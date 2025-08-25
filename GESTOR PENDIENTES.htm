@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Casos Local</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --surface-color: #1e1e1e;
+            --text-color: #e0e0e0;
+            --accent-color: #007bff;
+            --border-color: #333;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+            --closed-color: #28a745;
+            --active-color: #dc3545;
+            --warning-color: #ffc107;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background-color: var(--surface-color);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        h1, h2, h3 {
+            color: var(--accent-color);
+            text-align: center;
+        }
+
+        .section {
+            margin-bottom: 25px;
+            padding-bottom: 25px;
+            border-bottom: 1.5px solid var(--border-color);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="text"], input[type="file"], input[type="datetime-local"], select, textarea, input[type="date"], input[type="email"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            background-color: #2a2a2a;
+            color: var(--text-color);
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus, select:focus, textarea:focus, input[type="datetime-local"]:focus, input[type="date"]:focus, input[type="email"]:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+        
+        .row {
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
+        }
+        .row .form-group {
+            flex: 1;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        button {
+            background-color: var(--accent-color);
+            color: var(--text-color);
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 10px;
+        }
+        
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        button:active {
+            transform: scale(0.99);
+        }
+
+        .btn-secondary {
+            background-color: #555;
+        }
+
+        .btn-secondary:hover {
+            background-color: #444;
+        }
+
+        .btn-full-width {
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .message {
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .message.success {
+            background-color: var(--success-color);
+            color: var(--surface-color);
+        }
+
+        .message.error {
+            background-color: var(--error-color);
+            color: var(--surface-color);
+        }
+
+        .message.reminder {
+            background-color: rgba(255, 193, 7, 0.2);
+            color: var(--warning-color);
+        }
+        
+        #new-user-fields, #add-user-btn {
+            display: none;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background-color: var(--surface-color);
+            padding: 25px;
+            border-radius: 10px;
+            max-width: 800px;
+            width: 90%;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--text-color);
+            cursor: pointer;
+            line-height: 1;
+        }
+        
+        .case-table, .user-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .case-table th, .case-table td, .user-table th, .user-table td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .case-table th, .user-table th {
+            background-color: #2a2a2a;
+            color: var(--accent-color);
+            cursor: pointer;
+        }
+        
+        .case-table tr:hover, .user-table tr:hover {
+            background-color: #2a2a2a;
+        }
+        
+        #case-details {
+            white-space: pre-wrap;
+        }
+        
+        .attachments-list li {
+            list-style: none;
+            padding: 5px 0;
+        }
+        
+        .flex-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+        
+        .status-cell {
+            font-weight: bold;
+        }
+        .status-cell.Cerrado {
+            color: var(--closed-color);
+        }
+        .status-cell:not(.Cerrado) {
+            color: var(--active-color);
+        }
+        .is-invalid {
+            border-color: var(--error-color) !important;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .compact-view th:nth-child(2), .compact-view td:nth-child(2) { display: none; }
+        .compact-view td { padding: 8px; }
+        
+        .reminder-info {
+            background-color: rgba(255, 193, 7, 0.2);
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 15px;
+            border-left: 3px solid var(--warning-color);
+        }
+        
+        .status-tag {
+            padding: 5px 10px;
+            border-radius: 15px;
+            color: var(--text-color);
+            font-weight: bold;
+        }
+        .status-tag.Cerrado { background-color: var(--closed-color); }
+        .status-tag.Pendiente { background-color: var(--active-color); }
+        .status-tag.Incompleto { background-color: var(--warning-color); }
+        .status-tag.Baja { background-color: #555; }
+        .status-tag.Media { background-color: #ff9800; }
+        .status-tag.Alta { background-color: var(--error-color); }
+
+        .history-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 10px;
+        }
+        .history-list li {
+            background-color: #2a2a2a;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 5px;
+        }
+        
+        .priority-select {
+            width: auto;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            .button-group {
+                flex-direction: column;
+            }
+            .flex-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+
+        /* Estilos para las notificaciones toast */
+        #toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1001;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .toast {
+            background-color: #333;
+            color: #fff;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+            width: 300px;
+            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+            transform: translateX(110%);
+            opacity: 0;
+        }
+        .toast.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        .toast h4 {
+            margin: 0;
+            font-size: 1.1em;
+            color: var(--accent-color);
+        }
+        .toast p {
+            margin: 0;
+            font-size: 0.9em;
+        }
+        .toast .toast-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Gestión de Casos</h1>
+        <div id="reminder-alert" class="message reminder" style="display: none;"></div>
+        <div class="button-group" style="justify-content: space-between;">
+            <button id="view-cases-btn" class="btn-secondary">Ver Todos los Casos</button>
+            <button id="view-users-btn" class="btn-secondary">Ver Usuarios</button>
+            <button id="config-btn" class="btn-secondary">Configuración</button>
+        </div>
+    </header>
+
+    <main id="main-content">
+        <section id="register-case" class="section">
+            <h2>Registrar Nuevo Caso</h2>
+            <div id="message-area" class="message" style="display:none;"></div>
+            
+            <div class="form-group">
+                <label for="cedula">Cédula:</label>
+                <input type="text" id="cedula" placeholder="Número de Cédula" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="nombre">Nombre Completo:</label>
+                <input type="text" id="nombre" placeholder="Nombre del Usuario" readonly>
+            </div>
+            
+            <div id="new-user-fields">
+                <div class="form-group">
+                    <label for="new-nombre">Nombre del Nuevo Usuario:</label>
+                    <input type="text" id="new-nombre" placeholder="Nombre completo">
+                </div>
+                <div class="row">
+                    <div class="form-group">
+                        <label for="new-correo">Correo electrónico:</label>
+                        <input type="text" id="new-correo" placeholder="Correo electrónico">
+                    </div>
+                    <div class="form-group">
+                        <label for="new-telefono">Número de teléfono:</label>
+                        <input type="text" id="new-telefono" placeholder="Teléfono">
+                    </div>
+                </div>
+                <button id="add-user-btn" class="btn-full-width">Añadir Usuario</button>
+            </div>
+            
+            <div class="row">
+                <div class="form-group">
+                    <label for="estado">Estado del Caso:</label>
+                    <select id="estado">
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="prioridad">Prioridad:</label>
+                    <select id="prioridad" class="priority-select">
+                        <option value="Baja">Baja</option>
+                        <option value="Media">Media</option>
+                        <option value="Alta">Alta</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="notas">Notas del Caso:</label>
+                <textarea id="notas" placeholder="Escribe aquí las notas del caso..." required></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="recordatorio">Recordatorio:</label>
+                <input type="datetime-local" id="recordatorio">
+                <div class="button-group" style="justify-content: flex-start; margin-top: 5px;">
+                    <button class="quick-reminder-btn btn-secondary" data-time="tomorrow_8am">Mañana 8 AM</button>
+                    <button class="quick-reminder-btn btn-secondary" data-time="tomorrow_12pm">Mañana 12 PM</button>
+                    <button class="quick-reminder-btn btn-secondary" data-time="tomorrow_4pm">Mañana 4 PM</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="adjuntos">Archivos Adjuntos (Solo Referencia):</label>
+                <input type="file" id="adjuntos" multiple>
+                <div id="file-progress-bar" style="display:none; margin-top: 10px; background-color: #333; height: 10px; border-radius: 5px;">
+                    <div id="file-progress" style="width: 0%; height: 100%; background-color: var(--accent-color); border-radius: 5px;"></div>
+                </div>
+                <small>Los nombres de los archivos se guardarán, no los archivos en sí.</small>
+            </div>
+
+            <button id="save-case-btn" class="btn-full-width">Guardar Caso</button>
+        </section>
+    </main>
+</div>
+
+<div id="toast-container"></div>
+
+<div id="view-cases-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" data-modal="view-cases-modal">&times;</span>
+        <h2>Todos los Casos Registrados</h2>
+        
+        <div class="flex-row" style="align-items: flex-start;">
+            <div style="flex: 1;">
+                <label for="case-search">Buscar por Cédula:</label>
+                <input type="text" id="case-search" placeholder="Número de Cédula" style="width: 100%;">
+            </div>
+            <div style="flex: 1;">
+                 <label for="filter-status">Filtrar por estado:</label>
+                <select id="filter-status" style="width: 100%;">
+                    <option value="">Todos los Estados</option>
+                </select>
+            </div>
+            <div style="flex: 1;">
+                <label for="filter-date-start">Fecha desde:</label>
+                <input type="date" id="filter-date-start" style="width: 100%;">
+            </div>
+            <div style="flex: 1;">
+                <label for="filter-date-end">Fecha hasta:</label>
+                <input type="date" id="filter-date-end" style="width: 100%;">
+            </div>
+        </div>
+
+        <div class="flex-row" style="justify-content: space-between; align-items: center;">
+            <div class="button-group" style="margin: 0; gap: 5px;">
+                <span>Mostrar:</span>
+                <button class="page-size-btn btn-secondary" data-size="5">5</button>
+                <button class="page-size-btn btn-secondary" data-size="10">10</button>
+                <button class="page-size-btn btn-secondary" data-size="15">15</button>
+                <button class="page-size-btn btn-secondary" data-size="20">20</button>
+            </div>
+            <button id="toggle-compact-view" class="btn-secondary">Vista Compacta</button>
+        </div>
+        
+        <div style="max-height: 40vh; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 5px;">
+            <table class="case-table" id="case-table">
+                <thead>
+                    <tr>
+                        <th data-sort="cedula">Cédula</th>
+                        <th data-sort="nombre">Nombre</th>
+                        <th data-sort="prioridad">Prioridad</th>
+                        <th data-sort="fecha">Fecha</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody id="case-list-body">
+                    </tbody>
+            </table>
+        </div>
+        
+        <div class="pagination">
+            <button id="prev-page-btn" class="btn-secondary">Anterior</button>
+            <span id="page-info">Página 1 de 1</span>
+            <button id="next-page-btn" class="btn-secondary">Siguiente</button>
+        </div>
+
+        <h3 id="selected-case-title" style="margin-top: 20px; display: none;">Detalles del Caso</h3>
+        <div id="selected-case-details" style="padding-top: 10px;">
+            </div>
+    </div>
+</div>
+
+<div id="view-users-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" data-modal="view-users-modal">&times;</span>
+        <h2>Base de Datos de Usuarios</h2>
+        
+        <div class="flex-row" style="align-items: flex-end;">
+            <div style="flex: 1;">
+                <label for="user-search">Buscar por Cédula o Nombre:</label>
+                <input type="text" id="user-search" placeholder="Cédula o Nombre" style="width: 100%;">
+            </div>
+        </div>
+        
+        <div style="max-height: 40vh; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 5px;">
+            <table class="user-table">
+                <thead>
+                    <tr>
+                        <th>Cédula</th>
+                        <th>Nombre</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="user-list-body">
+                </tbody>
+            </table>
+        </div>
+
+        <h3 id="selected-user-title" style="margin-top: 20px; display: none;">Detalles del Usuario</h3>
+        <div id="selected-user-details" style="padding-top: 10px;">
+        </div>
+    </div>
+</div>
+
+<div id="config-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" data-modal="config-modal">&times;</span>
+        <h2>Configuración</h2>
+        <div class="section">
+            <h3>Gestión de Estados</h3>
+            <p>Define estados personalizados para tus casos.</p>
+            <div class="form-group" style="display: flex; gap: 10px;">
+                <input type="text" id="new-status-input" placeholder="Nuevo estado" style="flex: 1;">
+                <button id="add-status-btn" class="btn-secondary">Añadir</button>
+            </div>
+            <ul id="status-list" style="list-style: none; padding: 0;">
+            </ul>
+        </div>
+        <div class="section">
+            <h3>Base de Datos de Usuarios</h3>
+            <p>Gestiona la base de datos de usuarios.</p>
+            <div class="button-group">
+                <button id="upload-users-btn" class="btn-secondary">Subir Archivo de Usuarios</button>
+                <input type="file" id="upload-users-json" accept=".json" style="display: none;">
+                <button id="download-users-btn">Descargar Base de Datos</button>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h3>Base de Datos de Casos</h3>
+            <p>Gestiona tu historial de casos.</p>
+            <div class="button-group">
+                <button id="upload-cases-btn" class="btn-secondary">Subir Archivo de Casos</button>
+                <input type="file" id="upload-cases-json" accept=".json" style="display: none;">
+                <button id="download-cases-btn">Descargar Historial de Casos</button>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h3>Respaldo</h3>
+            <p id="backup-message"></p>
+            <button id="check-backup-btn" class="btn-secondary">Revisar Respaldo</button>
+        </div>
+
+        <div class="section">
+            <h3>Borrar Datos</h3>
+            <p style="color: var(--error-color);">¡Precaución! Esta acción es irreversible.</p>
+            <button id="clear-all-data-btn" class="btn-secondary" style="background-color: var(--error-color);">Borrar Todos los Datos Locales</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // --- Selectores del DOM ---
+        const cedulaInput = document.getElementById('cedula');
+        const nombreInput = document.getElementById('nombre');
+        const notasTextarea = document.getElementById('notas');
+        const estadoSelect = document.getElementById('estado');
+        const prioridadSelect = document.getElementById('prioridad');
+        const recordatorioInput = document.getElementById('recordatorio');
+        const adjuntosInput = document.getElementById('adjuntos');
+        const saveCaseBtn = document.getElementById('save-case-btn');
+        const quickReminderBtns = document.querySelectorAll('.quick-reminder-btn');
+        const newUserFields = document.getElementById('new-user-fields');
+        const newNombreInput = document.getElementById('new-nombre');
+        const newCorreoInput = document.getElementById('new-correo');
+        const newTelefonoInput = document.getElementById('new-telefono');
+        const addUserBtn = document.getElementById('add-user-btn');
+        const messageArea = document.getElementById('message-area');
+        const reminderAlert = document.getElementById('reminder-alert');
+        const fileProgressBar = document.getElementById('file-progress-bar');
+        const fileProgress = document.getElementById('file-progress');
+        const toastContainer = document.getElementById('toast-container');
+        const audio = new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'); 
+
+        // Modals
+        const viewCasesBtn = document.getElementById('view-cases-btn');
+        const viewCasesModal = document.getElementById('view-cases-modal');
+        const viewUsersBtn = document.getElementById('view-users-btn');
+        const viewUsersModal = document.getElementById('view-users-modal');
+        const configBtn = document.getElementById('config-btn');
+        const configModal = document.getElementById('config-modal');
+        const closeBtns = document.querySelectorAll('.close-btn');
+
+        // View Cases Modal
+        const caseTable = document.getElementById('case-table');
+        const caseListBody = document.getElementById('case-list-body');
+        const caseSearchInput = document.getElementById('case-search');
+        const filterStatusSelect = document.getElementById('filter-status');
+        const filterDateStart = document.getElementById('filter-date-start');
+        const filterDateEnd = document.getElementById('filter-date-end');
+        const selectedCaseDetails = document.getElementById('selected-case-details');
+        const selectedCaseTitle = document.getElementById('selected-case-title');
+        const toggleCompactViewBtn = document.getElementById('toggle-compact-view');
+        const pageSizeButtons = document.querySelectorAll('.page-size-btn');
+        const prevPageBtn = document.getElementById('prev-page-btn');
+        const nextPageBtn = document.getElementById('next-page-btn');
+        const pageInfoSpan = document.getElementById('page-info');
+
+        // View Users Modal
+        const userSearchInput = document.getElementById('user-search');
+        const userListBody = document.getElementById('user-list-body');
+        const selectedUserDetails = document.getElementById('selected-user-details');
+        const selectedUserTitle = document.getElementById('selected-user-title');
+
+
+        // Config Modal
+        const uploadUsersBtn = document.getElementById('upload-users-btn');
+        const uploadUsersJsonInput = document.getElementById('upload-users-json');
+        const downloadUsersBtn = document.getElementById('download-users-btn');
+        const uploadCasesBtn = document.getElementById('upload-cases-btn');
+        const uploadCasesJsonInput = document.getElementById('upload-cases-json');
+        const downloadCasesBtn = document.getElementById('download-cases-btn');
+        const clearAllDataBtn = document.getElementById('clear-all-data-btn');
+        const newStatusInput = document.getElementById('new-status-input');
+        const addStatusBtn = document.getElementById('add-status-btn');
+        const statusList = document.getElementById('status-list');
+        const backupMessage = document.getElementById('backup-message');
+        const checkBackupBtn = document.getElementById('check-backup-btn');
+
+        // --- Variables para la gestión de datos ---
+        let usersDB = [];
+        let casesDB = [];
+        let customStatuses = ['Pendiente', 'Autorizado', 'Cerrado', 'Incompleto'];
+
+        // Paginación y orden
+        let currentPage = 1;
+        let casesPerPage = 10;
+        let isCompactView = false;
+        let sortDirection = 'desc';
+        let sortColumn = 'fecha';
+        let selectedCaseId = null;
+
+        // --- Funciones para manejar datos del localStorage ---
+        const loadData = () => {
+            try {
+                const storedUsers = localStorage.getItem('usersDB');
+                const storedCases = localStorage.getItem('casesDB');
+                const storedStatuses = localStorage.getItem('customStatuses');
+                if (storedUsers) usersDB = JSON.parse(storedUsers);
+                if (storedCases) casesDB = JSON.parse(storedCases);
+                if (storedStatuses) customStatuses = JSON.parse(storedStatuses);
+            } catch (e) {
+                console.error("Error al cargar datos de localStorage: ", e);
+            }
+        };
+
+        const saveData = (key, data) => {
+            try {
+                localStorage.setItem(key, JSON.stringify(data));
+            } catch (e) {
+                console.error("Error al guardar datos en localStorage: ", e);
+            }
+        };
+
+        const updateStatusDropdowns = () => {
+            const createOptions = (selectElement) => {
+                selectElement.innerHTML = '';
+                if (selectElement.id === 'filter-status') {
+                    const defaultOption = document.createElement('option');
+                    defaultOption.value = '';
+                    defaultOption.textContent = 'Todos los Estados';
+                    selectElement.appendChild(defaultOption);
+                }
+                customStatuses.forEach(status => {
+                    const option = document.createElement('option');
+                    option.value = status;
+                    option.textContent = status;
+                    selectElement.appendChild(option);
+                });
+            };
+            createOptions(estadoSelect);
+            createOptions(filterStatusSelect);
+        };
+
+        // --- Funciones de Utilidad ---
+        const showMessage = (text, type = 'success') => {
+            messageArea.textContent = text;
+            messageArea.className = `message ${type}`;
+            messageArea.style.display = 'block';
+            setTimeout(() => {
+                messageArea.style.display = 'none';
+            }, 5000);
+        };
+
+        const clearForm = () => {
+            cedulaInput.value = '';
+            nombreInput.value = '';
+            notasTextarea.value = '';
+            estadoSelect.value = 'Pendiente';
+            prioridadSelect.value = 'Baja';
+            recordatorioInput.value = '';
+            adjuntosInput.value = null;
+            newUserFields.style.display = 'none';
+            newNombreInput.value = '';
+            newCorreoInput.value = '';
+            newTelefonoInput.value = '';
+            addUserBtn.style.display = 'none';
+            cedulaInput.classList.remove('is-invalid');
+            notasTextarea.classList.remove('is-invalid');
+        };
+
+        const validateForm = () => {
+            let isValid = true;
+            if (!cedulaInput.value) {
+                cedulaInput.classList.add('is-invalid');
+                isValid = false;
+            } else {
+                cedulaInput.classList.remove('is-invalid');
+            }
+            if (!nombreInput.value || nombreInput.value === 'Usuario no encontrado') {
+                 showMessage('Por favor, ingresa una cédula de un usuario existente o añade uno nuevo.', 'error');
+                 cedulaInput.classList.add('is-invalid');
+                 isValid = false;
+            } else {
+                cedulaInput.classList.remove('is-invalid');
+            }
+            return isValid;
+        };
+        
+        const saveCase = (isCtrlEnter = false) => {
+            const cedula = cedulaInput.value;
+            const nombre = nombreInput.value;
+            const notas = notasTextarea.value;
+            let estado = estadoSelect.value;
+            const prioridad = prioridadSelect.value;
+            const recordatorio = recordatorioInput.value;
+            const adjuntos = Array.from(adjuntosInput.files).map(file => file.name);
+
+            if (!validateForm()) {
+                if (isCtrlEnter && !notas) {
+                    estado = 'Incompleto';
+                } else if (!notas) {
+                    notasTextarea.classList.add('is-invalid');
+                    return;
+                }
+            } else if (!notas) {
+                if(isCtrlEnter){
+                     estado = 'Incompleto';
+                } else {
+                    notasTextarea.classList.add('is-invalid');
+                    showMessage('Por favor, completa las notas del caso.', 'error');
+                    return;
+                }
+            }
+            
+            fileProgressBar.style.display = 'block';
+            fileProgress.style.width = '0%';
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 10;
+                fileProgress.style.width = `${progress}%`;
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => { fileProgressBar.style.display = 'none'; }, 500);
+                }
+            }, 100);
+
+            const newCase = {
+                id: Date.now(),
+                cedula: cedula,
+                nombre: nombre,
+                notas: notas,
+                estado: estado,
+                prioridad: prioridad,
+                recordatorio: recordatorio,
+                adjuntos: adjuntos,
+                fecha: new Date().toLocaleString(),
+                history: [{ timestamp: new Date().toLocaleString(), message: `Caso creado con estado '${estado}' y prioridad '${prioridad}'.` }]
+            };
+
+            casesDB.push(newCase);
+            saveData('casesDB', casesDB);
+            showMessage('Caso registrado con éxito.', 'success');
+            clearForm();
+        };
+
+        // --- Lógica principal ---
+        cedulaInput.addEventListener('input', () => {
+            const cedula = cedulaInput.value;
+            const user = usersDB.find(u => u.documento === cedula);
+            
+            if (user) {
+                nombreInput.value = user.nombre;
+                nombreInput.readOnly = true;
+                newUserFields.style.display = 'none';
+                addUserBtn.style.display = 'none';
+            } else {
+                nombreInput.value = 'Usuario no encontrado';
+                nombreInput.readOnly = true;
+                newUserFields.style.display = 'block';
+                addUserBtn.style.display = 'block';
+            }
+        });
+        
+        addUserBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const cedula = cedulaInput.value;
+            const nombre = newNombreInput.value;
+            const correo = newCorreoInput.value;
+            const telefono = newTelefonoInput.value;
+            if (cedula && nombre) {
+                const newUser = { documento: cedula, nombre: nombre, correo: correo, telefono: telefono };
+                usersDB.push(newUser);
+                saveData('usersDB', usersDB);
+                showMessage('Usuario añadido a la base de datos.', 'success');
+                nombreInput.value = nombre;
+                nombreInput.readOnly = true;
+                newUserFields.style.display = 'none';
+                addUserBtn.style.display = 'none';
+            } else {
+                showMessage('Por favor, completa los campos del nuevo usuario.', 'error');
+            }
+        });
+
+        saveCaseBtn.addEventListener('click', () => saveCase());
+        
+        notasTextarea.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                saveCase(true);
+            }
+        });
+
+        quickReminderBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const now = new Date();
+                const day = now.getDay();
+                const daysUntilTomorrow = (day === 6) ? 2 : (day === 5) ? 3 : 1;
+                const tomorrow = new Date();
+                tomorrow.setDate(now.getDate() + daysUntilTomorrow);
+                
+                const time = btn.dataset.time.split('_')[1];
+                let hours, minutes = 0;
+                if (time === '8am') { hours = 8; }
+                else if (time === '12pm') { hours = 12; }
+                else if (time === '4pm') { hours = 16; }
+
+                tomorrow.setHours(hours, minutes, 0, 0);
+                recordatorioInput.value = tomorrow.toISOString().slice(0, 16);
+            });
+        });
+
+        // --- Lógica de Modals ---
+        viewCasesBtn.addEventListener('click', () => {
+            currentPage = 1;
+            loadCasesList();
+            viewCasesModal.style.display = 'flex';
+        });
+
+        viewUsersBtn.addEventListener('click', () => {
+            loadUsersList();
+            viewUsersModal.style.display = 'flex';
+        });
+
+        configBtn.addEventListener('click', () => {
+            loadStatusList();
+            checkBackup();
+            configModal.style.display = 'flex';
+        });
+
+        closeBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const modalId = e.target.dataset.modal;
+                document.getElementById(modalId).style.display = 'none';
+            });
+        });
+
+        window.addEventListener('click', (e) => {
+            if (e.target === viewCasesModal) viewCasesModal.style.display = 'none';
+            if (e.target === viewUsersModal) viewUsersModal.style.display = 'none';
+            if (e.target === configModal) configModal.style.display = 'none';
+        });
+        
+        // --- Lógica del modal "Ver Casos" ---
+        const loadCasesList = () => {
+            caseListBody.innerHTML = '';
+            
+            let filteredCases = casesDB.filter(c => {
+                const matchesCedula = c.cedula.toLowerCase().includes(caseSearchInput.value.toLowerCase());
+                const matchesStatus = filterStatusSelect.value === '' || c.estado === filterStatusSelect.value;
+
+                let matchesDate = true;
+                const caseDate = new Date(c.fecha);
+                if (filterDateStart.value) {
+                    const startDate = new Date(filterDateStart.value + 'T00:00:00');
+                    matchesDate = matchesDate && (caseDate >= startDate);
+                }
+                if (filterDateEnd.value) {
+                    const endDate = new Date(filterDateEnd.value + 'T23:59:59');
+                    matchesDate = matchesDate && (caseDate <= endDate);
+                }
+
+                return matchesCedula && matchesStatus && matchesDate;
+            });
+
+            filteredCases.sort((a, b) => {
+                let aVal, bVal;
+                if (sortColumn === 'fecha') {
+                    aVal = new Date(a.fecha);
+                    bVal = new Date(b.fecha);
+                } else if (sortColumn === 'prioridad') {
+                    const priorityOrder = ['Baja', 'Media', 'Alta'];
+                    aVal = priorityOrder.indexOf(a.prioridad);
+                    bVal = priorityOrder.indexOf(b.prioridad);
+                } else {
+                    aVal = String(a[sortColumn] || '').toLowerCase();
+                    bVal = String(b[sortColumn] || '').toLowerCase();
+                }
+
+                if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+                if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            const totalPages = Math.ceil(filteredCases.length / casesPerPage);
+            const start = (currentPage - 1) * casesPerPage;
+            const end = start + casesPerPage;
+            const paginatedCases = filteredCases.slice(start, end);
+
+            paginatedCases.forEach(c => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${c.cedula}</td>
+                    <td>${c.nombre}</td>
+                    <td><span class="status-tag ${c.prioridad}">${c.prioridad}</span></td>
+                    <td>${new Date(c.fecha).toLocaleDateString()}</td>
+                    <td><span class="status-tag ${c.estado}">${c.estado}</span></td>
+                `;
+                row.addEventListener('click', () => showCaseDetails(c));
+                caseListBody.appendChild(row);
+            });
+
+            pageInfoSpan.textContent = `Página ${currentPage} de ${totalPages || 1}`;
+            prevPageBtn.disabled = currentPage === 1;
+            nextPageBtn.disabled = currentPage >= totalPages || totalPages === 0;
+            selectedCaseDetails.innerHTML = '';
+            selectedCaseTitle.style.display = 'none';
+        };
+
+        const showCaseDetails = (caseItem) => {
+            selectedCaseId = caseItem.id;
+            selectedCaseTitle.textContent = `Detalles del Caso #${caseItem.id}`;
+            selectedCaseDetails.innerHTML = `
+                <div class="row">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Cédula:</label>
+                        <input type="text" value="${caseItem.cedula}" readonly>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>Nombre:</label>
+                        <input type="text" value="${caseItem.nombre}" readonly>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Estado:</label>
+                        <select id="edit-estado">
+                            ${customStatuses.map(s => `<option value="${s}" ${s === caseItem.estado ? 'selected' : ''}>${s}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>Prioridad:</label>
+                        <select id="edit-prioridad">
+                            <option value="Baja" ${caseItem.prioridad === 'Baja' ? 'selected' : ''}>Baja</option>
+                            <option value="Media" ${caseItem.prioridad === 'Media' ? 'selected' : ''}>Media</option>
+                            <option value="Alta" ${caseItem.prioridad === 'Alta' ? 'selected' : ''}>Alta</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Notas:</label>
+                    <textarea id="edit-notas">${caseItem.notas}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>Adjuntos:</label>
+                    <ul class="attachments-list">${caseItem.adjuntos.map(f => `<li>${f}</li>`).join('') || '<li>No hay archivos adjuntos.</li>'}</ul>
+                </div>
+                ${caseItem.recordatorio ? `<div class="reminder-info"><b>Recordatorio programado para:</b> ${new Date(caseItem.recordatorio).toLocaleString()}</div>` : ''}
+                <div class="form-group">
+                    <label>Historial de Cambios:</label>
+                    <ul class="history-list">${caseItem.history.map(h => `<li><b>${h.timestamp}:</b> ${h.message}</li>`).join('')}</ul>
+                </div>
+                <div class="button-group">
+                    <button id="update-case-btn" class="btn-secondary">Actualizar Caso</button>
+                    <button id="delete-case-btn" style="background-color: var(--error-color);">Eliminar Caso</button>
+                </div>
+            `;
+            selectedCaseTitle.style.display = 'block';
+
+            document.getElementById('update-case-btn').addEventListener('click', () => {
+                const updatedCase = casesDB.find(c => c.id === selectedCaseId);
+                const oldEstado = updatedCase.estado;
+                const oldPrioridad = updatedCase.prioridad;
+                
+                updatedCase.estado = document.getElementById('edit-estado').value;
+                updatedCase.prioridad = document.getElementById('edit-prioridad').value;
+                updatedCase.notas = document.getElementById('edit-notas').value;
+
+                if (oldEstado !== updatedCase.estado) {
+                    updatedCase.history.push({ timestamp: new Date().toLocaleString(), message: `Estado cambiado de '${oldEstado}' a '${updatedCase.estado}'.` });
+                }
+                if (oldPrioridad !== updatedCase.prioridad) {
+                    updatedCase.history.push({ timestamp: new Date().toLocaleString(), message: `Prioridad cambiada de '${oldPrioridad}' a '${updatedCase.prioridad}'.` });
+                }
+
+                saveData('casesDB', casesDB);
+                loadCasesList();
+                showCaseDetails(updatedCase);
+                showMessage('Caso actualizado con éxito.', 'success');
+            });
+
+            document.getElementById('delete-case-btn').addEventListener('click', () => {
+                if (confirm('¿Estás seguro de que deseas eliminar este caso? Esta acción es irreversible.')) {
+                    casesDB = casesDB.filter(c => c.id !== selectedCaseId);
+                    saveData('casesDB', casesDB);
+                    loadCasesList();
+                    showMessage('Caso eliminado con éxito.', 'success');
+                }
+            });
+        };
+
+        caseSearchInput.addEventListener('input', () => {
+            currentPage = 1;
+            loadCasesList();
+        });
+        filterStatusSelect.addEventListener('change', () => {
+            currentPage = 1;
+            loadCasesList();
+        });
+        filterDateStart.addEventListener('change', () => {
+            currentPage = 1;
+            loadCasesList();
+        });
+        filterDateEnd.addEventListener('change', () => {
+            currentPage = 1;
+            loadCasesList();
+        });
+        toggleCompactViewBtn.addEventListener('click', () => {
+            isCompactView = !isCompactView;
+            caseTable.classList.toggle('compact-view', isCompactView);
+            toggleCompactViewBtn.textContent = isCompactView ? 'Vista Estándar' : 'Vista Compacta';
+        });
+
+        pageSizeButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                casesPerPage = parseInt(e.target.dataset.size);
+                currentPage = 1;
+                loadCasesList();
+            });
+        });
+
+        prevPageBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                loadCasesList();
+            }
+        });
+
+        nextPageBtn.addEventListener('click', () => {
+            const totalPages = Math.ceil(casesDB.filter(c => c.cedula.toLowerCase().includes(caseSearchInput.value.toLowerCase())).length / casesPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                loadCasesList();
+            }
+        });
+
+        document.querySelectorAll('.case-table th').forEach(header => {
+            header.addEventListener('click', () => {
+                const column = header.dataset.sort;
+                if (sortColumn === column) {
+                    sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    sortColumn = column;
+                    sortDirection = 'asc';
+                }
+                loadCasesList();
+            });
+        });
+
+        // --- Lógica del modal "Ver Usuarios" (Nueva funcionalidad) ---
+        const loadUsersList = () => {
+            userListBody.innerHTML = '';
+            const searchText = userSearchInput.value.toLowerCase();
+
+            const filteredUsers = usersDB.filter(u => 
+                u.documento.toLowerCase().includes(searchText) || 
+                u.nombre.toLowerCase().includes(searchText)
+            );
+
+            filteredUsers.forEach(user => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${user.documento}</td>
+                    <td>${user.nombre}</td>
+                    <td><button class="btn-secondary edit-user-btn" data-cedula="${user.documento}">Ver/Editar</button></td>
+                `;
+                userListBody.appendChild(row);
+            });
+
+            document.querySelectorAll('.edit-user-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const cedula = e.target.dataset.cedula;
+                    const user = usersDB.find(u => u.documento === cedula);
+                    showUserDetails(user);
+                });
+            });
+
+            selectedUserDetails.innerHTML = '';
+            selectedUserTitle.style.display = 'none';
+        };
+
+        const showUserDetails = (user) => {
+            selectedUserTitle.textContent = `Detalles de ${user.nombre}`;
+            selectedUserDetails.innerHTML = `
+                <div class="form-group">
+                    <label>Cédula:</label>
+                    <input type="text" id="edit-user-cedula" value="${user.documento}" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Nombre:</label>
+                    <input type="text" id="edit-user-nombre" value="${user.nombre}">
+                </div>
+                <div class="form-group">
+                    <label>Correo:</label>
+                    <input type="email" id="edit-user-correo" value="${user.correo || ''}">
+                </div>
+                <div class="form-group">
+                    <label>Teléfono:</label>
+                    <input type="text" id="edit-user-telefono" value="${user.telefono || ''}">
+                </div>
+                <div class="button-group">
+                    <button id="save-user-changes-btn" class="btn-secondary">Guardar Cambios</button>
+                    <button id="delete-user-btn" style="background-color: var(--error-color);">Eliminar Usuario</button>
+                </div>
+            `;
+            selectedUserTitle.style.display = 'block';
+
+            document.getElementById('save-user-changes-btn').addEventListener('click', () => {
+                user.nombre = document.getElementById('edit-user-nombre').value;
+                user.correo = document.getElementById('edit-user-correo').value;
+                user.telefono = document.getElementById('edit-user-telefono').value;
+                saveData('usersDB', usersDB);
+                loadUsersList();
+                showMessage('Usuario actualizado con éxito.', 'success');
+            });
+
+            document.getElementById('delete-user-btn').addEventListener('click', () => {
+                if (confirm(`¿Estás seguro de que deseas eliminar a ${user.nombre}? Esta acción es irreversible.`)) {
+                    usersDB = usersDB.filter(u => u.documento !== user.documento);
+                    saveData('usersDB', usersDB);
+                    loadUsersList();
+                    showMessage('Usuario eliminado con éxito.', 'success');
+                }
+            });
+        };
+
+        userSearchInput.addEventListener('input', loadUsersList);
+
+        // --- Lógica del modal "Configuración" (Mejoras) ---
+        const downloadJSON = (data, filename) => {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+
+        const uploadJSON = (fileInput, dbKey) => {
+            const file = fileInput.files[0];
+            if (!file) {
+                showMessage('Por favor, selecciona un archivo JSON.', 'error');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (Array.isArray(data)) {
+                        saveData(dbKey, data);
+                        if (dbKey === 'usersDB') usersDB = data;
+                        if (dbKey === 'casesDB') casesDB = data;
+                        showMessage(`Base de datos de ${dbKey === 'usersDB' ? 'usuarios' : 'casos'} importada con éxito.`, 'success');
+                        loadData();
+                    } else {
+                        showMessage('El archivo JSON no tiene el formato esperado (debe ser un array).', 'error');
+                    }
+                } catch (error) {
+                    showMessage('Error al procesar el archivo JSON.', 'error');
+                    console.error(error);
+                }
+            };
+            reader.readAsText(file);
+        };
+        
+        // Asignación de eventos de importación/exportación de usuarios
+        downloadUsersBtn.addEventListener('click', () => downloadJSON(usersDB, 'usuarios_backup.json'));
+        uploadUsersBtn.addEventListener('click', () => uploadUsersJsonInput.click());
+        uploadUsersJsonInput.addEventListener('change', () => uploadJSON(uploadUsersJsonInput, 'usersDB'));
+
+        // Eventos existentes de casos
+        downloadCasesBtn.addEventListener('click', () => downloadJSON(casesDB, 'casos_backup.json'));
+        uploadCasesBtn.addEventListener('click', () => uploadCasesJsonInput.click());
+        uploadCasesJsonInput.addEventListener('change', () => uploadJSON(uploadCasesJsonInput, 'casesDB'));
+
+        // Funciones existentes de configuración
+        const loadStatusList = () => {
+            statusList.innerHTML = '';
+            customStatuses.forEach((status, index) => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <span>${status}</span>
+                    <button class="delete-status-btn btn-secondary" data-index="${index}" style="background-color: var(--error-color);">X</button>
+                `;
+                statusList.appendChild(li);
+            });
+            document.querySelectorAll('.delete-status-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const index = parseInt(e.target.dataset.index);
+                    if (customStatuses[index] === 'Pendiente' || customStatuses[index] === 'Cerrado') {
+                        showMessage('No se pueden eliminar los estados predeterminados.', 'error');
+                        return;
+                    }
+                    customStatuses.splice(index, 1);
+                    saveData('customStatuses', customStatuses);
+                    loadStatusList();
+                    updateStatusDropdowns();
+                });
+            });
+        };
+        addStatusBtn.addEventListener('click', () => {
+            const newStatus = newStatusInput.value.trim();
+            if (newStatus && !customStatuses.includes(newStatus)) {
+                customStatuses.push(newStatus);
+                saveData('customStatuses', customStatuses);
+                loadStatusList();
+                updateStatusDropdowns();
+                newStatusInput.value = '';
+            } else if (customStatuses.includes(newStatus)) {
+                showMessage('El estado ya existe.', 'error');
+            }
+        });
+        checkBackupBtn.addEventListener('click', checkBackup);
+        function checkBackup() {
+            const hasUsers = localStorage.getItem('usersDB') !== null;
+            const hasCases = localStorage.getItem('casesDB') !== null;
+            const hasStatuses = localStorage.getItem('customStatuses') !== null;
+            let message = "Estado del respaldo: ";
+            if (hasUsers || hasCases || hasStatuses) {
+                message += "<b>Se ha encontrado un respaldo local.</b>";
+                if (hasUsers) message += " (Usuarios)";
+                if (hasCases) message += " (Casos)";
+                if (hasStatuses) message += " (Estados)";
+                backupMessage.innerHTML = message;
+                backupMessage.style.color = "var(--success-color)";
+            } else {
+                message += "No se ha encontrado respaldo local.";
+                backupMessage.innerHTML = message;
+                backupMessage.style.color = "var(--error-color)";
+            }
+        }
+        clearAllDataBtn.addEventListener('click', () => {
+            if (confirm('¿Estás seguro de que deseas borrar TODOS los datos? Esta acción es irreversible.')) {
+                localStorage.clear();
+                location.reload();
+            }
+        });
+
+        // --- Sistema de Notificaciones de Recordatorios (Nueva funcionalidad) ---
+        const requestNotificationPermission = () => {
+            if (!("Notification" in window)) {
+                console.log("Este navegador no soporta notificaciones de escritorio.");
+            } else if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                        showMessage("Permiso de notificaciones concedido. Los recordatorios aparecerán como notificaciones del sistema.", "success");
+                    }
+                });
+            }
+        };
+
+        const showToast = (title, message, id) => {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `
+                <h4>${title}</h4>
+                <p>${message}</p>
+                <div class="toast-actions">
+                    <button class="btn-secondary snooze-btn" data-id="${id}">Posponer 5 min</button>
+                    <button class="btn-secondary close-toast-btn">Cerrar</button>
+                </div>
+            `;
+            toastContainer.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 100);
+
+            audio.play().catch(e => console.error("Error al reproducir el sonido:", e));
+
+            toast.querySelector('.close-toast-btn').addEventListener('click', () => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            });
+            toast.querySelector('.snooze-btn').addEventListener('click', () => {
+                const caseItem = casesDB.find(c => c.id === id);
+                if (caseItem) {
+                    const newReminderTime = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+                    caseItem.recordatorio = newReminderTime;
+                    saveData('casesDB', casesDB);
+                }
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            });
+        };
+
+        const checkReminders = () => {
+            const now = Date.now();
+            casesDB.forEach(c => {
+                if (c.recordatorio && new Date(c.recordatorio).getTime() < now) {
+                    if (c.estado !== 'Cerrado') {
+                        if (Notification.permission === 'granted') {
+                            new Notification('Recordatorio de Caso', {
+                                body: `Caso de: ${c.nombre}\nNotas: ${c.notas.substring(0, 50)}...`,
+                                icon: 'https://cdn-icons-png.flaticon.com/512/1041/1041916.png'
+                            });
+                        }
+                        showToast('Recordatorio de Caso', `El caso de **${c.nombre}** necesita tu atención.`, c.id);
+                    }
+                    c.recordatorio = '';
+                    saveData('casesDB', casesDB);
+                }
+            });
+        };
+
+        requestNotificationPermission();
+
+        setInterval(checkReminders, 30000);
+
+        // --- Inicialización ---
+        loadData();
+        updateStatusDropdowns();
+        clearForm();
+    });
+</script>
+
+</body>
+</html>
