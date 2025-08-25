@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración de Códigos - Extractor de PDF</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-4xl mx-auto bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-10">
+        <header class="text-center mb-6">
+            <h1 class="text-3xl md:text-4xl font-bold text-white mb-2">Configuración de Códigos</h1>
+            <p class="text-gray-400 mb-4">Importa tu archivo Excel y conviértelo a formato JSON para usarlo en la herramienta principal.</p>
+        </header>
+
+        <main>
+            <div class="mb-6">
+                <label class="block mb-2 font-semibold text-indigo-300">1. Sube tu archivo Excel (.xlsx)</label>
+                <input type="file" id="excel-file" accept=".xlsx, .xls" class="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-600 file:text-white"/>
+                <p id="excel-status" class="text-xs mt-2 text-green-400"></p>
+            </div>
+
+            <div class="mb-6">
+                <label class="block mb-2 font-semibold text-indigo-300">2. Previsualización de datos</label>
+                <div id="data-preview" class="bg-gray-700/50 rounded-lg p-4 max-h-60 overflow-y-auto text-sm text-gray-300">
+                    <p class="text-center text-gray-500">Los datos de tu archivo Excel aparecerán aquí.</p>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
+                <button id="convert-btn" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg transition duration-300 disabled:bg-gray-500 disabled:cursor-not-allowed">
+                    Convertir a JSON y Descargar
+                </button>
+            </div>
+
+            <div id="error-message" class="hidden mt-4 bg-red-900/50 border border-red-500 text-red-300 px-4 py-3 rounded-lg">
+                <p><strong>Error:</strong> El archivo no tiene el formato esperado. Asegúrate de que la primera columna sea el **Código** y la segunda sea la **Descripción**.</p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const excelFile = document.getElementById('excel-file');
+            const excelStatus = document.getElementById('excel-status');
+            const dataPreview = document.getElementById('data-preview');
+            const convertBtn = document.getElementById('convert-btn');
+            const errorMessage = document.getElementById('error-message');
+            
+            let jsonData = null;
+
+            excelFile.addEventListener('change', handleExcelFile, false);
+            convertBtn.addEventListener('click', downloadJson, false);
+
+            function handleExcelFile(e) {
+                const file = e.target.files[0];
+                if (!file) {
+                    excelStatus.textContent = '';
+                    dataPreview.innerHTML = '<p class="text-center text-gray-500">Los datos de tu archivo Excel aparecerán aquí.</p>';
+                    return;
+                }
+
+                errorMessage.classList.add('hidden');
+                excelStatus.textContent = `Leyendo ${file.name}...`;
+
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    const data = new Uint8Array(evt.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                    if (rows.length < 1 || rows[0].length < 2) {
+                        showError('El archivo Excel no tiene el formato esperado (mínimo 2 columnas).');
+                        return;
+                    }
+                    
+                    const headers = rows[0];
+                    if (!headers[0] || !headers[1]) {
+                        showError('Las primeras dos columnas no tienen encabezados válidos. Se espera que sean "Código" y "Descripción".');
+                        return;
+                    }
+
+                    // Ignorar la primera fila de encabezados
+                    const dataRows = rows.slice(1);
+                    const convertedData = {};
+                    let previewHTML = '<table class="w-full text-left"><thead><tr><th>Código</th><th>Descripción</th></tr></thead><tbody>';
+
+                    dataRows.forEach(row => {
+                        const code = row[0];
+                        const description = row[1];
+                        if (code && description) {
+                            convertedData[code] = description;
+                            previewHTML += `<tr><td class="pr-4 py-1">${code}</td><td class="pr-4 py-1">${description}</td></tr>`;
+                        }
+                    });
+                    
+                    previewHTML += '</tbody></table>';
+                    dataPreview.innerHTML = previewHTML;
+                    jsonData = convertedData;
+                    excelStatus.textContent = `Archivo cargado correctamente. ${Object.keys(jsonData).length} códigos detectados.`;
+                };
+                reader.readAsArrayBuffer(file);
+            }
+
+            function downloadJson() {
+                if (!jsonData) {
+                    showError('Por favor, sube y convierte un archivo Excel primero.');
+                    return;
+                }
+                const dataStr = JSON.stringify(jsonData, null, 2);
+                const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+                
+                const exportFileDefaultName = 'codes.json';
+                
+                const linkElement = document.createElement('a');
+                linkElement.setAttribute('href', dataUri);
+                linkElement.setAttribute('download', exportFileDefaultName);
+                linkElement.click();
+            }
+
+            function showError(message) {
+                errorMessage.classList.remove('hidden');
+                errorMessage.querySelector('p').innerHTML = `<strong>Error:</strong> ${message}`;
+                excelStatus.textContent = '';
+                jsonData = null;
+                dataPreview.innerHTML = '<p class="text-center text-gray-500">Los datos de tu archivo Excel aparecerán aquí.</p>';
+            }
+        });
+    </script>
+</body>
+</html>
