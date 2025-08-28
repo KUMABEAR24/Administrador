@@ -1109,5 +1109,46 @@
             }
         });
     </script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+  import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCLgYbPpqXwOY9ha9IdyZ8oLEqA9G_iTVg",
+    authDomain: "ayudacoomeva.firebaseapp.com",
+    databaseURL: "https://ayudacoomeva-default-rtdb.firebaseio.com",
+    projectId: "ayudacoomeva",
+    storageBucket: "ayudacoomeva.appspot.com",
+    messagingSenderId: "533229200872",
+    appId: "1:533229200872:web:c754a6a3670e92b4caf05d"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  window.guardarJSON = (nombreArchivo, datos) => {
+    const referencia = ref(db, 'archivos/' + nombreArchivo);
+    set(referencia, datos)
+      .then(() => alert("Archivo guardado correctamente en Firebase"))
+      .catch((error) => console.error("Error al guardar:", error));
+  };
+
+  window.cargarJSON = (nombreArchivo, callback) => {
+    const referencia = ref(db, 'archivos/' + nombreArchivo);
+    get(referencia)
+      .then((snapshot) => {
+        if (snapshot.exists()) {
+          const datos = snapshot.val();
+          console.log("Datos cargados:", datos);
+          if (typeof callback === "function") callback(datos);
+        } else {
+          alert("No se encontró el archivo en Firebase");
+        }
+      })
+      .catch((error) => console.error("Error al cargar:", error));
+  };
+</script>
+
 </body>
 </html>
