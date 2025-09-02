@@ -6,11 +6,10 @@
   <title>Inicio - Herramientas PDF</title>
   <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
   <style>
-    /* Estilos generales del cuerpo */
     body {
       background-color: #121212;
       color: #f0f0f0;
-      font-family: 'Lato', sans-serif; /* Usando Lato */
+      font-family: 'Lato', sans-serif;
       margin: 0;
       padding: 0;
       line-height: 1.6;
@@ -19,8 +18,6 @@
       align-items: center;
       min-height: 100vh;
     }
-
-    /* Estilos del encabezado */
     header {
       background-color: #1f1f1f;
       padding: 2rem;
@@ -32,19 +29,15 @@
     header h1 {
       margin: 0;
       font-size: 2.5rem;
-      color: #008c9e; /* Un tono de azul para el título */
+      color: #008c9e;
       font-weight: 300;
     }
-
-    /* Contenedor principal para centrar el contenido */
     .main-content {
       width: 90%;
       max-width: 1200px;
       margin: 2rem auto;
       flex-grow: 1;
     }
-
-    /* Barra de búsqueda */
     .search-container {
       text-align: center;
       margin-bottom: 2rem;
@@ -62,18 +55,14 @@
     }
     input[type="text"]:focus {
       outline: none;
-      border-color: #005f73; /* Azul oscuro para el foco */
+      border-color: #005f73;
     }
-
-    /* Cuadrícula de tarjetas */
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 20px;
       justify-content: center;
     }
-
-    /* Estilos de las tarjetas */
     .card {
       background-color: #1e1e1e;
       border: 1px solid #333;
@@ -84,8 +73,8 @@
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
       display: flex;
       flex-direction: column;
-      justify-content: space-between; /* Para alinear el botón al final */
-      min-height: 220px; /* Aumenta un poco la altura para más espacio */
+      justify-content: space-between;
+      min-height: 220px;
     }
     .card:hover {
       transform: translateY(-5px) scale(1.02);
@@ -94,30 +83,51 @@
     .card h2 {
       margin: 0 0 10px 0;
       font-size: 1.5rem;
-      color: #005f73; /* Azul oscuro para los títulos de las tarjetas */
-      font-weight: 400; /* Un poco más ligero */
+      color: #005f73;
+      font-weight: 400;
     }
     .card p {
       color: #ccc;
       font-size: 0.95rem;
       margin-bottom: 20px;
-      flex-grow: 1; /* Permite que el párrafo ocupe el espacio restante */
+      flex-grow: 1;
     }
     .card a {
       color: #fff;
       text-decoration: none;
       font-weight: bold;
-      background-color: #005f73; /* Azul oscuro para los botones */
+      background-color: #005f73;
       padding: 10px 20px;
       border-radius: 50px;
       transition: background-color 0.3s ease;
       display: inline-block;
-      margin-top: auto; /* Empuja el enlace hacia la parte inferior */
+      margin-top: auto;
     }
     .card a:hover {
-      background-color: #004d5a; /* Tono más oscuro al pasar el mouse */
+      background-color: #004d5a;
     }
-
+    /* Tarjeta SIGWEB personalizada */
+    .sigweb-card {
+      background: linear-gradient(135deg, #1e90ff, #00bfff 80%);
+      border: 1px solid #1976d2;
+      color: #fff;
+    }
+    .sigweb-card h2 {
+      color: #fff;
+      font-weight: 700;
+      font-size: 1.7rem;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .sigweb-card a {
+      background-color: #1976d2;
+    }
+    .sigweb-card a:hover {
+      background-color: #1565c0;
+    }
   </style>
 </head>
 <body>
@@ -129,8 +139,12 @@
     <div class="search-container">
       <input type="text" id="search" placeholder="Buscar herramienta..." oninput="filtrarTarjetas()">
     </div>
-
     <div class="grid" id="appGrid">
+      <div class="card sigweb-card">
+        <h2><span>🌐</span>SIGWEB</h2>
+        <p>Accede al sistema SIGWEB para gestión de información institucional y documental.</p>
+        <a href="Sigweb.htm">Ir a SIGWEB</a>
+      </div>
       <div class="card">
         <h2>Extractor de PDFs</h2>
         <p>Extrae información de múltiples archivos PDF usando códigos JSON.</p>
@@ -160,7 +174,7 @@
       const cards = document.querySelectorAll('.card');
       cards.forEach(card => {
         const text = card.textContent.toLowerCase();
-        card.style.display = text.includes(input) ? 'flex' : 'none'; /* Asegura que la tarjeta se muestre como flex */
+        card.style.display = text.includes(input) ? 'flex' : 'none';
       });
     }
   </script>
