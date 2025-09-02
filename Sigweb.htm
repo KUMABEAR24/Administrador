@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Sigweb - Versión Estable</title>
+    <style>
+        :root { --primary-color: #4e9fef; --background-color: #1e1e1e; --surface-color: #2d2d2d; --text-color: #d4d4d4; --border-color: #444; --header-color: #3a3a3a; --highlight-color: #252526; --warning-color: #6e550c; --archive-color: #3a3a3a;}
+        html { scroll-behavior: smooth; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 2em; background-color: var(--background-color); color: var(--text-color); }
+        .container { max-width: 1800px; margin: auto; background-color: var(--surface-color); padding: 2em; border-radius: 12px; border: 1px solid var(--border-color); }
+        h1, h2, h3 { color: var(--primary-color); }
+        h3 { border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-top: 2em; }
+        .table-container { max-height: 250px; overflow: auto; border: 1px solid var(--border-color); margin-bottom: 1em; border-radius: 8px; }
+        table { border-collapse: collapse; width: 100%; table-layout: auto; }
+        th, td { border: 1px solid var(--border-color); padding: 10px; text-align: left; font-size: 13px; vertical-align: top; position: relative; }
+        td { white-space: normal; word-wrap: break-word; }
+        .compact-cell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+        th { background-color: var(--header-color); font-weight: bold; position: sticky; top: 0; z-index: 10; cursor: pointer; user-select: none; }
+        th:hover { background-color: var(--primary-color); }
+        td[contenteditable="true"] { background-color: var(--highlight-color); }
+        button, .nav-btn, input[type="file"]::file-selector-button { background-color: #0e639c; color: white; border: 1px solid var(--primary-color); font-weight: bold; padding: 10px 15px; margin: 5px; border-radius: 8px; font-size: 14px; cursor: pointer; transition: background-color 0.2s; }
+        button:hover, .nav-btn:hover, input[type="file"]::file-selector-button:hover { background-color: #1a73e8; }
+        button:disabled { background-color: #3a3a3a; color: #888; border-color: #555; cursor: not-allowed; }
+        #clear_all_btn { background-color: #a02d2d; border-color: #f48771; }
+        #clear_all_btn:hover { background-color: #c0392b; }
+        .action-bar { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; margin-top: 10px; padding: 10px; background-color: var(--highlight-color); border-radius: 8px; }
+        .action-bar input, .action-bar select { padding: 8px; font-size: 13px; background-color: var(--surface-color); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 6px; }
+        .step { padding: 2em 0; border-bottom: 1px solid var(--border-color); }
+        .nav-bar { text-align: center; margin-bottom: 2em; padding-bottom: 1em; border-bottom: 1px solid var(--border-color); }
+        .nav-btn { text-decoration: none; display: inline-block; }
+        .highlight-warning { background-color: var(--warning-color) !important; }
+        .archived-row { background-color: var(--archive-color) !important; color: #888; text-decoration: line-through; }
+        .preview-icon, .action-icon { cursor: pointer; color: var(--primary-color); font-size: 16px; text-align: center; }
+        #modal-overlay, #preview-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); z-index: 2000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+        .modal-content { background-color: var(--surface-color); border: 1px solid var(--border-color); padding: 25px; border-radius: 10px; width: 80%; max-width: 800px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #preview-content { font-family: 'Times New Roman', Times, serif; background-color: white; color: black; padding: 20px; border-radius: 5px; max-height: 70vh; overflow-y: auto; }
+        #progress-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 3000; display: none; justify-content: center; align-items: center; color: white; font-size: 2em; }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div id="progress-overlay">Procesando...</div>
+    <div class="container">
+        <h1>Gestion Sigweb - Versión 02/09/2025 🛠️</h1>
+        <div class="nav-bar">
+            <a href="#area1" class="nav-btn">Área 1: Portal</a>
+            <a href="#area2" class="nav-btn">Área 2: PDF</a>
+            <a href="#area3" class="nav-btn">Área 3: Revisión</a>
+            <a href="#area4" class="nav-btn">Área 4: Seguimiento</a>
+            <button id="clear_all_btn" title="Reinicia la aplicación, borrando todos los datos de las tablas y del seguimiento.">Limpiar Todo</button>
+        </div>
+
+        <div id="area1" class="step">
+            <h2>Área 1: Datos del Portal</h2>
+            <div class="table-container">
+                <table id="portal_table">
+                     <thead><tr><th>Fecha Neg.</th><th>Sucursal</th><th>No. Orden</th><th>No. Cédula</th><th>Nombre</th><th>Motivo Negación</th><th>Auditor</th><th>Programa</th><th>Plan</th><th>Antiguedad</th><th>E.P.S</th><th>Teléfono</th><th>Celular</th><th>Dirección</th><th>Email</th><th>Edad</th><th>Tipo Usuario</th><th>Usuario Emitió</th><th>Regional</th><th>Gestión Negacion</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <button id="process_portal_btn">Paso 1: Procesar Datos del Portal</button>
+        </div>
+
+        <div id="area2" class="step">
+            <h2>Área 2: Datos del PDF Extractor</h2>
+            <div class="table-container">
+                <table id="pdf_table">
+                    <thead><tr><th>Archivo (No. Orden)</th><th>Descripción</th><th>Justificación</th><th>Fundamento Legal</th><th>Código</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <button id="merge_pdf_btn" disabled>Paso 2: Combinar con Datos del PDF</button>
+        </div>
+
+        <div id="area3" class="step" style="display:none;">
+            <h2>Área 3: Revisión Final y Exportación</h2>
+            <div class="action-bar">
+                <input type="text" id="final_table_filter" placeholder="Buscar en la tabla de revisión...">
+                <span>Acciones en Lote:</span>
+                <input type="checkbox" id="select_all_final_rows" title="Seleccionar todo">
+                <select id="bulk_action_selector">
+                    <option value="">-- Asignar Carta --</option>
+                    <option value="PLANTILLA NEGACION GENERAL">Negación General</option>
+                    <option value="PLANTILLA NO PERTINENCIA Y TEMAS ESTETICOS">No Pertinencia</option>
+                    <option value="COMPLEMENTARIEDAD RED COINCIDENTE">Comp. Red Coincidente</option>
+                    <option value="COMPLEMENTARIEDAD RED NO COINCIDENTE">Comp. Red No Coincidente</option>
+                    <option value="COMPLEMENTARIEDAD AYUDAS DIAGNOSTICAS">Comp. Ayudas Dx</option>
+                </select>
+                <button id="apply_bulk_action_btn">Aplicar a Seleccionados</button>
+            </div>
+            <div id="final_table_container" class="table-container" style="max-height: 500px;"></div>
+            <div class="action-bar">
+                <button id="send_to_tracking_btn">Paso 3: Enviar a Seguimiento</button>
+                <button id="export_btn">Paso 4: Exportar Excel para Envío</button>
+            </div>
+        </div>
+        
+        <div id="area4" class="step">
+            <h3>Área 4: Seguimiento de Complementariedad</h3>
+            <div class="action-bar">
+                <input type="text" id="tracking_filter_input" placeholder="Buscar en seguimiento...">
+                <button id="toggle_archived_btn">Mostrar Archivados (0)</button>
+            </div>
+            <div id="tracking_table_container" class="table-container" style="max-height: 400px;">
+                 <table id="tracking_table">
+                    <thead><tr><th>Fecha Ing.</th><th>No. Orden</th><th>Nombre</th><th>EPS</th><th>Radicado</th><th>Estado</th><th>Notas</th><th>Acción</th></tr></thead>
+                    <tbody id="tracking_body"></tbody>
+                </table>
+            </div>
+             <div id="archived_table_container" class="table-container" style="max-height: 400px; display: none;">
+                <h3>Casos Archivados</h3>
+                <table id="archived_table">
+                    <thead><tr><th>Fecha Ing.</th><th>No. Orden</th><th>Nombre</th><th>EPS</th><th>Radicado</th><th>Estado</th><th>Notas</th><th>Acción</th></tr></thead>
+                    <tbody id="archived_body"></tbody>
+                </table>
+            </div>
+            <div class="action-bar">
+                <button id="export_tracking_btn">Exportar Seguimiento a Excel</button>
+                <button id="backup_tracking_btn">Hacer Copia de Seguridad</button>
+                <label for="restore_tracking_input" class="nav-btn">Restaurar Copia</label>
+                <input type="file" id="restore_tracking_input" accept=".json" style="display: none;">
+            </div>
+        </div>
+    </div>
+    <div id="preview-modal-overlay" onclick="this.style.display='none'">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3>Vista Previa del Correo</h3>
+            <div id="preview-content"></div>
+            <button onclick="document.getElementById('preview-modal-overlay').style.display='none'">Cerrar</button>
+        </div>
+    </div>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        let finalData = [];
+        let trackingData = [];
+        let archivedData = [];
+        const progressBar = document.getElementById('progress-overlay');
+
+        const portalHeaders = ["Fecha_Neg", "Sucursal", "No_Orden", "No_Cedula", "Nombre", "Motivo_Negacion", "Auditor", "Programa", "Plan", "Antiguedad", "EPS", "Telefono", "Celular", "Direccion", "Email", "Edad", "Tipo_Usuario", "Usuario_Emitio", "Regional", "Gestion_Negacion"];
+        const importantPortalIndexes = [0, 2, 3, 4, 5, 7, 10, 14];
+
+        function setupPasteGrid(tableId) {
+            const table = document.getElementById(tableId);
+            if (!table) return;
+            const headersCount = table.querySelector('thead tr').cells.length;
+            const tbody = table.querySelector('tbody');
+            tbody.innerHTML = '';
+            for (let i = 0; i < 2; i++) {
+                const row = tbody.insertRow();
+                for (let j = 0; j < headersCount; j++) { row.insertCell().setAttribute('contenteditable', 'true'); }
+            }
+            table.addEventListener('paste', handlePaste);
+        }
+
+        function handlePaste(e) {
+            e.preventDefault();
+            const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+            const pastedRows = text.trim().split(/\r?\n/);
+            const targetCell = e.target;
+            const gridBody = targetCell.closest('tbody');
+            let gridRows = Array.from(gridBody.rows);
+            const startRowIndex = targetCell.parentElement.rowIndex - 1;
+            const startColIndex = targetCell.cellIndex;
+            pastedRows.forEach((rowText, i) => {
+                const cells = rowText.split('\t');
+                let targetRow = gridRows[startRowIndex + i];
+                if (!targetRow) {
+                    targetRow = gridBody.insertRow();
+                    for (let j = 0; j < gridBody.parentElement.tHead.rows[0].cells.length; j++) { targetRow.insertCell().setAttribute('contenteditable', 'true'); }
+                    gridRows.push(targetRow);
+                }
+                cells.forEach((cellText, j) => { if (targetRow.cells[startColIndex + j]) { targetRow.cells[startColIndex + j].innerText = cellText; } });
+            });
+        }
+        
+        async function runAsync(fn) {
+            progressBar.style.display = 'flex';
+            await new Promise(resolve => setTimeout(resolve, 50));
+            try { fn(); } catch (error) { console.error("Error durante la operación:", error); alert("Ocurrió un error. Revisa la consola para más detalles (F12)."); }
+            progressBar.style.display = 'none';
+        }
+
+        document.getElementById('process_portal_btn').addEventListener('click', () => runAsync(() => {
+            finalData = [];
+            const tableRows = document.getElementById('portal_table').querySelector('tbody').rows;
+            for (const row of tableRows) {
+                const cells = row.cells;
+                if (cells.length > 2 && cells[2].innerText.trim()) {
+                    let rowObject = {};
+                    importantPortalIndexes.forEach(index => { rowObject[portalHeaders[index]] = cells[index]?.innerText.trim() || ''; });
+                    rowObject.Descripcion_PDF = rowObject.Justificacion_PDF = rowObject.Fundamento_Legal_PDF = '(pendiente)';
+                    rowObject.Tipo_Carta = 'NO_SELECCIONADA';
+                    rowObject.Radicado_Comp = '';
+                    finalData.push(rowObject);
+                }
+            }
+            if (finalData.length) { document.getElementById('area3').style.display = 'block'; document.getElementById('merge_pdf_btn').disabled = false; displayFinalTable(); }
+        }));
+
+        document.getElementById('merge_pdf_btn').addEventListener('click', () => runAsync(() => {
+            const pdfData = new Map();
+            const pdfTableRows = document.getElementById('pdf_table').querySelector('tbody').rows;
+            for (const row of pdfTableRows) {
+                const cells = row.cells;
+                const key = cells[0]?.innerText.trim();
+                if (key) pdfData.set(key, { Descripcion_PDF: cells[1]?.innerText.trim() || '', Justificacion_PDF: cells[2]?.innerText.trim() || '', Fundamento_Legal_PDF: cells[3]?.innerText.trim() || '' });
+            }
+            finalData.forEach(row => { if (pdfData.has(row.No_Orden)) Object.assign(row, pdfData.get(row.No_Orden)); });
+            displayFinalTable();
+        }));
+
+        function displayFinalTable() {
+            const container = document.getElementById('final_table_container');
+            const headers = ["👁️", `<input type='checkbox' id='select_all_final_rows' title='Seleccionar todo'>`, "Fecha Neg.", "No. Orden", "No. Cédula", "Nombre", "EPS", "Programa", "Motivo Neg.", "Descripción", "Justificación", "Fund. Legal", "Tipo de Carta"];
+            const table = document.createElement('table');
+            table.id = 'final_table';
+            const thead = table.createTHead();
+            const tbody = table.createTBody();
+            tbody.id = 'final_table_body';
+            const headerRow = thead.insertRow();
+            headers.forEach((text, index) => {
+                const th = document.createElement('th');
+                th.innerHTML = text;
+                if (![0, 1].includes(index)) th.addEventListener('click', () => sortTable('final_table_body', index));
+                headerRow.appendChild(th);
+            });
+            
+            finalData.forEach((row, index) => {
+                const tr = tbody.insertRow();
+                tr.dataset.rowIndex = index;
+                
+                let warnings = [];
+                if (!row.Email || !row.Email.includes('@')) warnings.push("Email inválido");
+                if ((row.Tipo_Carta || "").toUpperCase().includes('COMPLEMENTARIEDAD') && !(row.Radicado_Comp || "").trim()) warnings.push("Falta radicado");
+                if (warnings.length) { tr.classList.add('highlight-warning'); tr.title = warnings.join(', '); }
+
+                let epsClass = row.EPS ? (row.EPS.toUpperCase().includes('NUEVA EPS') ? 'eps-nueva' : (row.EPS.toUpperCase().includes('SALUD TOTAL') ? 'eps-saludtotal' : 'eps-default')) : 'eps-default';
+
+                tr.innerHTML = `
+                    <td class="preview-icon" onclick="window.app.previewEmail(${index})">👁️</td>
+                    <td><input type="checkbox" class="row-selector"></td>
+                    <td>${row.Fecha_Neg || ''}</td><td>${row.No_Orden || ''}</td><td>${row.No_Cedula || ''}</td><td>${row.Nombre || ''}</td><td class="eps-cell ${epsClass}">${row.EPS || ''}</td>
+                    <td class="compact-cell">${row.Programa || ''}</td><td class="compact-cell">${row.Motivo_Negacion || ''}</td><td class="compact-cell">${row.Descripcion_PDF || ''}</td>
+                    <td class="compact-cell">${row.Justificacion_PDF || ''}</td><td class="compact-cell">${row.Fundamento_Legal_PDF || ''}</td>
+                    <td><select class="letter-selector" data-row-index="${index}">${getLetterOptions(row.Tipo_Carta)}</select><div class="extra-input-container">${getExtraInput(row.Tipo_Carta, index, row.Radicado_Comp)}</div></td>`;
+            });
+
+            container.innerHTML = '';
+            container.appendChild(table);
+            document.querySelectorAll('.letter-selector').forEach(s => s.addEventListener('change', handleLetterChange));
+            document.querySelectorAll('.radicado-input').forEach(i => i.addEventListener('blur', handleRadicadoChange));
+            document.getElementById('select_all_final_rows').addEventListener('change', (e) => document.querySelectorAll('#final_table_body .row-selector').forEach(cb => cb.checked = e.target.checked));
+        }
+        
+        function getLetterOptions(selectedValue) {
+            const options = { "NO_SELECCIONADA": "-- Seleccionar --", "PLANTILLA NEGACION GENERAL": "Negación General", "PLANTILLA NO PERTINENCIA Y TEMAS ESTETICOS": "No Pertinencia", "COMPLEMENTARIEDAD RED COINCIDENTE": "Comp. Red Coincidente", "COMPLEMENTARIEDAD RED NO COINCIDENTE": "Comp. Red No Coincidente", "COMPLEMENTARIEDAD AYUDAS DIAGNOSTICAS": "Comp. Ayudas Dx" };
+            return Object.entries(options).map(([value, text]) => `<option value="${value}" ${value === selectedValue ? 'selected' : ''}>${text}</option>`).join('');
+        }
+
+        function getExtraInput(selectedValue, index, value) {
+            if (selectedValue.toUpperCase().includes('COMPLEMENTARIEDAD')) {
+                return `<div class="extra-input"><label for="extra_input_${index}">Radicado:</label><input type="text" class="radicado-input" data-row-index="${index}" id="extra_input_${index}" value="${value || ''}" placeholder="Obligatorio..."></div>`;
+            }
+            return '';
+        }
+
+        function handleLetterChange(event) {
+            const index = event.target.dataset.rowIndex;
+            finalData[index].Tipo_Carta = event.target.value;
+            if (!event.target.value.toUpperCase().includes('COMPLEMENTARIEDAD')) { finalData[index].Radicado_Comp = ''; }
+            displayFinalTable();
+        }
+
+        function handleRadicadoChange(event) {
+            const index = event.target.dataset.rowIndex;
+            finalData[index].Radicado_Comp = event.target.value;
+            displayFinalTable(); // Re-render to update warning highlights
+        }
+
+        function saveAllTrackingData() { localStorage.setItem('sigwebTrackingData', JSON.stringify(trackingData)); localStorage.setItem('sigwebArchivedData', JSON.stringify(archivedData)); }
+        function loadAllTrackingData() { trackingData = JSON.parse(localStorage.getItem('sigwebTrackingData') || '[]'); archivedData = JSON.parse(localStorage.getItem('sigwebArchivedData') || '[]'); renderTrackingTable(); renderArchivedTable(); }
+
+        function renderTable(tbodyId, data, isArchived) {
+            const tbody = document.getElementById(tbodyId);
+            tbody.innerHTML = '';
+            data.forEach((item, index) => {
+                const row = tbody.insertRow();
+                row.className = isArchived ? 'archived-row' : '';
+                const actionBtn = isArchived ? `<td class="action-icon" onclick="window.app.unarchiveItem(${index})" title="Restaurar">♻️</td>` : `<td class="action-icon" onclick="window.app.archiveItem(${index})" title="Archivar">🗄️</td>`;
+                row.innerHTML = `<td>${item.Fecha_Neg}</td><td>${item.No_Orden}</td><td>${item.Nombre}</td><td>${item.EPS}</td><td>${item.Radicado}</td>
+                    <td><select class="status-selector" onchange="window.app.updateTracking(${index}, 'Estado', this.value, ${isArchived})">${getStatusOptions(item.Estado)}</select></td>
+                    <td contenteditable="true" onblur="window.app.updateTracking(${index}, 'Notas', this.innerText, ${isArchived})">${item.Notas || ''}</td>${actionBtn}`;
+            });
+            document.getElementById('toggle_archived_btn').innerText = `Mostrar Archivados (${archivedData.length})`;
+        }
+        const renderTrackingTable = () => renderTable('tracking_body', trackingData, false);
+        const renderArchivedTable = () => renderTable('archived_body', archivedData, true);
+
+        function getStatusOptions(selected) { return ['Pendiente', 'En Gestión', 'Finalizado'].map(s => `<option value="${s}" ${s === selected ? 'selected' : ''}>${s}</option>`).join(''); }
+        
+        function sortTable(tbodyId, colIndex) {
+            const tbody = document.getElementById(tbodyId);
+            const rows = Array.from(tbody.rows);
+            const isNumeric = !isNaN(parseFloat(rows[0]?.cells[colIndex].innerText));
+            const direction = tbody.dataset.sortDirection === 'asc' ? 'desc' : 'asc';
+            tbody.dataset.sortDirection = direction;
+            rows.sort((a, b) => {
+                let valA = a.cells[colIndex].innerText; let valB = b.cells[colIndex].innerText;
+                if (isNumeric) { valA = parseFloat(valA) || 0; valB = parseFloat(valB) || 0; }
+                if (valA < valB) return direction === 'asc' ? -1 : 1;
+                if (valA > valB) return direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+            rows.forEach(row => tbody.appendChild(row));
+        }
+
+        function filterTable(inputId, tbodyId) {
+            const filter = document.getElementById(inputId).value.toUpperCase();
+            const rows = document.getElementById(tbodyId).rows;
+            Array.from(rows).forEach(row => { row.style.display = row.innerText.toUpperCase().includes(filter) ? "" : "none"; });
+        }
+        
+        window.app = {
+            updateTracking: (index, key, value, isArchived) => { (isArchived ? archivedData : trackingData)[index][key] = value.trim(); saveAllTrackingData(); },
+            archiveItem: index => { archivedData.push(trackingData.splice(index, 1)[0]); saveAllTrackingData(); renderTrackingTable(); renderArchivedTable(); },
+            unarchiveItem: index => { trackingData.push(archivedData.splice(index, 1)[0]); saveAllTrackingData(); renderTrackingTable(); renderArchivedTable(); },
+            previewEmail: index => {
+                const rowData = finalData[index];
+                const tipoCarta = rowData.Tipo_Carta;
+                let body = `<b>Error:</b> Plantilla "${tipoCarta}" no encontrada.`;
+                const getOficinaVirtual = (eps) => { const e = (eps || "").toUpperCase(); if (e.includes("NUEVA EPS")) return `<a href='https://portal.nuevaeps.com.co/Portal/home.jspx'>NUEVA EPS</a>`; if (e.includes("SALUD TOTAL")) return `<a href='https://saludtotal.com.co/'>SALUD TOTAL</a>`; return eps; };
+                const cuerpoComun = `<br><br><b>Si tiene alguna duda puede contactarse por medio de los canales que tenemos disponibles para usted:</b><br>· Nuestra línea nacional 018000931666. O con nuestras líneas locales: Cali (602) 489 0073, Bogotá (601) 743 5485, Medellín (604) 604 4507, Barranquilla (605) 385 3165, Bucaramanga (607) 697 3350, Cartagena (605) 693 9853, Tuluá (602) 235 9483, Valledupar (605)588 5699, Pereira (606) 340 2635.<br>· WhatsApp: 317-224-07-94<br><br>Gracias por su Atención.`;
+                const signature = `<br><br>Cordialmente,<br><br><b>Juan Ricardo Morales Agudelo</b><br>Ejecutivo De Atención Integral<br>Coomeva Medicina Prepagada<br>Cra. 13 No.11-12 Centro Médico Circunvalar<br>Coomeva Medicina Prepagada Pereira, Risaralda<br><br><img src="https://via.placeholder.com/480x110.png?text=Logo+de+la+Compañía" alt="Logo" style="width: 480px; height: 110px;"><br><br><i>Este correo es generado automáticamente, por favor no responda este mensaje.</i>`;
+                switch (tipoCarta) {
+                    case "PLANTILLA NEGACION GENERAL": body = `Apreciado usuario;<br><br>Agradecemos la confianza... acerca del servicio ${rowData.Motivo_Negacion} que en esta oportunidad no está aprobado debido a que corresponde a EXCLUSIÓN (${rowData.Descripcion_PDF}), (${rowData.Justificacion_PDF}), (${rowData.Fundamento_Legal_PDF}).<br><br>El servicio negado anteriormente; debe tramitarlo a través su EPS asignada. Adjuntamos soporte de la carta de negación.<br><br>`; break;
+                    case "PLANTILLA NO PERTINENCIA Y TEMAS ESTETICOS": body = `Apreciado usuario;<br><br>Agradecemos la confianza... acerca del servicio ${rowData.Motivo_Negacion} que en esta oportunidad No está aprobado debido a que corresponde a NO PERTINENCIA (${rowData.Descripcion_PDF}), (${rowData.Justificacion_PDF}), (${rowData.Fundamento_Legal_PDF}).<br><br>`; break;
+                    case "COMPLEMENTARIEDAD RED COINCIDENTE": body = `Apreciado Usuario;<br><br>Agradecemos la confianza... acerca del servicio (${rowData.Descripcion_PDF}) que no fue aprobado, debido a que (${rowData.Justificacion_PDF}), (${rowData.Fundamento_Legal_PDF}).<br><br>Sin embargo, está en gestión a través de su EPS (${rowData.EPS}) con el número de radicado (${rowData.Radicado_Comp}), puede realizar seguimiento mediante la oficina virtual de la EPS (${getOficinaVirtual(rowData.EPS)}).<br><br>Adicional estaremos haciendo seguimiento...`; break;
+                    case "COMPLEMENTARIEDAD RED NO COINCIDENTE": body = `Agradecemos la confianza... acerca del servicio (${rowData.Descripcion_PDF}) que no está aprobado, debido a que corresponde a (${rowData.Justificacion_PDF}), (${rowData.Fundamento_Legal_PDF}).<br><br>El prestador actual solicitado, no tiene convenio... se radica la solicitud ante su EPS con el número (${rowData.Radicado_Comp}) por favor realizar seguimiento mediante la oficina virtual de la EPS (${getOficinaVirtual(rowData.EPS)}).`; break;
+                    case "COMPLEMENTARIEDAD AYUDAS DIAGNOSTICAS": body = `Apreciado usuario;<br><br>Agradecemos la confianza... acerca del servicio (${rowData.Descripcion_PDF}) que no está aprobado debido a que corresponde a (${rowData.Justificacion_PDF}), (${rowData.Fundamento_Legal_PDF}).<br><br>Sin embargo, se encuentra en gestión a través de su EPS con el número de radicado (${rowData.Radicado_Comp}), por favor realizar seguimiento mediante la oficina virtual. (${getOficinaVirtual(rowData.EPS)}).`; break;
+                }
+                document.getElementById('preview-content').innerHTML = body + cuerpoComun + signature;
+                document.getElementById('preview-modal-overlay').style.display = 'flex';
+            }
+        };
+
+        document.getElementById('final_table_filter').addEventListener('keyup', () => filterTable('final_table_filter', 'final_table_body'));
+        document.getElementById('tracking_filter_input').addEventListener('keyup', () => filterTable('tracking_filter_input', 'tracking_body'));
+        document.getElementById('clear_all_btn').addEventListener('click', () => { if (confirm("¿Estás seguro de que quieres borrar TODOS los datos? Esta acción es irreversible.")) { localStorage.clear(); location.reload(); } });
+        document.getElementById('toggle_archived_btn').addEventListener('click', () => { const container = document.getElementById('archived_table_container'); container.style.display = container.style.display === 'none' ? 'block' : 'none'; });
+        document.getElementById('apply_bulk_action_btn').addEventListener('click', () => {
+            const selectedAction = document.getElementById('bulk_action_selector').value; if (!selectedAction) return;
+            document.querySelectorAll('#final_table_body .row-selector:checked').forEach(cb => { const row = cb.closest('tr'); if (row) finalData[row.dataset.rowIndex].Tipo_Carta = selectedAction; });
+            displayFinalTable();
+        });
+        document.getElementById('send_to_tracking_btn').addEventListener('click', () => {
+            let addedCount = 0;
+            finalData.forEach(row => {
+                if (row.Tipo_Carta.toUpperCase().includes('COMPLEMENTARIEDAD') && row.Radicado_Comp.trim() !== '') {
+                    if (!trackingData.some(item => item.No_Orden === row.No_Orden)) {
+                        trackingData.push({ Fecha_Neg: row.Fecha_Neg, No_Orden: row.No_Orden, No_Cedula: row.No_Cedula, Nombre: row.Nombre, EPS: row.EPS, Radicado: row.Radicado_Comp, Estado: 'Pendiente', Notas: '' });
+                        addedCount++;
+                    }
+                }
+            });
+            if (addedCount > 0) { saveAllTrackingData(); renderTrackingTable(); alert(`${addedCount} caso(s) añadidos a seguimiento.`); } 
+            else { alert("No se añadieron nuevos casos. Verifique que tengan un radicado y no estén ya en la lista."); }
+        });
+        document.getElementById('export_btn').addEventListener('click', () => {
+            if (!finalData.length) { alert("No hay datos para exportar."); return; }
+            const dataToExport = finalData.map(row => ({
+                "Fecha_Neg": row.Fecha_Neg, "Numero_Orden": row.No_Orden, "Numero_Cedula": row.No_Cedula, "Nombre_Afiliado": row.Nombre,
+                "EPS": row.EPS, "Programa": row.Programa, "Email": row.Email, "Motivo_Negacion": row.Motivo_Negacion,
+                "Descripcion_PDF": row.Descripcion_PDF, "Justificacion_PDF": row.Justificacion_PDF, "Fundamento_Legal_PDF": row.Fundamento_Legal_PDF,
+                "Tipo_Carta": row.Tipo_Carta, "Radicado_Comp": row.Radicado_Comp
+            }));
+            const ws = XLSX.utils.json_to_sheet(dataToExport); const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "DatosParaEnvio"); XLSX.writeFile(wb, "Sigweb_Procesado.xlsx");
+        });
+        document.getElementById('export_tracking_btn').addEventListener('click', () => {
+            if (!trackingData.length) { alert("No hay datos de seguimiento para exportar."); return; }
+            const ws = XLSX.utils.json_to_sheet(trackingData); const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Seguimiento"); XLSX.writeFile(wb, "Sigweb_Seguimiento.xlsx");
+        });
+        document.getElementById('backup_tracking_btn').addEventListener('click', () => {
+            const dataToBackup = JSON.stringify({ tracking: trackingData, archived: archivedData });
+            const blob = new Blob([dataToBackup], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `sigweb_backup_${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(url);
+        });
+        document.getElementById('restore_tracking_input').addEventListener('change', (event) => {
+            const file = event.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (confirm("¿Estás seguro de que quieres restaurar? Esto sobreescribirá tus listas actuales.") && data.tracking && data.archived) {
+                        trackingData = data.tracking; archivedData = data.archived;
+                        saveAllTrackingData(); loadAllTrackingData(); alert("Restauración completada.");
+                    }
+                } catch (err) { alert("Error: El archivo de copia de seguridad no es válido."); }
+            };
+            reader.readAsText(file);
+        });
+        
+        setupPasteGrid('portal_table');
+        setupPasteGrid('pdf_table');
+        loadAllTrackingData();
+    });
+    </script>
+</body>
+</html>
