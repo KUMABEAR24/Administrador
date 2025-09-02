@@ -92,19 +92,24 @@
       margin-bottom: 20px;
       flex-grow: 1;
     }
+    /* Decoración uniforme para TODOS los botones de las tarjetas */
     .card a {
       color: #fff;
       text-decoration: none;
       font-weight: bold;
-      background-color: #005f73;
+      background-color: #1976d2;
       padding: 10px 20px;
       border-radius: 50px;
-      transition: background-color 0.3s ease;
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
       display: inline-block;
       margin-top: auto;
+      box-shadow: 0 2px 8px rgba(25, 118, 210, 0.15);
+      letter-spacing: 0.5px;
     }
     .card a:hover {
-      background-color: #004d5a;
+      background-color: #1565c0;
+      box-shadow: 0 4px 12px rgba(25, 118, 210, 0.25);
+      text-decoration: underline;
     }
     /* Tarjeta SIGWEB personalizada */
     .sigweb-card {
@@ -121,12 +126,6 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
-    }
-    .sigweb-card a {
-      background-color: #1976d2;
-    }
-    .sigweb-card a:hover {
-      background-color: #1565c0;
     }
   </style>
 </head>
