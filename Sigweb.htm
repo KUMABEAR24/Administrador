@@ -88,9 +88,11 @@
         const COMMON_EMAIL_FOOTER = `\n\nSi tiene alguna duda puede contactarse por medio de los canales que tenemos disponibles para usted:\n· Nuestra línea nacional 018000931666. O con nuestras líneas locales: Cali (602) 489 0073, Bogotá (601) 743 5485, Medellín (604) 604 4507, Barranquilla (605) 385 3165, Bucaramanga (607) 697 3350, Cartagena (605) 693 9853, Tuluá (602) 235 9483, Valledupar (605)588 5699, Pereira (606) 340 2635.\n· WhatsApp: 317-224-07-94\n\nGracias por su Atención.`;
 
         const defaultTemplates = [
-            { id: 'tpl_neg_gen', name: 'Negación General', body: `Apreciado usuario; {{Nombre}},\n\nAgradecemos la confianza depositada en Coomeva Medicina Prepagada, con relación a su solicitud acerca del servicio {{Motivo_Negacion}} que en esta oportunidad no está aprobado debido a que corresponde a EXCLUSIÓN ({{Descripcion_PDF}}), ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).\n\nEl servicio negado anteriormente; debe tramitarlo a través su EPS asignada. Adjuntamos soporte de la carta de negación.` + COMMON_EMAIL_FOOTER },
-            { id: 'tpl_neg_simple', name: 'Negación Simple', body: `Apreciado usuario; {{Nombre}},\n\nAgradecemos la confianza depositada en Coomeva Medicina Prepagada, con relación a su solicitud acerca del servicio {{Motivo_Negacion}} que en esta oportunidad no está aprobado debido a que corresponde a EXCLUSIÓN ({{Descripcion_PDF}}), ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).` + COMMON_EMAIL_FOOTER },
-            { id: 'tpl_comp_eps', name: 'Comp. Trámite por EPS', body: `Apreciado Usuario; {{Nombre}},\n\nAgradecemos la confianza depositada en Coomeva Medicina Prepagada, con relación a su solicitud acerca del servicio ({{Descripcion_PDF}}) que no fue aprobado, debido a que ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).\n\nSin embargo, está en gestión a través de su EPS ({{EPS}}) con el número de radicado ({{Radicado_Comp}}), puede realizar seguimiento mediante la oficina virtual de la EPS ({{Oficina_Virtual_EPS}}).` + COMMON_EMAIL_FOOTER },
+            { id: 'tpl_neg_gen', name: 'PLANTILLA NEGACION GENERAL', body: `Apreciado usuario;\n\nAgradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y la de su familia. Por medio de este correo queremos brindar información acerca del servicio {{Motivo_Negacion}} que en esta oportunidad no está aprobado debido a que corresponde a EXCLUSIÓN ({{Descripcion_PDF}}), ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).\n\nEl servicio negado anteriormente; debe tramitarlo a través su EPS asignada. Adjuntamos soporte de la carta de negación.` + COMMON_EMAIL_FOOTER },
+            { id: 'tpl_neg_pert', name: 'PLANTILLA NO PERTINENCIA Y TEMAS ESTETICOS', body: `Apreciado usuario;\n\nAgradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y la de su familia. Por medio de este correo queremos brindar información acerca del servicio {{Motivo_Negacion}} que en esta oportunidad No está aprobado debido a que corresponde a NO PERTINENCIA ({{Descripcion_PDF}}), ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).` + COMMON_EMAIL_FOOTER },
+            { id: 'tpl_comp_coinc', name: 'COMPLEMENTARIEDAD RED COINCIDENTE', body: `Apreciado Usuario;\n\nAgradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y el de su familia. Por medio de este correo queremos brindar información acerca del servicio ({{Descripcion_PDF}}) que en esta oportunidad no fue aprobado, debido a que ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).\n\nSin embargo, está en gestión a través de su EPS ({{EPS}}) con el número de radicado ({{Radicado_Comp}}), puede realizar seguimiento mediante la oficina virtual de la EPS ({{Oficina_Virtual_EPS}}).\n\nAdicional estaremos haciendo seguimiento al radicado y una vez se encuentre gestionado por la EPS, le notificaremos por medio de correo electrónico.` + COMMON_EMAIL_FOOTER },
+            { id: 'tpl_comp_no_coinc', name: 'COMPLEMENTARIEDAD RED NO COINCIDENTE', body: `Agradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y la de su familia. Por medio de este correo queremos brindar información acerca del servicio ({{Descripcion_PDF}}) que en esta oportunidad no está aprobado, debido a que corresponde a ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).\n\nEl prestador actual solicitado, no tiene convenio con la EPS, por lo que los costos adicionales del servicio o insumo estarán a cargo del paciente. Sin embargo; se radica la solicitud ante su EPS con el número ({{Radicado_Comp}}) por favor realizar seguimiento mediante la oficina virtual de la EPS ({{Oficina_Virtual_EPS}}).` + COMMON_EMAIL_FOOTER },
+            { id: 'tpl_comp_ayudas', name: 'COMPLEMENTARIEDAD AYUDAS DIAGNOSTICAS', body: `Apreciado usuario;\n\nAgradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y la de su familia. Por medio de este correo queremos brindar información acerca del servicio ({{Descripcion_PDF}}) que en esta oportunidad no está aprobado debido a que corresponde a ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).\n\nSin embargo, se encuentra en gestión a través de su EPS con el número de radicado ({{Radicado_Comp}}), por favor realizar seguimiento mediante la oficina virtual. ({{Oficina_Virtual_EPS}}).` + COMMON_EMAIL_FOOTER },
         ];
 
 
@@ -489,7 +491,7 @@
           const handleSelectChange = (noOrden, value) => {
             const changes = { Tipo_Carta: value };
             const template = templates.find(t => t.id === value);
-            if (!template || !template.name.toLowerCase().includes('comp')) {
+            if (!template || !template.name.toUpperCase().includes('COMPLEMENTARIEDAD')) {
                 changes.Radicado_Comp = '';
             }
             updateRow(noOrden, changes);
@@ -539,7 +541,7 @@
                   <tbody>
                     {filteredData.map((row) => {
                       const template = templates.find(t => t.id === row.Tipo_Carta);
-                      const isComplementariedad = template && template.name.toLowerCase().includes('comp');
+                      const isComplementariedad = template && template.name.toUpperCase().includes('COMPLEMENTARIEDAD');
                       const requiresRadicado = isComplementariedad;
                       
                       return (
@@ -1169,7 +1171,7 @@
                 const template = state.templates.find((t) => t.id === row.Tipo_Carta);
                 return (
                   template &&
-                  template.name.toLowerCase().includes('comp') &&
+                  template.name.toUpperCase().includes('COMPLEMENTARIEDAD') &&
                   row.Radicado_Comp &&
                   row.Radicado_Comp.trim() !== ''
                 );
@@ -1177,7 +1179,7 @@
 
             if (itemsToSend.length === 0) {
               showNotification(
-                "No hay ítems para enviar. Asegúrate de que sean del tipo 'Comp.' y tengan un 'Radicado'.",
+                "No hay ítems para enviar. Asegúrate de que sean del tipo 'COMPLEMENTARIEDAD' y tengan un 'Radicado'.",
                 'warning'
               );
               return;
