@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -236,13 +237,38 @@
         };
         
         const addCasesToSheet = async (url, cases) => {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify({ action: 'addReviewCases', data: cases }),
-            });
-            if (!response.ok) throw new Error('Falló al añadir casos.');
-            return await response.json();
+            let response;
+            try {
+                response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify({ action: 'addReviewCases', data: cases }),
+                });
+            } catch (networkError) {
+                console.error('Network error:', networkError);
+                throw new Error('Error de Red: No se pudo conectar al servidor. Revisa tu conexión a internet.');
+            }
+
+            if (!response.ok) {
+                let errorMessage = `Error del Servidor: El servidor respondió con un error ${response.status}.`;
+                try {
+                    const errorBody = await response.json();
+                    if (errorBody && errorBody.message) {
+                        errorMessage += ` Mensaje: ${errorBody.message}`;
+                    }
+                } catch (e) {
+                    errorMessage += ' Revisa la URL y la configuración del script de Google.';
+                }
+                console.error('Server error:', errorMessage);
+                throw new Error(errorMessage);
+            }
+
+            try {
+                return await response.json();
+            } catch (jsonError) {
+                console.error('JSON parsing error:', jsonError);
+                throw new Error('La respuesta del servidor no es un JSON válido.');
+            }
         };
 
         const saveTrackingAndArchived = async (url, trackingData, archivedData) => {
@@ -259,10 +285,11 @@
         // =================================================================================
         // INLINED: components/Spinner.tsx
         // =================================================================================
-        const Spinner = () => {
+        const Spinner = ({ isInline = false }) => {
+          const sizeClasses = isInline ? "h-5 w-5" : "h-8 w-8";
           return (
             <div
-              className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
+              className={`inline-block ${sizeClasses} animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]`}
               role="status"
             >
               <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
@@ -600,9 +627,17 @@
                 <button 
                     onClick={() => onAddCasesToCloud(Array.from(selectedRows))}
                     disabled={selectedRows.size === 0 || isSaving}
-                    className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
+                    className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed flex items-center justify-center min-w-[220px]"
                 >
-                    {isSaving ? 'Agregando...' : `Agregar ${selectedRows.size} Casos a la Nube`}
+                    {isSaving ? (
+                        <>
+                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Agregando...
+                        </>
+                    ) : `Agregar ${selectedRows.size} Casos a la Nube`}
                 </button>
                 <button 
                     onClick={() => onSendToTracking(Array.from(selectedRows))}
@@ -1099,15 +1134,15 @@
                 showNotification(response.message, 'success');
 
                 if (response.data && response.data.added > 0) {
-                    const addedOrderNumbers = new Set(casesToAdd.map(c => c.No_Orden));
+                    const addedOrderNumbers = new Set(casesToAdd.map(c => String(c.No_Orden).trim()));
                     setState(prev => ({
                         ...prev,
-                        finalData: prev.finalData.filter(row => !addedOrderNumbers.has(row.No_Orden))
+                        finalData: prev.finalData.filter(row => !addedOrderNumbers.has(String(row.No_Orden).trim()))
                     }));
                 }
             } catch (error) {
                 console.error(error);
-                showNotification('Falló al agregar los casos. Inténtalo de nuevo.', 'error');
+                showNotification(error.message || 'Falló al agregar los casos. Inténtalo de nuevo.', 'error', 10000);
             } finally {
                 setState((prev) => ({ ...prev, isSaving: false }));
             }
@@ -1162,12 +1197,10 @@
                 processedData.forEach(portalRow => {
                     const index = finalDataArr.findIndex(r => String(r.No_Orden).trim() === portalRow.No_Orden);
                     if (index !== -1) {
-                        // Update: Preserve manually entered fields from the existing row
                         const existingRow = finalDataArr[index];
                         finalDataArr[index] = { ...existingRow, ...portalRow };
                         updatedCount++;
                     } else {
-                        // Insert: Add placeholder fields for PDF data, etc.
                         finalDataArr.push({
                             ...portalRow,
                             Descripcion_PDF: '(pendiente)',
@@ -1182,7 +1215,6 @@
 
                 showNotification(`${addedCount} caso(s) nuevo(s) añadido(s), ${updatedCount} caso(s) actualizado(s).`, 'success');
 
-                // Clear portal data after processing
                 return { 
                     ...prev, 
                     finalData: finalDataArr,
@@ -1221,7 +1253,7 @@
             setState((prev) => ({ 
                 ...prev, 
                 finalData: mergedData,
-                pdfData: Array(5).fill({}) // Also clear PDF data table
+                pdfData: Array(5).fill({})
             }));
             showNotification(`${matchCount} caso(s) en el área de revisión fueron actualizados con los datos del PDF.`, 'success');
           }, [state.pdfData, state.finalData]);
@@ -1282,6 +1314,10 @@
             
             const itemsSentOrderNumbers = itemsToSend.map(i => i.No_Orden);
             newFinalData = newFinalData.filter(f => !itemsSentOrderNumbers.includes(f.No_Orden));
+            
+            if (addedCount > 0 || updatedCount > 0) {
+              showNotification(`${addedCount} nuevo(s) enviado(s), ${updatedCount} actualizado(s) en seguimiento. Guardando en segundo plano...`, 'success');
+            }
 
             setState((prev) => {
               const newState = {
@@ -1292,33 +1328,38 @@
               debouncedSaveTracking(newState.scriptUrl, newState.trackingData, newState.archivedData);
               return newState;
             });
-            showNotification(`${addedCount} nuevos ítems enviados, ${updatedCount} ítems actualizados en seguimiento.`, 'success');
           };
           
           const exportForMailMerge = (data) => {
-              if (!data || data.length === 0) {
-                  showNotification("No hay datos en revisión para exportar.", "warning");
-                  return;
+              try {
+                if (!data || data.length === 0) {
+                    showNotification("No hay datos en revisión para exportar.", "warning");
+                    return;
+                }
+                const dataToExport = data.map(row => ({
+                    "Fecha": row.Fecha_Neg,
+                    "Orden": row.No_Orden,
+                    "Cedula": row.No_Cedula,
+                    "Nombre": row.Nombre,
+                    "EPS": row.EPS,
+                    "Programa": row.Programa,
+                    "Email": row.Email,
+                    "Motivo": row.Motivo_Negacion,
+                    "Desc": row.Descripcion_PDF,
+                    "Just": row.Justificacion_PDF,
+                    "Fund": row.Fundamento_Legal_PDF,
+                    "Carta": state.templates.find(t => t.id === row.Tipo_Carta)?.name || "NO_SELECCIONADA",
+                    "Radicado": row.Radicado_Comp
+                }));
+                const ws = XLSX.utils.json_to_sheet(dataToExport);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "DatosParaEnvio");
+                XLSX.writeFile(wb, "Sigweb_Procesado.xlsx");
+                showNotification("Exportación para envío masivo generada con éxito.", "success");
+              } catch (error) {
+                  console.error("Falló la exportación para envío masivo:", error);
+                  showNotification("Ocurrió un error al generar el archivo de exportación.", "error");
               }
-              const dataToExport = data.map(row => ({
-                  "Fecha": row.Fecha_Neg,
-                  "Orden": row.No_Orden,
-                  "Cedula": row.No_Cedula,
-                  "Nombre": row.Nombre,
-                  "EPS": row.EPS,
-                  "Programa": row.Programa,
-                  "Email": row.Email,
-                  "Motivo": row.Motivo_Negacion,
-                  "Desc": row.Descripcion_PDF,
-                  "Just": row.Justificacion_PDF,
-                  "Fund": row.Fundamento_Legal_PDF,
-                  "Carta": state.templates.find(t => t.id === row.Tipo_Carta)?.name || "NO_SELECCIONADA",
-                  "Radicado": row.Radicado_Comp
-              }));
-              const ws = XLSX.utils.json_to_sheet(dataToExport);
-              const wb = XLSX.utils.book_new();
-              XLSX.utils.book_append_sheet(wb, ws, "DatosParaEnvio");
-              XLSX.writeFile(wb, "Sigweb_Procesado.xlsx");
           };
 
 
