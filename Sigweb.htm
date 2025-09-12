@@ -92,9 +92,9 @@
         const defaultTemplates = [
             { id: 'tpl_neg_gen', name: 'PLANTILLA NEGACION GENERAL', body: `Apreciado usuario;<br><br>Agradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y la de su familia. Por medio de este correo queremos brindar información acerca del servicio {{Motivo_Negacion}} que en esta oportunidad no está aprobado debido a que corresponde a EXCLUSIÓN ({{Descripcion_PDF}}), ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).<br><br>El servicio negado anteriormente; debe tramitarlo a través su EPS asignada. Adjuntamos soporte de la carta de negación.` },
             { id: 'tpl_neg_pert', name: 'PLANTILLA NO PERTINENCIA Y TEMAS ESTETICOS', body: `Apreciado usuario;<br><br>Agradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y la de su familia. Por medio de este correo queremos brindar información acerca del servicio {{Motivo_Negacion}} que en esta oportunidad No está aprobado debido a que corresponde a NO PERTINENCIA ({{Descripcion_PDF}}), ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).<br><br>` },
-            { id: 'tpl_comp_coinc', name: 'COMPLEMENTARIEDAD RED COINCIDENTE', body: `Apreciado Usuario;<br><br>Agradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y el de su familia. Por medio de este correo queremos brindar información acerca del servicio ({{Descripcion_PDF}}) que en esta oportunidad no fue aprobado, debido a que ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).<br><br>Sin embargo, está en gestión a través de su EPS ({{EPS}}) con el número de radicado ({{Radicado_Comp}}), puede realizar seguimiento mediante la oficina virtual de la EPS ({{Oficina_Virtual_EPS}}).<br><br>Adicional estaremos haciendo seguimiento al radicado y una vez se encuentre gestionado por la EPS, le notificaremos por medio de correo electrónico.` },
-            { id: 'tpl_comp_no_coinc', name: 'COMPLEMENTARIEDAD RED NO COINCIDENTE', body: `Agradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y la de su familia. Por medio de este correo queremos brindar información acerca del servicio ({{Descripcion_PDF}}) que en esta oportunidad no está aprobado, debido a que corresponde a ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).<br><br>El prestador actual solicitado, no tiene convenio con la EPS, por lo que los costos adicionales del servicio o insumo estarán a cargo del paciente. Sin embargo; se radica la solicitud ante su EPS con el número ({{Radicado_Comp}}) por favor realizar seguimiento mediante la oficina virtual de la EPS ({{Oficina_Virtual_EPS}}).` },
-            { id: 'tpl_comp_ayudas', name: 'COMPLEMENTARIEDAD AYUDAS DIAGNOSTICAS', body: `Apreciado usuario;<br><br>Agradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y la de su familia. Por medio de este correo queremos brindar información acerca del servicio ({{Descripcion_PDF}}) que en esta oportunidad no está aprobado debido a que corresponde a ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).<br><br>Sin embargo, se encuentra en gestión a través de su EPS con el número de radicado ({{Radicado_Comp}}), por favor realizar seguimiento mediante la oficina virtual. ({{Oficina_Virtual_EPS}}).` },
+            { id: 'tpl_comp_coinc', name: 'COMPLEMENTARIEDAD RED COINCIDENTE', body: `Apreciado Usuario;<br><br>Agradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y el de su familia. Por medio de este correo queremos brindar información acerca del servicio ({{Descripcion_PDF}}) que en esta oportunidad no fue aprobado, debido a que ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).<br><br>Sin embargo, está en gestión a través de su EPS ({{EPS}}) con el número de radicado ({{Radicado_Comp}}), puede realizar seguimiento mediante la oficina virtual de la EPS ({{Oficina_Virtual_EPS}}).<br><br>Adicional estaremos haciendo seguimiento al radicado y una vez se encuentre gestionado por la EPS, le notificaremos por medio de correo electrónico.`, requiresTracking: true },
+            { id: 'tpl_comp_no_coinc', name: 'COMPLEMENTARIEDAD RED NO COINCIDENTE', body: `Agradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y la de su familia. Por medio de este correo queremos brindar información acerca del servicio ({{Descripcion_PDF}}) que en esta oportunidad no está aprobado, debido a que corresponde a ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).<br><br>El prestador actual solicitado, no tiene convenio con la EPS, por lo que los costos adicionales del servicio o insumo estarán a cargo del paciente. Sin embargo; se radica la solicitud ante su EPS con el número ({{Radicado_Comp}}) por favor realizar seguimiento mediante la oficina virtual de la EPS ({{Oficina_Virtual_EPS}}).`, requiresTracking: true },
+            { id: 'tpl_comp_ayudas', name: 'COMPLEMENTARIEDAD AYUDAS DIAGNOSTICAS', body: `Apreciado usuario;<br><br>Agradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y la de su familia. Por medio de este correo queremos brindar información acerca del servicio ({{Descripcion_PDF}}) que en esta oportunidad no está aprobado debido a que corresponde a ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).<br><br>Sin embargo, se encuentra en gestión a través de su EPS con el número de radicado ({{Radicado_Comp}}), por favor realizar seguimiento mediante la oficina virtual. ({{Oficina_Virtual_EPS}}).`, requiresTracking: true },
         ];
 
 
@@ -438,7 +438,6 @@
           onSendToTracking,
           onPreview,
           onExportForMailMerge,
-          onClearReviewData,
           sortConfig,
           setSortConfig,
         }) => {
@@ -498,7 +497,7 @@
           const handleSelectChange = (noOrden, value) => {
             const changes = { Tipo_Carta: value };
             const template = templates.find(t => t.id === value);
-            if (!template || !template.name.toUpperCase().includes('COMPLEMENTARIEDAD')) {
+            if (!template || !template.requiresTracking) {
                 changes.Radicado_Comp = '';
             }
             updateRow(noOrden, changes);
@@ -548,11 +547,10 @@
                   <tbody>
                     {filteredData.map((row) => {
                       const template = templates.find(t => t.id === row.Tipo_Carta);
-                      const isComplementariedad = template && template.name.toUpperCase().includes('COMPLEMENTARIEDAD');
-                      const requiresRadicado = isComplementariedad;
+                      const requiresRadicado = template && template.requiresTracking;
                       
                       return (
-                        <tr key={row.No_Orden} className={`border-b border-border-color hover:bg-highlight ${isComplementariedad ? 'bg-indigo-900/50' : ''}`}>
+                        <tr key={row.No_Orden} className={`border-b border-border-color hover:bg-highlight ${requiresRadicado ? 'bg-indigo-900/50' : ''}`}>
                           <td className="px-4 py-2"><input type="checkbox" checked={selectedRows.has(row.No_Orden)} onChange={() => handleSelectRow(row.No_Orden)} /></td>
                           <td className="px-4 py-2 text-lg cursor-pointer" onClick={() => onPreview(row)}>👁️</td>
                           {REVIEW_HEADERS.map(({ key, compact }) => (
@@ -604,12 +602,6 @@
                     className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
                 >
                     Exportar para Envío Masivo
-                </button>
-                <button 
-                    onClick={onClearReviewData}
-                    className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
-                >
-                    Limpiar Tabla de Revisión
                 </button>
               </div>
             </section>
@@ -1086,8 +1078,6 @@
             }
             setState((prev) => ({ ...prev, isSaving: true }));
             try {
-              // El backend ahora tiene una protección para no borrar la hoja de 'Revisión'
-              // si se envía un array vacío, así que es seguro enviar el estado actual.
               await saveData(state.scriptUrl, {
                 finalData: state.finalData,
                 trackingData: state.trackingData,
@@ -1168,21 +1158,15 @@
             );
             setState((prev) => ({ ...prev, finalData: newData }));
           };
-          
-          const handleClearReviewData = () => {
-            if (window.confirm("¿Estás seguro de que quieres limpiar la tabla de revisión?\n\nEsta acción solo afectará tu vista actual y no borrará ningún dato guardado en la nube.")) {
-                setState(prev => ({ ...prev, finalData: [] }));
-                showNotification("La tabla de revisión ha sido limpiada.", "info");
-            }
-          };
 
           const handleSendToTracking = (selectedOrderNumbers) => {
-            const itemsToSend = state.finalData.filter(row => selectedOrderNumbers.includes(row.No_Orden))
+            const itemsToSend = state.finalData
+              .filter(row => selectedOrderNumbers.includes(row.No_Orden))
               .filter((row) => {
                 const template = state.templates.find((t) => t.id === row.Tipo_Carta);
                 return (
                   template &&
-                  template.name.toUpperCase().includes('COMPLEMENTARIEDAD') &&
+                  template.requiresTracking &&
                   row.Radicado_Comp &&
                   row.Radicado_Comp.trim() !== ''
                 );
@@ -1190,7 +1174,7 @@
 
             if (itemsToSend.length === 0) {
               showNotification(
-                "No hay ítems para enviar. Asegúrate de que sean del tipo 'COMPLEMENTARIEDAD' y tengan un 'Radicado'.",
+                "No hay ítems para enviar. Asegúrate de que la plantilla requiera seguimiento y tenga un 'Radicado'.",
                 'warning'
               );
               return;
@@ -1390,7 +1374,6 @@
                   onSendToTracking={handleSendToTracking}
                   onPreview={(row) => setState(prev => ({ ...prev, previewData: row }))}
                   onExportForMailMerge={exportForMailMerge}
-                  onClearReviewData={handleClearReviewData}
                   sortConfig={sortConfig}
                   setSortConfig={setSortConfig}
                 />
