@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sigweb Pro v3.5</title>
+    <title>MANEJO DE NEGACIONES EJE CAFETERO</title>
     <!-- Tailwind CSS JIT CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- SheetJS for Excel Exports -->
@@ -148,7 +148,7 @@
             const masterData = Array.from(masterDataMap.values());
 
             if (masterData.length === 0) {
-              alert("No consolidated data to export.");
+              alert("No hay datos consolidados para exportar.");
               return;
             }
 
@@ -156,26 +156,26 @@
             
             if (finalData.length > 0) {
               const ws1 = XLSX.utils.json_to_sheet(finalData);
-              XLSX.utils.book_append_sheet(wb, ws1, "Cases in Review");
+              XLSX.utils.book_append_sheet(wb, ws1, "Casos en Revisión");
             }
             
             if (trackingData.length > 0) {
               const ws2 = XLSX.utils.json_to_sheet(trackingData);
-              XLSX.utils.book_append_sheet(wb, ws2, "Active Tracking");
+              XLSX.utils.book_append_sheet(wb, ws2, "Seguimiento Activo");
             }
 
             if (archivedData.length > 0) {
               const ws3 = XLSX.utils.json_to_sheet(archivedData);
-              XLSX.utils.book_append_sheet(wb, ws3, "Archived Tracking");
+              XLSX.utils.book_append_sheet(wb, ws3, "Seguimiento Archivado");
             }
             
             const ws4 = XLSX.utils.json_to_sheet(masterData);
-            XLSX.utils.book_append_sheet(wb, ws4, "Master Consolidated");
+            XLSX.utils.book_append_sheet(wb, ws4, "Maestro Consolidado");
 
-            XLSX.writeFile(wb, `Sigweb_Detailed_Report_${new Date().toISOString().slice(0, 10)}.xlsx`);
+            XLSX.writeFile(wb, `Sigweb_Reporte_Detallado_${new Date().toISOString().slice(0, 10)}.xlsx`);
           } catch (error) {
-            console.error("Failed to export Excel report:", error);
-            alert("An error occurred while generating the report.");
+            console.error("Falló la exportación del reporte Excel:", error);
+            alert("Ocurrió un error al generar el reporte.");
           }
         };
 
@@ -191,7 +191,7 @@
               return JSON.parse(storedTemplates);
             }
           } catch (error) {
-            console.error("Failed to load templates from localStorage", error);
+            console.error("Falló la carga de plantillas desde localStorage", error);
           }
           return defaultTemplates;
         };
@@ -200,7 +200,7 @@
           try {
             localStorage.setItem(TEMPLATE_STORAGE_KEY, JSON.stringify(templates));
           } catch (error) {
-            console.error("Failed to save templates to localStorage", error);
+            console.error("Falló el guardado de plantillas en localStorage", error);
           }
         };
 
@@ -211,7 +211,7 @@
         const fetchData = async (url) => {
             const response = await fetch(`${url}?action=getData`);
             if (!response.ok) {
-                throw new Error('Network response was not ok');
+                throw new Error('La respuesta de la red no fue correcta');
             }
             const data = await response.json();
             return {
@@ -224,16 +224,14 @@
         const saveData = async (url, data) => {
             const response = await fetch(url, {
                 method: 'POST',
-                mode: 'no-cors', // Use no-cors for 'text/plain' to avoid CORS preflight issues with simple requests
+                mode: 'no-cors', 
                 headers: {
-                    'Content-Type': 'text/plain', // Keep as text/plain for Apps Script
+                    'Content-Type': 'text/plain',
                 },
-                body: JSON.stringify(data), // Send the data object directly
+                body: JSON.stringify(data),
             });
             
-            // For 'no-cors' requests, we cannot inspect the response.
-            // We have to assume success if the request doesn't throw a network error.
-            return { status: 'success', message: 'Data sent to server.' };
+            return { status: 'success', message: 'Datos enviados al servidor.' };
         };
 
 
@@ -247,7 +245,7 @@
               role="status"
             >
               <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
-                Loading...
+                Cargando...
               </span>
             </div>
           );
@@ -282,11 +280,11 @@
                 <h1 className="text-3xl font-bold text-white">
                   Sigweb Pro <span className="text-primary">v3.5</span> 🚀
                 </h1>
-                <p className="text-text-secondary">Integrated Workflow Management System</p>
+                <p className="text-text-secondary">Sistema Integrado de Gestión de Flujos de Trabajo</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <button onClick={onManageTemplates} className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors">
-                  Manage Templates
+                  Gestionar Plantillas
                 </button>
                 <button onClick={onSave} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -294,7 +292,7 @@
                         <path d="M5.5 16.5h8a2.5 2.5 0 002.5-2.5V8.5h-13v5.5a2.5 2.5 0 002.5 2.5z" />
                         <path d="M10.5 10a.5.5 0 01.5-.5h2a.5.5 0 010 1h-2a.5.5 0 01-.5-.5z" />
                     </svg>
-                    Save to Cloud
+                    Guardar en la Nube
                 </button>
               </div>
             </header>
@@ -317,10 +315,10 @@
 
         const Dashboard = ({ reviewCount, trackingCount, archivedCount, editsCount }) => (
           <section id="dashboard" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <DashboardCard title="Cases in Review" value={reviewCount} icon={'📋'} />
-            <DashboardCard title="Active Tracking" value={trackingCount} icon={'⏳'} />
-            <DashboardCard title="Archived Cases" value={archivedCount} icon={'🗄️'} />
-            <DashboardCard title="Session Edits" value={editsCount} icon={'✏️'} />
+            <DashboardCard title="Casos en Revisión" value={reviewCount} icon={'📋'} />
+            <DashboardCard title="Seguimiento Activo" value={trackingCount} icon={'⏳'} />
+            <DashboardCard title="Casos Archivados" value={archivedCount} icon={'🗄️'} />
+            <DashboardCard title="Ediciones en Sesión" value={editsCount} icon={'✏️'} />
           </section>
         );
 
@@ -335,7 +333,7 @@
           data,
           onDataChange,
           onProcess,
-          processButtonText = "Process Data",
+          processButtonText = "Procesar Datos",
         }) {
           
           const handlePaste = useCallback((e) => {
@@ -407,7 +405,7 @@
                   {processButtonText}
                 </button>
                 <button onClick={clearTable} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
-                  Clear Table
+                  Limpiar Tabla
                 </button>
               </div>
             </section>
@@ -424,6 +422,7 @@
           incrementEdits,
           onSendToTracking,
           onPreview,
+          onExportForMailMerge,
           sortConfig,
           setSortConfig,
         }) => {
@@ -504,19 +503,19 @@
 
           return (
             <section id="area3" className="space-y-4">
-              <h2 className="text-2xl font-bold text-primary border-b border-border-color pb-2">Area 3: Final Review & Export</h2>
+              <h2 className="text-2xl font-bold text-primary border-b border-border-color pb-2">Área 3: Revisión Final y Exportación</h2>
               <div className="action-bar bg-highlight p-4 rounded-lg flex flex-wrap items-center gap-4">
                 <input
                   type="text"
-                  placeholder="Search in review table..."
+                  placeholder="Buscar en tabla de revisión..."
                   className="bg-surface border border-border-color rounded-md px-3 py-2 text-text-primary placeholder-text-secondary w-full sm:w-auto"
                   value={filter}
                   onChange={(e) => setFilter(e.target.value)}
                 />
-                <span className="text-text-primary">{selectedRows.size} row(s) selected</span>
+                <span className="text-text-primary">{selectedRows.size} fila(s) seleccionada(s)</span>
               </div>
 
-              <div className="table-container max-h-[500px] overflow-auto border border-border-color rounded-lg">
+              <div className="table-container max-h-[700px] overflow-auto border border-border-color rounded-lg">
                 <table className="w-full text-sm text-left text-text-secondary table-auto">
                   <thead className="text-xs text-text-primary uppercase bg-header sticky top-0">
                     <tr>
@@ -533,10 +532,11 @@
                   <tbody>
                     {filteredData.map((row) => {
                       const template = templates.find(t => t.id === row.Tipo_Carta);
-                      const requiresRadicado = template && template.name.toLowerCase().includes('comp');
+                      const isComplementariedad = template && template.name.toLowerCase().includes('comp');
+                      const requiresRadicado = isComplementariedad;
                       
                       return (
-                        <tr key={row.No_Orden} className="border-b border-border-color hover:bg-highlight">
+                        <tr key={row.No_Orden} className={`border-b border-border-color hover:bg-highlight ${isComplementariedad ? 'bg-indigo-900/50' : ''}`}>
                           <td className="px-4 py-2"><input type="checkbox" checked={selectedRows.has(row.No_Orden)} onChange={() => handleSelectRow(row.No_Orden)} /></td>
                           <td className="px-4 py-2 text-lg cursor-pointer" onClick={() => onPreview(row)}>👁️</td>
                           {REVIEW_HEADERS.map(({ key, compact }) => (
@@ -556,7 +556,7 @@
                                 onChange={(e) => handleSelectChange(row.No_Orden, e.target.value)}
                                 className="bg-surface border border-border-color rounded-md px-2 py-1 text-text-primary w-full"
                               >
-                                <option value="">-- Select --</option>
+                                <option value="">-- Seleccionar --</option>
                                 {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                               </select>
                               {requiresRadicado && (
@@ -576,12 +576,18 @@
                   </tbody>
                 </table>
               </div>
-              <div className="flex gap-4">
+              <div className="flex flex-wrap gap-4">
                 <button 
                     onClick={() => onSendToTracking(Array.from(selectedRows))}
                     className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors"
                 >
-                    Send to Tracking
+                    Enviar a Seguimiento
+                </button>
+                 <button 
+                    onClick={() => onExportForMailMerge(data)}
+                    className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                >
+                    Exportar para Envío Masivo
                 </button>
               </div>
             </section>
@@ -645,7 +651,7 @@
                         onClick={handleBulkArchive}
                         className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors"
                      >
-                        {isArchived ? `Unarchive ${selectedRows.size} Selected` : `Archive ${selectedRows.size} Selected`}
+                        {isArchived ? `Restaurar ${selectedRows.size} Seleccionados` : `Archivar ${selectedRows.size} Seleccionados`}
                      </button>
                  )}
               </div>
@@ -702,21 +708,21 @@
 
           return (
             <section id="area4" className="space-y-4">
-              <h2 className="text-2xl font-bold text-primary border-b border-border-color pb-2">Area 4: Tracking</h2>
+              <h2 className="text-2xl font-bold text-primary border-b border-border-color pb-2">Área 4: Seguimiento</h2>
               <div className="action-bar bg-highlight p-4 rounded-lg flex flex-wrap items-center gap-4">
                 <input
                   type="text"
-                  placeholder="Search in tracking..."
+                  placeholder="Buscar en seguimiento..."
                   className="bg-surface border border-border-color rounded-md px-3 py-2 text-text-primary placeholder-text-secondary w-full sm:w-auto"
                   value={filter}
                   onChange={e => setFilter(e.target.value)}
                 />
                 <button onClick={() => setShowArchived(!showArchived)} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg">
-                  {showArchived ? 'Hide' : 'Show'} Archived ({archivedData.length})
+                  {showArchived ? 'Ocultar' : 'Mostrar'} Archivados ({archivedData.length})
                 </button>
               </div>
 
-              <h3 className="text-xl font-semibold text-white">Active Cases ({trackingData.length})</h3>
+              <h3 className="text-xl font-semibold text-white">Casos Activos ({trackingData.length})</h3>
               <TrackingTable
                 data={trackingData}
                 isArchived={false}
@@ -727,7 +733,7 @@
 
               {showArchived && (
                 <div className="mt-8">
-                  <h3 className="text-xl font-semibold text-white">Archived Cases ({archivedData.length})</h3>
+                  <h3 className="text-xl font-semibold text-white">Casos Archivados ({archivedData.length})</h3>
                   <TrackingTable
                     data={archivedData}
                     isArchived={true}
@@ -750,7 +756,7 @@
 
           const handleSave = async () => {
             if (!url.startsWith('https://script.google.com/macros/s/')) {
-                alert("Please enter a valid Google Apps Script URL.");
+                alert("Por favor, introduce una URL válida de Google Apps Script.");
                 return;
             }
             setIsVerifying(true);
@@ -762,14 +768,14 @@
             <div className="fixed inset-0 bg-background bg-opacity-90 flex justify-center items-center z-50 p-4">
               <div className="bg-surface rounded-lg shadow-xl w-full max-w-lg border border-border-color p-8 space-y-6">
                 <div className="text-center">
-                    <h2 className="text-2xl font-bold text-primary">Initial Setup Required</h2>
+                    <h2 className="text-2xl font-bold text-primary">Configuración Inicial Requerida</h2>
                     <p className="text-text-secondary mt-2">
-                        Please provide the Google Apps Script URL to connect to your database.
+                        Por favor, proporciona la URL de Google Apps Script para conectar a tu base de datos.
                     </p>
                 </div>
                 <div>
                     <label htmlFor="script-url" className="block text-sm font-medium text-text-primary mb-1">
-                        Script URL
+                        URL del Script
                     </label>
                     <input
                         id="script-url"
@@ -785,7 +791,7 @@
                     disabled={isVerifying || !url}
                     className="w-full bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
                 >
-                    {isVerifying ? 'Verifying...' : 'Save and Verify Connection'}
+                    {isVerifying ? 'Verificando...' : 'Guardar y Verificar Conexión'}
                 </button>
               </div>
             </div>
@@ -813,14 +819,14 @@
           };
 
           const handleDelete = (id) => {
-            if (window.confirm('Are you sure you want to delete this template?')) {
+            if (window.confirm('¿Estás seguro de que quieres eliminar esta plantilla?')) {
               setCurrentTemplates(currentTemplates.filter(t => t.id !== id));
             }
           };
           
           const handleSaveTemplateEdit = () => {
             if (!editingTemplate || !editingTemplate.name || !editingTemplate.body) {
-              alert('Template name and body cannot be empty.');
+              alert('El nombre y el cuerpo de la plantilla no pueden estar vacíos.');
               return;
             }
 
@@ -837,21 +843,21 @@
             <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-40 p-4">
               <div className="bg-surface rounded-lg shadow-xl w-full max-w-4xl border border-border-color flex flex-col max-h-[90vh]">
                 <div className="p-6 border-b border-border-color flex justify-between items-center">
-                  <h3 className="text-xl font-bold text-primary">Manage Email Templates</h3>
+                  <h3 className="text-xl font-bold text-primary">Gestionar Plantillas de Correo</h3>
                   <button onClick={onClose} className="text-text-secondary text-2xl">&times;</button>
                 </div>
                 
                 <div className="p-6 overflow-y-auto space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <h4 className="text-lg font-semibold mb-2">Current Templates</h4>
+                      <h4 className="text-lg font-semibold mb-2">Plantillas Actuales</h4>
                       <ul className="space-y-2 border border-border-color rounded-lg p-2 max-h-96 overflow-y-auto">
                         {currentTemplates.map(template => (
                           <li key={template.id} className="flex justify-between items-center p-2 bg-highlight rounded">
                             <span className="text-text-primary">{template.name}</span>
                             <div className="space-x-2">
-                              <button onClick={() => handleEdit(template)} className="text-sm bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded">Edit</button>
-                              <button onClick={() => handleDelete(template.id)} className="text-sm bg-danger hover:bg-danger-hover px-2 py-1 rounded">Delete</button>
+                              <button onClick={() => handleEdit(template)} className="text-sm bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded">Editar</button>
+                              <button onClick={() => handleDelete(template.id)} className="text-sm bg-danger hover:bg-danger-hover px-2 py-1 rounded">Borrar</button>
                             </div>
                           </li>
                         ))}
@@ -859,31 +865,31 @@
                     </div>
                     
                     <div>
-                      <h4 className="text-lg font-semibold mb-2">{editingTemplate ? 'Edit Template' : 'Create New Template'}</h4>
+                      <h4 className="text-lg font-semibold mb-2">{editingTemplate ? 'Editar Plantilla' : 'Crear Nueva Plantilla'}</h4>
                       {editingTemplate ? (
                         <div className="space-y-4 p-4 border border-border-color rounded-lg bg-highlight">
                            <input
                             type="text"
-                            placeholder="Template Name"
+                            placeholder="Nombre de la Plantilla"
                             value={editingTemplate.name || ''}
                             onChange={(e) => setEditingTemplate({ ...editingTemplate, name: e.target.value })}
                             className="w-full bg-background border border-border-color rounded-md px-3 py-2"
                           />
                           <textarea
-                            placeholder="Template Body..."
+                            placeholder="Cuerpo de la Plantilla..."
                             value={editingTemplate.body || ''}
                             onChange={(e) => setEditingTemplate({ ...editingTemplate, body: e.target.value })}
                             className="w-full bg-background border border-border-color rounded-md px-3 py-2 h-40 resize-y"
                           />
-                           <p className="text-xs text-text-secondary">Placeholders: {`{{Nombre}}`}, {`{{No_Orden}}`}, etc.</p>
+                           <p className="text-xs text-text-secondary">Marcadores: {`{{Nombre}}`}, {`{{No_Orden}}`}, etc.</p>
                           <div className="flex gap-2">
-                            <button onClick={handleSaveTemplateEdit} className="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm">Save Changes</button>
-                            <button onClick={() => setEditingTemplate(null)} className="bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm">Cancel</button>
+                            <button onClick={handleSaveTemplateEdit} className="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm">Guardar Cambios</button>
+                            <button onClick={() => setEditingTemplate(null)} className="bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm">Cancelar</button>
                           </div>
                         </div>
                       ) : (
                         <button onClick={handleAddNew} className="w-full bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg">
-                          Add New Template
+                          Añadir Nueva Plantilla
                         </button>
                       )}
                     </div>
@@ -892,14 +898,14 @@
 
                 <div className="p-4 bg-header flex justify-between items-center rounded-b-lg">
                    <button onClick={onReset} className="bg-danger hover:bg-danger-hover text-white font-bold py-2 px-4 rounded-lg">
-                    Restore Defaults
+                    Restaurar Predeterminadas
                   </button>
                   <div className="flex gap-4">
                     <button onClick={onClose} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg">
-                        Cancel
+                        Cancelar
                     </button>
                     <button onClick={handleSave} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">
-                        Save & Close
+                        Guardar y Cerrar
                     </button>
                   </div>
                 </div>
@@ -912,19 +918,19 @@
         // INLINED: components/PreviewModal.tsx
         // =================================================================================
         const PreviewModal = ({ data, template, onClose }) => {
-          const body = template ? replacePlaceholders(template.body, data) : '<b>Error:</b> Template not selected or not found.';
+          const body = template ? replacePlaceholders(template.body, data) : '<b>Error:</b> Plantilla no seleccionada o no encontrada.';
 
           const copyToClipboard = () => {
             navigator.clipboard.writeText(body.replace(/<br\s*\/?>/gi, '\n'))
-              .then(() => alert('Content copied to clipboard!'))
-              .catch(err => alert('Failed to copy content.'));
+              .then(() => alert('¡Contenido copiado al portapapeles!'))
+              .catch(err => alert('Falló al copiar el contenido.'));
           };
 
           return (
             <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-40 p-4">
               <div className="bg-surface rounded-lg shadow-xl w-full max-w-3xl border border-border-color flex flex-col">
                 <div className="p-6 border-b border-border-color">
-                  <h3 className="text-xl font-bold text-primary">Email Preview</h3>
+                  <h3 className="text-xl font-bold text-primary">Vista Previa del Correo</h3>
                 </div>
                 <div 
                   className="p-6 overflow-y-auto max-h-[60vh] bg-white text-black font-serif"
@@ -932,10 +938,10 @@
                 />
                 <div className="p-4 bg-header flex justify-end gap-4 rounded-b-lg">
                   <button onClick={copyToClipboard} className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors">
-                    Copy Content
+                    Copiar Contenido
                   </button>
                   <button onClick={onClose} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
-                    Close
+                    Cerrar
                   </button>
                 </div>
               </div>
@@ -991,11 +997,11 @@
                 isSetupNeeded: false,
                 isLoading: false,
               }));
-              showNotification('Connection successful and data loaded!', 'success');
+              showNotification('¡Conexión exitosa y datos cargados!', 'success');
             } catch (error) {
               console.error(error);
               showNotification(
-                `Connection failed. Please check the URL and script permissions.`,
+                `Falló la conexión. Por favor, revisa la URL y los permisos del script.`,
                 'error'
               );
               setState((prev) => ({ ...prev, isLoading: false }));
@@ -1016,7 +1022,7 @@
             const updateOnlineStatus = () => {
                 setState(prev => ({ ...prev, onlineStatus: navigator.onLine }));
                 if (!navigator.onLine) {
-                    showNotification("You are offline. Data saving is disabled.", "warning", 10000);
+                    showNotification("Estás desconectado. El guardado de datos está deshabilitado.", "warning", 10000);
                 }
             };
 
@@ -1035,11 +1041,11 @@
 
           const handleSave = async () => {
             if (!state.scriptUrl) {
-              showNotification('Cannot save. Script URL is not configured.', 'error');
+              showNotification('No se puede guardar. La URL del script no está configurada.', 'error');
               return;
             }
             if (!state.onlineStatus) {
-                showNotification('Cannot save while offline.', 'error');
+                showNotification('No se puede guardar mientras estás desconectado.', 'error');
                 return;
             }
             setState((prev) => ({ ...prev, isSaving: true }));
@@ -1049,11 +1055,11 @@
                 trackingData: state.trackingData,
                 archivedData: state.archivedData,
               });
-              showNotification('All data saved successfully to the cloud!', 'success');
+              showNotification('¡Todos los datos guardados en la nube con éxito!', 'success');
               setState((prev) => ({ ...prev, editsCount: 0 })); // Reset edits on successful save
             } catch (error) {
               console.error(error);
-              showNotification('Failed to save data. Please try again.', 'error');
+              showNotification('Falló el guardado de datos. Por favor, inténtalo de nuevo.', 'error');
             } finally {
               setState((prev) => ({ ...prev, isSaving: false }));
             }
@@ -1092,7 +1098,7 @@
 
             setState((prev) => ({ ...prev, finalData: processedData }));
             showNotification(
-              `${processedData.length} rows processed from Portal data.`,
+              `${processedData.length} filas procesadas desde los datos del Portal.`,
               'success'
             );
           }, [state.portalData]);
@@ -1115,7 +1121,7 @@
             });
 
             setState((prev) => ({ ...prev, finalData: mergedData }));
-            showNotification(`PDF data merged into Review Area.`, 'success');
+            showNotification(`Datos del PDF combinados en el Área de Revisión.`, 'success');
           }, [state.pdfData, state.finalData]);
 
           const updateFinalDataRow = (noOrden, partialUpdate) => {
@@ -1139,7 +1145,7 @@
 
             if (itemsToSend.length === 0) {
               showNotification(
-                "No items to send. Ensure they are 'Complementariedad' type and have a 'Radicado'.",
+                "No hay ítems para enviar. Asegúrate de que sean del tipo 'Complementariedad' y tengan un 'Radicado'.",
                 'warning'
               );
               return;
@@ -1153,7 +1159,7 @@
             itemsToSend.forEach((item) => {
               const existingIndex = newTrackingData.findIndex((t) => t.No_Orden === item.No_Orden);
               if (existingIndex !== -1) {
-                 if(window.confirm(`Case ${item.No_Orden} is already in tracking. Do you want to update it?`)) {
+                 if(window.confirm(`El caso ${item.No_Orden} ya está en seguimiento. ¿Quieres actualizarlo?`)) {
                     newTrackingData[existingIndex].Radicado = item.Radicado_Comp;
                     updatedCount++;
                  }
@@ -1180,8 +1186,35 @@
               trackingData: newTrackingData,
               finalData: newFinalData,
             }));
-            showNotification(`${addedCount} new items sent, ${updatedCount} items updated in tracking.`, 'success');
+            showNotification(`${addedCount} nuevos ítems enviados, ${updatedCount} ítems actualizados en seguimiento.`, 'success');
           };
+          
+          const exportForMailMerge = (data) => {
+              if (!data || data.length === 0) {
+                  showNotification("No hay datos en revisión para exportar.", "warning");
+                  return;
+              }
+              const dataToExport = data.map(row => ({
+                  "Fecha_Neg": row.Fecha_Neg,
+                  "Numero_Orden": row.No_Orden,
+                  "Numero_Cedula": row.No_Cedula,
+                  "Nombre_Afiliado": row.Nombre,
+                  "EPS": row.EPS,
+                  "Programa": row.Programa,
+                  "Email": row.Email,
+                  "Motivo_Negacion": row.Motivo_Negacion,
+                  "Descripcion_PDF": row.Descripcion_PDF,
+                  "Justificacion_PDF": row.Justificacion_PDF,
+                  "Fundamento_Legal_PDF": row.Fundamento_Legal_PDF,
+                  "Tipo_Carta": state.templates.find(t => t.id === row.Tipo_Carta)?.name || row.Tipo_Carta, // Use template name
+                  "Radicado_Comp": row.Radicado_Comp
+              }));
+              const ws = XLSX.utils.json_to_sheet(dataToExport);
+              const wb = XLSX.utils.book_new();
+              XLSX.utils.book_append_sheet(wb, ws, "DatosParaEnvio");
+              XLSX.writeFile(wb, "Sigweb_Procesado.xlsx");
+          };
+
 
           const updateTrackingData = (index, updatedRow, isArchived) => {
             const dataKey = isArchived ? 'archivedData' : 'trackingData';
@@ -1213,11 +1246,11 @@
           const handleSaveTemplates = (newTemplates) => {
             setState((prev) => ({ ...prev, templates: newTemplates }));
             saveTemplates(newTemplates);
-            showNotification('Email templates saved.', 'success');
+            showNotification('Plantillas de correo guardadas.', 'success');
           };
 
           const handleResetTemplates = () => {
-            if (window.confirm('Are you sure you want to restore default templates?')) {
+            if (window.confirm('¿Estás seguro de que quieres restaurar las plantillas predeterminadas?')) {
               handleSaveTemplates(defaultTemplates);
             }
           };
@@ -1241,7 +1274,7 @@
           }, [state.finalData, sortConfig]);
 
           if (state.isLoading) {
-            return <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50"><Spinner /> <span className="ml-4 text-xl">Loading Data...</span></div>;
+            return <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50"><Spinner /> <span className="ml-4 text-xl">Cargando Datos...</span></div>;
           }
 
           if (state.isSetupNeeded) {
@@ -1259,7 +1292,7 @@
               )}
               {!state.onlineStatus && (
                  <div className="bg-yellow-600 text-white text-center p-2 fixed top-0 left-0 w-full z-50">
-                   You are currently offline. Data synchronization is paused.
+                   Actualmente estás desconectado. La sincronización de datos está en pausa.
                  </div>
               )}
 
@@ -1276,14 +1309,14 @@
                         onClick={() => exportDetailedReport(state.finalData, state.trackingData, state.archivedData)}
                         className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
                     >
-                        Download Detailed Report
+                        Descargar Reporte Detallado
                     </button>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                   <DataInputArea
                     id="portal-area"
-                    title="Area 1: Portal Data"
+                    title="Área 1: Datos del Portal"
                     headers={PORTAL_HEADERS}
                     data={state.portalData}
                     onDataChange={(newData) => setState(prev => ({ ...prev, portalData: newData }))}
@@ -1291,12 +1324,12 @@
                   />
                   <DataInputArea
                     id="pdf-area"
-                    title="Area 2: PDF Extractor Data"
+                    title="Área 2: Datos del Extractor PDF"
                     headers={PDF_HEADERS}
                     data={state.pdfData}
                     onDataChange={(newData) => setState(prev => ({ ...prev, pdfData: newData }))}
                     onProcess={mergePdfData}
-                    processButtonText="Merge with PDF Data"
+                    processButtonText="Combinar con Datos del PDF"
                   />
                 </div>
 
@@ -1307,6 +1340,7 @@
                   incrementEdits={incrementEdits}
                   onSendToTracking={handleSendToTracking}
                   onPreview={(row) => setState(prev => ({ ...prev, previewData: row }))}
+                  onExportForMailMerge={exportForMailMerge}
                   sortConfig={sortConfig}
                   setSortConfig={setSortConfig}
                 />
@@ -1318,7 +1352,7 @@
                   archiveItems={archiveItems}
                 />
                 
-                {state.isSaving && <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50"><Spinner /> <span className="ml-4 text-xl">Saving Data...</span></div>}
+                {state.isSaving && <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50"><Spinner /> <span className="ml-4 text-xl">Guardando Datos...</span></div>}
               </main>
 
               {state.isTemplateManagerOpen && (
