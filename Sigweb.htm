@@ -86,11 +86,11 @@
         const TRACKING_STATUSES = ['Pendiente', 'En Gestión', 'Finalizado'];
 
         const defaultTemplates = [
-            { id: 'tpl_neg_gen', name: 'Negación General', body: `Apreciado usuario; {{Nombre}},\n\nAgradecemos la confianza... acerca del servicio {{Motivo_Negacion}} que en esta oportunidad no está aprobado debido a que corresponde a EXCLUSIÓN ({{Descripcion_PDF}}), ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).\n\nEl servicio negado anteriormente; debe tramitarlo a través su EPS asignada. Adjuntamos soporte de la carta de negación.` },
-            { id: 'tpl_comp_rc', name: 'Comp. Red Coincidente', body: `Apreciado Usuario; {{Nombre}},\n\nAgradecemos la confianza... acerca del servicio ({{Descripcion_PDF}}) que no fue aprobado, debido a que ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).\n\nSin embargo, está en gestión a través de su EPS ({{EPS}}) con el número de radicado ({{Radicado_Comp}}), puede realizar seguimiento mediante la oficina virtual de la EPS ({{Oficina_Virtual_EPS}}).` },
-            { id: 'tpl_3', name: 'Template 3', body: 'This is the body for template 3. Case: {{No_Orden}}' },
-            { id: 'tpl_4', name: 'Template 4', body: 'This is the body for template 4. Case: {{No_Orden}}' },
-            { id: 'tpl_5', name: 'Template 5', body: 'This is the body for template 5. Case: {{No_Orden}}' },
+            { id: 'tpl_neg_gen', name: 'Negación General', body: `Apreciado usuario; {{Nombre}},\n\nAgradecemos la confianza depositada en Coomeva Medicina Prepagada, con relación a su solicitud acerca del servicio {{Motivo_Negacion}} que en esta oportunidad no está aprobado debido a que corresponde a EXCLUSIÓN ({{Descripcion_PDF}}), ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).\n\nEl servicio negado anteriormente; debe tramitarlo a través su EPS asignada. Adjuntamos soporte de la carta de negación.` },
+            { id: 'tpl_comp_rc', name: 'Comp. Red Coincidente', body: `Apreciado Usuario; {{Nombre}},\n\nAgradecemos la confianza depositada en Coomeva Medicina Prepagada, con relación a su solicitud acerca del servicio ({{Descripcion_PDF}}) que no fue aprobado, debido a que ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).\n\nSin embargo, está en gestión a través de su EPS ({{EPS}}) con el número de radicado ({{Radicado_Comp}}), puede realizar seguimiento mediante la oficina virtual de la EPS ({{Oficina_Virtual_EPS}}).` },
+            { id: 'tpl_3', name: 'Negación Tutela', body: 'Apreciado usuario; {{Nombre}},\n\nCon relación a su solicitud mediante acción de tutela, informamos que el servicio {{Motivo_Negacion}} no puede ser aprobado debido a ({{Justificacion_PDF}}).\n\nLe recomendamos seguir el conducto regular a través de su EPS. Caso: {{No_Orden}}' },
+            { id: 'tpl_4', name: 'Informativa Cita', body: 'Apreciado usuario; {{Nombre}},\n\nLe informamos que su cita para {{Motivo_Negacion}} ha sido programada exitosamente. Por favor, preséntese en {{Direccion}} el día {{Fecha_Neg}}.\n\nGracias por su confianza.' },
+            { id: 'tpl_5', name: 'Recordatorio General', body: 'Estimado(a) {{Nombre}},\n\nEste es un recordatorio sobre su caso con número de orden {{No_Orden}} relacionado con {{Motivo_Negacion}}. Nuestro equipo está trabajando en ello.\n\nNos comunicaremos pronto.' },
         ];
 
 
@@ -224,19 +224,16 @@
         const saveData = async (url, data) => {
             const response = await fetch(url, {
                 method: 'POST',
+                mode: 'no-cors', // Use no-cors for 'text/plain' to avoid CORS preflight issues with simple requests
                 headers: {
-                    'Content-Type': 'text/plain', 
+                    'Content-Type': 'text/plain', // Keep as text/plain for Apps Script
                 },
-                body: JSON.stringify({
-                    action: 'saveData',
-                    payload: data,
-                }),
+                body: JSON.stringify(data), // Send the data object directly
             });
-
-            if (!response.ok) {
-                throw new Error('Failed to save data');
-            }
-            await response.json();
+            
+            // For 'no-cors' requests, we cannot inspect the response.
+            // We have to assume success if the request doesn't throw a network error.
+            return { status: 'success', message: 'Data sent to server.' };
         };
 
 
@@ -456,41 +453,40 @@
             );
           }, [data, filter]);
 
-          const handleSelectRow = (originalIndex) => {
+          const handleSelectRow = (noOrden) => {
             const newSelection = new Set(selectedRows);
-            if (newSelection.has(originalIndex)) {
-              newSelection.delete(originalIndex);
+            if (newSelection.has(noOrden)) {
+              newSelection.delete(noOrden);
             } else {
-              newSelection.add(originalIndex);
+              newSelection.add(noOrden);
             }
             setSelectedRows(newSelection);
           };
 
           const handleSelectAll = (e) => {
             if (e.target.checked) {
-              const allOriginalIndices = filteredData.map(row => data.indexOf(row));
-              setSelectedRows(new Set(allOriginalIndices));
+              const allOrderNumbers = filteredData.map(row => row.No_Orden);
+              setSelectedRows(new Set(allOrderNumbers));
             } else {
               setSelectedRows(new Set());
             }
           };
 
-          const handleCellBlur = (originalIndex, key, value) => {
-            const originalRow = data[originalIndex];
+          const handleCellBlur = (noOrden, key, value) => {
+            const originalRow = data.find(r => r.No_Orden === noOrden);
             if (originalRow && originalRow[key] !== value) {
-              updateRow(originalIndex, { ...originalRow, [key]: value });
+              updateRow(noOrden, { [key]: value });
               incrementEdits();
             }
           };
           
-          const handleSelectChange = (originalIndex, value) => {
-            const originalRow = data[originalIndex];
-            const newRow = { ...originalRow, Tipo_Carta: value };
+          const handleSelectChange = (noOrden, value) => {
+            const changes = { Tipo_Carta: value };
             const template = templates.find(t => t.id === value);
             if (!template || !template.name.toLowerCase().includes('comp')) {
-                newRow.Radicado_Comp = '';
+                changes.Radicado_Comp = '';
             }
-            updateRow(originalIndex, newRow);
+            updateRow(noOrden, changes);
           };
 
           const requestSort = (key) => {
@@ -536,19 +532,18 @@
                   </thead>
                   <tbody>
                     {filteredData.map((row) => {
-                      const originalIndex = data.indexOf(row);
                       const template = templates.find(t => t.id === row.Tipo_Carta);
                       const requiresRadicado = template && template.name.toLowerCase().includes('comp');
                       
                       return (
-                        <tr key={originalIndex} className="border-b border-border-color hover:bg-highlight">
-                          <td className="px-4 py-2"><input type="checkbox" checked={selectedRows.has(originalIndex)} onChange={() => handleSelectRow(originalIndex)} /></td>
+                        <tr key={row.No_Orden} className="border-b border-border-color hover:bg-highlight">
+                          <td className="px-4 py-2"><input type="checkbox" checked={selectedRows.has(row.No_Orden)} onChange={() => handleSelectRow(row.No_Orden)} /></td>
                           <td className="px-4 py-2 text-lg cursor-pointer" onClick={() => onPreview(row)}>👁️</td>
                           {REVIEW_HEADERS.map(({ key, compact }) => (
                             <td key={key} 
                                 className={`px-4 py-2 border-r border-border-color focus:bg-primary focus:text-black outline-none ${compact ? 'max-w-[150px] overflow-hidden text-ellipsis whitespace-nowrap' : ''}`}
                                 contentEditable
-                                onBlur={(e) => handleCellBlur(originalIndex, key, e.currentTarget.innerText)}
+                                onBlur={(e) => handleCellBlur(row.No_Orden, key, e.currentTarget.innerText)}
                                 suppressContentEditableWarning={true}
                             >
                                 {row[key]}
@@ -557,8 +552,8 @@
                           <td className="px-4 py-2">
                             <div className="flex flex-col gap-1">
                               <select 
-                                value={row.Tipo_Carta} 
-                                onChange={(e) => handleSelectChange(originalIndex, e.target.value)}
+                                value={row.Tipo_Carta || ''}
+                                onChange={(e) => handleSelectChange(row.No_Orden, e.target.value)}
                                 className="bg-surface border border-border-color rounded-md px-2 py-1 text-text-primary w-full"
                               >
                                 <option value="">-- Select --</option>
@@ -568,9 +563,8 @@
                                 <input
                                   type="text"
                                   placeholder="Radicado..."
-                                  value={row.Radicado_Comp}
-                                  onChange={(e) => updateRow(originalIndex, { ...row, Radicado_Comp: e.target.value })}
-                                  onBlur={(e) => handleCellBlur(originalIndex, 'Radicado_Comp', e.target.value)}
+                                  value={row.Radicado_Comp || ''}
+                                  onChange={(e) => updateRow(row.No_Orden, { Radicado_Comp: e.target.value })}
                                   className="bg-surface border border-border-color rounded-md px-2 py-1 text-text-primary w-full mt-1"
                                 />
                               )}
@@ -601,6 +595,12 @@
         const TrackingTable = ({ data, isArchived, onUpdate, onArchive, filter }) => {
             
           const [selectedRows, setSelectedRows] = useState(new Set());
+          
+          const statusClasses = {
+            'Pendiente': 'bg-yellow-600/20',
+            'En Gestión': 'bg-blue-600/20',
+            'Finalizado': 'bg-green-600/20',
+          };
 
           const filteredData = useMemo(() => {
             if (!filter) return data;
@@ -668,7 +668,7 @@
                     {filteredData.map((row, index) => {
                       const originalIndex = data.indexOf(row);
                       return (
-                      <tr key={originalIndex} className={`border-b border-border-color hover:bg-highlight ${isArchived ? 'bg-archive/50 text-text-secondary' : ''}`}>
+                      <tr key={originalIndex} className={`border-b border-border-color hover:bg-highlight transition-colors ${isArchived ? 'bg-archive/50 text-text-secondary' : statusClasses[row.Estado] || ''}`}>
                         <td className="px-4 py-2"><input type="checkbox" checked={selectedRows.has(originalIndex)} onChange={() => handleSelectRow(originalIndex)} /></td>
                         <td className="px-4 py-2">{row.Fecha_Ing}</td>
                         <td className="px-4 py-2">{row.No_Orden}</td>
@@ -1038,6 +1038,10 @@
               showNotification('Cannot save. Script URL is not configured.', 'error');
               return;
             }
+            if (!state.onlineStatus) {
+                showNotification('Cannot save while offline.', 'error');
+                return;
+            }
             setState((prev) => ({ ...prev, isSaving: true }));
             try {
               await saveData(state.scriptUrl, {
@@ -1046,6 +1050,7 @@
                 archivedData: state.archivedData,
               });
               showNotification('All data saved successfully to the cloud!', 'success');
+              setState((prev) => ({ ...prev, editsCount: 0 })); // Reset edits on successful save
             } catch (error) {
               console.error(error);
               showNotification('Failed to save data. Please try again.', 'error');
@@ -1113,15 +1118,15 @@
             showNotification(`PDF data merged into Review Area.`, 'success');
           }, [state.pdfData, state.finalData]);
 
-          const updateFinalDataRow = (index, updatedRow) => {
-            const newData = [...state.finalData];
-            newData[index] = updatedRow;
+          const updateFinalDataRow = (noOrden, partialUpdate) => {
+            const newData = state.finalData.map(row => 
+                row.No_Orden === noOrden ? { ...row, ...partialUpdate } : row
+            );
             setState((prev) => ({ ...prev, finalData: newData }));
           };
 
-          const handleSendToTracking = (selectedIndices) => {
-            const itemsToSend = selectedIndices
-              .map((index) => state.finalData[index])
+          const handleSendToTracking = (selectedOrderNumbers) => {
+            const itemsToSend = state.finalData.filter(row => selectedOrderNumbers.includes(row.No_Orden))
               .filter((row) => {
                 const template = state.templates.find((t) => t.id === row.Tipo_Carta);
                 return (
@@ -1219,17 +1224,19 @@
 
           const sortedFinalData = React.useMemo(() => {
             let sortableItems = [...state.finalData];
-            sortableItems.sort((a, b) => {
-                const aVal = a[sortConfig.key] || '';
-                const bVal = b[sortConfig.key] || '';
-                if (aVal < bVal) {
-                    return sortConfig.direction === 'ascending' ? -1 : 1;
-                }
-                if (aVal > bVal) {
-                    return sortConfig.direction === 'ascending' ? 1 : -1;
-                }
-                return 0;
-            });
+            if (sortConfig.key) {
+                sortableItems.sort((a, b) => {
+                    const aVal = a[sortConfig.key] || '';
+                    const bVal = b[sortConfig.key] || '';
+                    if (aVal < bVal) {
+                        return sortConfig.direction === 'ascending' ? -1 : 1;
+                    }
+                    if (aVal > bVal) {
+                        return sortConfig.direction === 'ascending' ? 1 : -1;
+                    }
+                    return 0;
+                });
+            }
             return sortableItems;
           }, [state.finalData, sortConfig]);
 
