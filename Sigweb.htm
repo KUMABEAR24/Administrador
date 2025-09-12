@@ -142,7 +142,7 @@
 
             [...finalData, ...trackingData, ...archivedData].forEach(row => {
               if (row.No_Orden) {
-                const key = row.No_Orden.trim();
+                const key = String(row.No_Orden).trim();
                 const existing = masterDataMap.get(key) || {};
                 masterDataMap.set(key, { ...existing, ...row });
               }
@@ -1098,7 +1098,6 @@
                 
                 showNotification(response.message, 'success');
 
-                // Opcional: remover los casos añadidos del área de revisión para limpiar la UI
                 if (response.data && response.data.added > 0) {
                     const addedOrderNumbers = new Set(casesToAdd.map(c => c.No_Orden));
                     setState(prev => ({
@@ -1125,12 +1124,17 @@
           );
 
           const processPortalData = useCallback(() => {
+            if (!state.portalData.some(row => row.No_Orden && String(row.No_Orden).trim())) {
+                showNotification("No hay datos en el Área 1 para procesar.", "warning");
+                return;
+            }
+
             const processedData = state.portalData
               .filter((row) => row.No_Orden && String(row.No_Orden).trim())
               .map((row) => ({
                 Fecha_Neg: row.Fecha_Neg || '',
                 Sucursal: row.Sucursal || '',
-                No_Orden: row.No_Orden || '',
+                No_Orden: String(row.No_Orden).trim() || '',
                 No_Cedula: row.No_Cedula || '',
                 Nombre: capitalizeWords(row.Nombre || ''),
                 Motivo_Negacion: row.Motivo_Negacion || '',
@@ -1148,47 +1152,78 @@
                 Usuario_Emitio: row.Usuario_Emitio || '',
                 Regional: row.Regional || '',
                 Gestion_Negacion: row.Gestion_Negacion || '',
-                Descripcion_PDF: '(pendiente)',
-                Justificacion_PDF: '(pendiente)',
-                Fundamento_Legal_PDF: '(pendiente)',
-                Tipo_Carta: '',
-                Radicado_Comp: '',
               }));
-              
-            // AÑADIR sin duplicar, en lugar de reemplazar
+
             setState((prev) => {
-                const existingOrderNumbers = new Set(prev.finalData.map(r => r.No_Orden));
-                const newUniqueData = processedData.filter(r => !existingOrderNumbers.has(r.No_Orden));
-                if (newUniqueData.length < processedData.length) {
-                    showNotification(`Se omitieron ${processedData.length - newUniqueData.length} casos duplicados.`, 'info');
-                }
-                return { ...prev, finalData: [...prev.finalData, ...newUniqueData] };
+                let finalDataArr = [...prev.finalData];
+                let addedCount = 0;
+                let updatedCount = 0;
+
+                processedData.forEach(portalRow => {
+                    const index = finalDataArr.findIndex(r => String(r.No_Orden).trim() === portalRow.No_Orden);
+                    if (index !== -1) {
+                        // Update: Preserve manually entered fields from the existing row
+                        const existingRow = finalDataArr[index];
+                        finalDataArr[index] = { ...existingRow, ...portalRow };
+                        updatedCount++;
+                    } else {
+                        // Insert: Add placeholder fields for PDF data, etc.
+                        finalDataArr.push({
+                            ...portalRow,
+                            Descripcion_PDF: '(pendiente)',
+                            Justificacion_PDF: '(pendiente)',
+                            Fundamento_Legal_PDF: '(pendiente)',
+                            Tipo_Carta: '',
+                            Radicado_Comp: '',
+                        });
+                        addedCount++;
+                    }
+                });
+
+                showNotification(`${addedCount} caso(s) nuevo(s) añadido(s), ${updatedCount} caso(s) actualizado(s).`, 'success');
+
+                // Clear portal data after processing
+                return { 
+                    ...prev, 
+                    finalData: finalDataArr,
+                    portalData: Array(5).fill({}),
+                };
             });
-            showNotification(
-              `${processedData.length} filas procesadas desde los datos del Portal.`,
-              'success'
-            );
-          }, [state.portalData]);
+          }, [state.portalData, state.finalData]);
 
           const mergePdfData = useCallback(() => {
             const pdfMap = new Map();
             state.pdfData
               .filter((row) => row['Archivo (No. Orden)']?.trim())
               .forEach((row) => {
-                pdfMap.set(row['Archivo (No. Orden)'].trim(), {
+                pdfMap.set(String(row['Archivo (No. Orden)']).trim(), {
                   Descripcion_PDF: row.Descripción || '',
                   Justificacion_PDF: row.Justificación || '',
                   Fundamento_Legal_PDF: row['Fundamento Legal'] || '',
                 });
               });
 
+            if (pdfMap.size === 0) {
+                showNotification("No hay datos en el Área 2 para combinar.", "warning");
+                return;
+            }
+
+            let matchCount = 0;
             const mergedData = state.finalData.map((finalRow) => {
-              const pdfMatch = pdfMap.get(finalRow.No_Orden.trim());
-              return pdfMatch ? { ...finalRow, ...pdfMatch } : finalRow;
+              const pdfMatch = pdfMap.get(String(finalRow.No_Orden).trim());
+              if (pdfMatch) {
+                  matchCount++;
+                  return { ...finalRow, ...pdfMatch };
+              }
+              return finalRow;
             });
 
-            setState((prev) => ({ ...prev, finalData: mergedData }));
-            showNotification(`Datos del PDF combinados en el Área de Revisión.`, 'success');
+            setState((prev) => ({ 
+                ...prev, 
+                finalData: mergedData,
+                pdfData: Array(5).fill({}) // Also clear PDF data table
+            }));
+            showNotification(`${matchCount} caso(s) en el área de revisión fueron actualizados con los datos del PDF.`, 'success');
           }, [state.pdfData, state.finalData]);
 
           const updateFinalDataRow = (noOrden, partialUpdate) => {
