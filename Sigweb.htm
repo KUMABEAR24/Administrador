@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MANEJO DE NEGACIONES EJE CAFETERO</title>
+    <title>GESTION NEGACIONES EJE CAFETERO</title>
     <!-- Tailwind CSS JIT CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- SheetJS for Excel Exports -->
@@ -84,13 +84,13 @@
         ];
 
         const TRACKING_STATUSES = ['Pendiente', 'En Gestión', 'Finalizado'];
+        
+        const COMMON_EMAIL_FOOTER = `\n\nSi tiene alguna duda puede contactarse por medio de los canales que tenemos disponibles para usted:\n· Nuestra línea nacional 018000931666. O con nuestras líneas locales: Cali (602) 489 0073, Bogotá (601) 743 5485, Medellín (604) 604 4507, Barranquilla (605) 385 3165, Bucaramanga (607) 697 3350, Cartagena (605) 693 9853, Tuluá (602) 235 9483, Valledupar (605)588 5699, Pereira (606) 340 2635.\n· WhatsApp: 317-224-07-94\n\nGracias por su Atención.`;
 
         const defaultTemplates = [
-            { id: 'tpl_neg_gen', name: 'Negación General', body: `Apreciado usuario; {{Nombre}},\n\nAgradecemos la confianza depositada en Coomeva Medicina Prepagada, con relación a su solicitud acerca del servicio {{Motivo_Negacion}} que en esta oportunidad no está aprobado debido a que corresponde a EXCLUSIÓN ({{Descripcion_PDF}}), ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).\n\nEl servicio negado anteriormente; debe tramitarlo a través su EPS asignada. Adjuntamos soporte de la carta de negación.` },
-            { id: 'tpl_comp_rc', name: 'Comp. Red Coincidente', body: `Apreciado Usuario; {{Nombre}},\n\nAgradecemos la confianza depositada en Coomeva Medicina Prepagada, con relación a su solicitud acerca del servicio ({{Descripcion_PDF}}) que no fue aprobado, debido a que ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).\n\nSin embargo, está en gestión a través de su EPS ({{EPS}}) con el número de radicado ({{Radicado_Comp}}), puede realizar seguimiento mediante la oficina virtual de la EPS ({{Oficina_Virtual_EPS}}).` },
-            { id: 'tpl_3', name: 'Negación Tutela', body: 'Apreciado usuario; {{Nombre}},\n\nCon relación a su solicitud mediante acción de tutela, informamos que el servicio {{Motivo_Negacion}} no puede ser aprobado debido a ({{Justificacion_PDF}}).\n\nLe recomendamos seguir el conducto regular a través de su EPS. Caso: {{No_Orden}}' },
-            { id: 'tpl_4', name: 'Informativa Cita', body: 'Apreciado usuario; {{Nombre}},\n\nLe informamos que su cita para {{Motivo_Negacion}} ha sido programada exitosamente. Por favor, preséntese en {{Direccion}} el día {{Fecha_Neg}}.\n\nGracias por su confianza.' },
-            { id: 'tpl_5', name: 'Recordatorio General', body: 'Estimado(a) {{Nombre}},\n\nEste es un recordatorio sobre su caso con número de orden {{No_Orden}} relacionado con {{Motivo_Negacion}}. Nuestro equipo está trabajando en ello.\n\nNos comunicaremos pronto.' },
+            { id: 'tpl_neg_gen', name: 'Negación General', body: `Apreciado usuario; {{Nombre}},\n\nAgradecemos la confianza depositada en Coomeva Medicina Prepagada, con relación a su solicitud acerca del servicio {{Motivo_Negacion}} que en esta oportunidad no está aprobado debido a que corresponde a EXCLUSIÓN ({{Descripcion_PDF}}), ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).\n\nEl servicio negado anteriormente; debe tramitarlo a través su EPS asignada. Adjuntamos soporte de la carta de negación.` + COMMON_EMAIL_FOOTER },
+            { id: 'tpl_neg_simple', name: 'Negación Simple', body: `Apreciado usuario; {{Nombre}},\n\nAgradecemos la confianza depositada en Coomeva Medicina Prepagada, con relación a su solicitud acerca del servicio {{Motivo_Negacion}} que en esta oportunidad no está aprobado debido a que corresponde a EXCLUSIÓN ({{Descripcion_PDF}}), ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).` + COMMON_EMAIL_FOOTER },
+            { id: 'tpl_comp_eps', name: 'Comp. Trámite por EPS', body: `Apreciado Usuario; {{Nombre}},\n\nAgradecemos la confianza depositada en Coomeva Medicina Prepagada, con relación a su solicitud acerca del servicio ({{Descripcion_PDF}}) que no fue aprobado, debido a que ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).\n\nSin embargo, está en gestión a través de su EPS ({{EPS}}) con el número de radicado ({{Radicado_Comp}}), puede realizar seguimiento mediante la oficina virtual de la EPS ({{Oficina_Virtual_EPS}}).` + COMMON_EMAIL_FOOTER },
         ];
 
 
@@ -278,7 +278,7 @@
             <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-border-color">
               <div>
                 <h1 className="text-3xl font-bold text-white">
-                  Sigweb Pro <span className="text-primary">v3.5</span> 🚀
+                  GESTION NEGACIONES EJE CAFETERO
                 </h1>
                 <p className="text-text-secondary">Sistema Integrado de Gestión de Flujos de Trabajo</p>
               </div>
@@ -423,6 +423,7 @@
           onSendToTracking,
           onPreview,
           onExportForMailMerge,
+          onClearReviewData,
           sortConfig,
           setSortConfig,
         }) => {
@@ -588,6 +589,12 @@
                     className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
                 >
                     Exportar para Envío Masivo
+                </button>
+                <button 
+                    onClick={onClearReviewData}
+                    className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                >
+                    Limpiar Tabla de Revisión
                 </button>
               </div>
             </section>
@@ -1050,12 +1057,14 @@
             }
             setState((prev) => ({ ...prev, isSaving: true }));
             try {
+              // Solo se envían los datos que están actualmente en la vista de revisión
+              // para la operación de "upsert". Los datos de seguimiento y archivados se envían completos.
               await saveData(state.scriptUrl, {
                 finalData: state.finalData,
                 trackingData: state.trackingData,
                 archivedData: state.archivedData,
               });
-              showNotification('¡Todos los datos guardados en la nube con éxito!', 'success');
+              showNotification('¡Datos sincronizados con la nube con éxito!', 'success');
               setState((prev) => ({ ...prev, editsCount: 0 })); // Reset edits on successful save
             } catch (error) {
               console.error(error);
@@ -1130,6 +1139,13 @@
             );
             setState((prev) => ({ ...prev, finalData: newData }));
           };
+          
+          const handleClearReviewData = () => {
+            if (window.confirm("¿Estás seguro de que quieres limpiar la tabla de revisión?\n\nEsta acción solo afectará tu vista actual y no borrará ningún dato guardado en la nube.")) {
+                setState(prev => ({ ...prev, finalData: [] }));
+                showNotification("La tabla de revisión ha sido limpiada.", "info");
+            }
+          };
 
           const handleSendToTracking = (selectedOrderNumbers) => {
             const itemsToSend = state.finalData.filter(row => selectedOrderNumbers.includes(row.No_Orden))
@@ -1145,7 +1161,7 @@
 
             if (itemsToSend.length === 0) {
               showNotification(
-                "No hay ítems para enviar. Asegúrate de que sean del tipo 'Complementariedad' y tengan un 'Radicado'.",
+                "No hay ítems para enviar. Asegúrate de que sean del tipo 'Comp.' y tengan un 'Radicado'.",
                 'warning'
               );
               return;
@@ -1341,6 +1357,7 @@
                   onSendToTracking={handleSendToTracking}
                   onPreview={(row) => setState(prev => ({ ...prev, previewData: row }))}
                   onExportForMailMerge={exportForMailMerge}
+                  onClearReviewData={handleClearReviewData}
                   sortConfig={sortConfig}
                   setSortConfig={setSortConfig}
                 />
