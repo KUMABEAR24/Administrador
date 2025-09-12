@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -183,6 +182,15 @@
           }
         };
 
+        const debounce = (func, delay) => {
+            let timeout;
+            return function(...args) {
+                const context = this;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), delay);
+            };
+        };
+
         // =================================================================================
         // INLINED: services/templateService.ts
         // =================================================================================
@@ -192,7 +200,6 @@
           try {
             const storedTemplates = localStorage.getItem(TEMPLATE_STORAGE_KEY);
             if (storedTemplates) {
-              // Basic validation to prevent loading corrupted data
               const parsed = JSON.parse(storedTemplates);
               if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].id && parsed[0].name) {
                 return parsed;
@@ -219,9 +226,7 @@
         // =================================================================================
         const fetchData = async (url) => {
             const response = await fetch(`${url}?action=getData`);
-            if (!response.ok) {
-                throw new Error('La respuesta de la red no fue correcta');
-            }
+            if (!response.ok) throw new Error('La respuesta de la red no fue correcta');
             const data = await response.json();
             return {
                 finalData: data.finalData || [],
@@ -229,18 +234,25 @@
                 archivedData: data.archivedData || [],
             };
         };
-
-        const saveData = async (url, data) => {
+        
+        const addCasesToSheet = async (url, cases) => {
             const response = await fetch(url, {
                 method: 'POST',
-                mode: 'no-cors', 
-                headers: {
-                    'Content-Type': 'text/plain',
-                },
-                body: JSON.stringify(data),
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({ action: 'addReviewCases', data: cases }),
             });
-            
-            return { status: 'success', message: 'Datos enviados al servidor.' };
+            if (!response.ok) throw new Error('Falló al añadir casos.');
+            return await response.json();
+        };
+
+        const saveTrackingAndArchived = async (url, trackingData, archivedData) => {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                body: JSON.stringify({ action: 'saveTrackingAndArchived', data: { trackingData, archivedData } }),
+            });
+            if (!response.ok) throw new Error('Falló al guardar datos de seguimiento.');
+            return await response.json();
         };
 
 
@@ -282,7 +294,7 @@
         // =================================================================================
         // INLINED: components/Header.tsx
         // =================================================================================
-        const Header = ({ onSave, onManageTemplates, onReconfigure }) => {
+        const Header = ({ onManageTemplates, onReconfigure }) => {
           return (
             <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-border-color">
               <div>
@@ -300,14 +312,6 @@
                         <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0L8.21 5.15a1.5 1.5 0 01-1.25.82l-2.09.28c-1.68.23-2.34 2.26-1.09 3.42l1.52 1.48a1.5 1.5 0 01-.42 2.1l-1.83 1.25c-1.38.94-.92 3.01.7 3.42l2.05.51a1.5 1.5 0 011.1.98l.8 2.07c.43 1.12 2.29 1.12 2.72 0l.8-2.07a1.5 1.5 0 011.1-.98l2.05-.51c1.62-.4 2.08-2.48.7-3.42l-1.83-1.25a1.5 1.5 0 01-.42-2.1l1.52-1.48c1.25-1.16.59-3.19-1.09-3.42L13 5.97a1.5 1.5 0 01-1.25-.82l-.3-1.98zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
                     </svg>
                     Reconfigurar Conexión
-                </button>
-                <button onClick={onSave} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M5.5 16.5a2.5 2.5 0 01-5 0V4.414a1.5 1.5 0 01.44-1.06L4.354.439A1.5 1.5 0 015.414 0H12.5a2.5 2.5 0 012.5 2.5v2" />
-                        <path d="M5.5 16.5h8a2.5 2.5 0 002.5-2.5V8.5h-13v5.5a2.5 2.5 0 002.5 2.5z" />
-                        <path d="M10.5 10a.5.5 0 01.5-.5h2a.5.5 0 010 1h-2a.5.5 0 01-.5-.5z" />
-                    </svg>
-                    Guardar en la Nube
                 </button>
               </div>
             </header>
@@ -436,10 +440,12 @@
           updateRow,
           incrementEdits,
           onSendToTracking,
+          onAddCasesToCloud,
           onPreview,
           onExportForMailMerge,
           sortConfig,
           setSortConfig,
+          isSaving,
         }) => {
           const [selectedRows, setSelectedRows] = useState(new Set());
           const [filter, setFilter] = useState('');
@@ -592,8 +598,16 @@
               </div>
               <div className="flex flex-wrap gap-4">
                 <button 
+                    onClick={() => onAddCasesToCloud(Array.from(selectedRows))}
+                    disabled={selectedRows.size === 0 || isSaving}
+                    className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
+                >
+                    {isSaving ? 'Agregando...' : `Agregar ${selectedRows.size} Casos a la Nube`}
+                </button>
+                <button 
                     onClick={() => onSendToTracking(Array.from(selectedRows))}
-                    className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                    disabled={selectedRows.size === 0}
+                    className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:bg-gray-500"
                 >
                     Enviar a Seguimiento
                 </button>
@@ -722,7 +736,7 @@
 
           return (
             <section id="area4" className="space-y-4">
-              <h2 className="text-2xl font-bold text-primary border-b border-border-color pb-2">Área 4: Seguimiento</h2>
+              <h2 className="text-2xl font-bold text-primary border-b border-border-color pb-2">Área 4: Seguimiento (Guardado Automático)</h2>
               <div className="action-bar bg-highlight p-4 rounded-lg flex flex-wrap items-center gap-4">
                 <input
                   type="text"
@@ -1066,32 +1080,49 @@
 
           const incrementEdits = () =>
             setState((prev) => ({ ...prev, editsCount: prev.editsCount + 1 }));
-
-          const handleSave = async () => {
-            if (!state.scriptUrl) {
-              showNotification('No se puede guardar. La URL del script no está configurada.', 'error');
-              return;
-            }
-            if (!state.onlineStatus) {
-                showNotification('No se puede guardar mientras estás desconectado.', 'error');
+          
+          const handleAddCasesToCloud = async (selectedOrderNumbers) => {
+            if (!state.scriptUrl || !state.onlineStatus) {
+                showNotification('No se puede guardar. Revisa tu conexión o configuración.', 'error');
                 return;
             }
+            if (selectedOrderNumbers.length === 0) {
+                showNotification('Por favor, selecciona al menos un caso para agregar.', 'warning');
+                return;
+            }
+
             setState((prev) => ({ ...prev, isSaving: true }));
             try {
-              await saveData(state.scriptUrl, {
-                finalData: state.finalData,
-                trackingData: state.trackingData,
-                archivedData: state.archivedData,
-              });
-              showNotification('¡Datos sincronizados con la nube con éxito!', 'success');
-              setState((prev) => ({ ...prev, editsCount: 0 })); // Reset edits on successful save
+                const casesToAdd = state.finalData.filter(row => selectedOrderNumbers.includes(row.No_Orden));
+                const response = await addCasesToSheet(state.scriptUrl, casesToAdd);
+                
+                showNotification(response.message, 'success');
+
+                // Opcional: remover los casos añadidos del área de revisión para limpiar la UI
+                if (response.data && response.data.added > 0) {
+                    const addedOrderNumbers = new Set(casesToAdd.map(c => c.No_Orden));
+                    setState(prev => ({
+                        ...prev,
+                        finalData: prev.finalData.filter(row => !addedOrderNumbers.has(row.No_Orden))
+                    }));
+                }
             } catch (error) {
-              console.error(error);
-              showNotification('Falló el guardado de datos. Por favor, inténtalo de nuevo.', 'error');
+                console.error(error);
+                showNotification('Falló al agregar los casos. Inténtalo de nuevo.', 'error');
             } finally {
-              setState((prev) => ({ ...prev, isSaving: false }));
+                setState((prev) => ({ ...prev, isSaving: false }));
             }
           };
+          
+          const debouncedSaveTracking = useCallback(
+            debounce((url, trackingData, archivedData) => {
+                if (!url || !navigator.onLine) return;
+                saveTrackingAndArchived(url, trackingData, archivedData)
+                    .then(response => showNotification(response.message, 'info', 2000))
+                    .catch(err => showNotification('Error al guardar cambios de seguimiento.', 'error'));
+            }, 2500),
+            []
+          );
 
           const processPortalData = useCallback(() => {
             const processedData = state.portalData
@@ -1123,8 +1154,16 @@
                 Tipo_Carta: '',
                 Radicado_Comp: '',
               }));
-
-            setState((prev) => ({ ...prev, finalData: processedData }));
+              
+            // AÑADIR sin duplicar, en lugar de reemplazar
+            setState((prev) => {
+                const existingOrderNumbers = new Set(prev.finalData.map(r => r.No_Orden));
+                const newUniqueData = processedData.filter(r => !existingOrderNumbers.has(r.No_Orden));
+                if (newUniqueData.length < processedData.length) {
+                    showNotification(`Se omitieron ${processedData.length - newUniqueData.length} casos duplicados.`, 'info');
+                }
+                return { ...prev, finalData: [...prev.finalData, ...newUniqueData] };
+            });
             showNotification(
               `${processedData.length} filas procesadas desde los datos del Portal.`,
               'success'
@@ -1209,12 +1248,15 @@
             const itemsSentOrderNumbers = itemsToSend.map(i => i.No_Orden);
             newFinalData = newFinalData.filter(f => !itemsSentOrderNumbers.includes(f.No_Orden));
 
-
-            setState((prev) => ({
-              ...prev,
-              trackingData: newTrackingData,
-              finalData: newFinalData,
-            }));
+            setState((prev) => {
+              const newState = {
+                ...prev,
+                trackingData: newTrackingData,
+                finalData: newFinalData,
+              };
+              debouncedSaveTracking(newState.scriptUrl, newState.trackingData, newState.archivedData);
+              return newState;
+            });
             showNotification(`${addedCount} nuevos ítems enviados, ${updatedCount} ítems actualizados en seguimiento.`, 'success');
           };
           
@@ -1224,7 +1266,7 @@
                   return;
               }
               const dataToExport = data.map(row => ({
-                  "Fecha": row.Fecha_Neg, // Nombre de columna corregido para VBA
+                  "Fecha": row.Fecha_Neg,
                   "Orden": row.No_Orden,
                   "Cedula": row.No_Cedula,
                   "Nombre": row.Nombre,
@@ -1247,28 +1289,40 @@
 
           const updateTrackingData = (index, updatedRow, isArchived) => {
             const dataKey = isArchived ? 'archivedData' : 'trackingData';
-            const currentData = [...state[dataKey]];
-            currentData[index] = updatedRow;
-            setState((prev) => ({ ...prev, [dataKey]: currentData }));
+            setState((prev) => {
+                const currentData = [...prev[dataKey]];
+                currentData[index] = updatedRow;
+                const newState = { ...prev, [dataKey]: currentData };
+                debouncedSaveTracking(newState.scriptUrl, newState.trackingData, newState.archivedData);
+                return newState;
+            });
           };
 
           const archiveItems = (indices, fromArchived) => {
             if (fromArchived) { // Unarchive
-              const itemsToMove = indices.map(i => state.archivedData[i]).filter(Boolean);
-              const remainingArchived = state.archivedData.filter((_, i) => !indices.includes(i));
-              setState(prev => ({
-                ...prev,
-                trackingData: [...prev.trackingData, ...itemsToMove],
-                archivedData: remainingArchived,
-              }));
+              setState(prev => {
+                const itemsToMove = indices.map(i => prev.archivedData[i]).filter(Boolean);
+                const remainingArchived = prev.archivedData.filter((_, i) => !indices.includes(i));
+                const newState = {
+                  ...prev,
+                  trackingData: [...prev.trackingData, ...itemsToMove],
+                  archivedData: remainingArchived,
+                };
+                debouncedSaveTracking(newState.scriptUrl, newState.trackingData, newState.archivedData);
+                return newState;
+              });
             } else { // Archive
-              const itemsToMove = indices.map(i => state.trackingData[i]).filter(Boolean);
-              const remainingTracking = state.trackingData.filter((_, i) => !indices.includes(i));
-              setState(prev => ({
-                ...prev,
-                archivedData: [...prev.archivedData, ...itemsToMove],
-                trackingData: remainingTracking,
-              }));
+              setState(prev => {
+                const itemsToMove = indices.map(i => prev.trackingData[i]).filter(Boolean);
+                const remainingTracking = prev.trackingData.filter((_, i) => !indices.includes(i));
+                const newState = {
+                  ...prev,
+                  archivedData: [...prev.archivedData, ...itemsToMove],
+                  trackingData: remainingTracking,
+                };
+                debouncedSaveTracking(newState.scriptUrl, newState.trackingData, newState.archivedData);
+                return newState;
+              });
             }
           };
 
@@ -1327,7 +1381,6 @@
 
               <main className="max-w-screen-2xl mx-auto bg-surface p-4 sm:p-6 rounded-xl border border-border-color space-y-8">
                 <Header 
-                    onSave={handleSave} 
                     onManageTemplates={() => setState(prev => ({ ...prev, isTemplateManagerOpen: true }))}
                     onReconfigure={() => setState(prev => ({ ...prev, isReconfiguring: true }))}
                 />
@@ -1372,10 +1425,12 @@
                   updateRow={updateFinalDataRow}
                   incrementEdits={incrementEdits}
                   onSendToTracking={handleSendToTracking}
+                  onAddCasesToCloud={handleAddCasesToCloud}
                   onPreview={(row) => setState(prev => ({ ...prev, previewData: row }))}
                   onExportForMailMerge={exportForMailMerge}
                   sortConfig={sortConfig}
                   setSortConfig={setSortConfig}
+                  isSaving={state.isSaving}
                 />
 
                 <TrackingArea
