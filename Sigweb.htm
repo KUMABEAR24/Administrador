@@ -1,329 +1,1349 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Sigweb v3.4 - Versión Completa ☁️</title>
-    <style>
-        :root { --primary-color: #4e9fef; --background-color: #1e1e1e; --surface-color: #2d2d2d; --text-color: #d4d4d4; --border-color: #444; --header-color: #3a3a3a; --highlight-color: #252526; --warning-color: #d9a016; --archive-color: #3a3a3a; --success-color: #28a745; --error-color: #dc3545;}
-        html { scroll-behavior: smooth; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: var(--background-color); color: var(--text-color); }
-        .container { max-width: 1800px; margin: auto; background-color: var(--surface-color); padding: 2em; border-radius: 12px; border: 1px solid var(--border-color); margin-top: 2em; }
-        h1, h2, h3 { color: var(--primary-color); }
-        h3 { border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-top: 2em; }
-        .table-container { max-height: 250px; overflow: auto; border: 1px solid var(--border-color); margin-bottom: 1em; border-radius: 8px; }
-        table { border-collapse: collapse; width: 100%; table-layout: auto; }
-        th, td { border: 1px solid var(--border-color); padding: 10px; text-align: left; font-size: 13px; vertical-align: top; }
-        td[contenteditable="true"]:focus { background-color: var(--primary-color); color: black; outline: 1px solid var(--primary-color); }
-        th { background-color: var(--header-color); font-weight: bold; position: sticky; top: 0; z-index: 10; cursor: pointer; user-select: none; }
-        th .sort-indicator { float: right; color: #888; }
-        button, .nav-btn { background-color: #0e639c; color: white; border: 1px solid var(--primary-color); font-weight: bold; padding: 10px 15px; margin: 5px; border-radius: 8px; font-size: 14px; cursor: pointer; transition: background-color 0.2s, opacity 0.2s; }
-        button:hover, .nav-btn:hover { background-color: #1a73e8; }
-        button:disabled { background-color: #3a3a3a; color: #888; border-color: #555; cursor: not-allowed; opacity: 0.6; }
-        #clear_all_btn { background-color: #a02d2d; border-color: #f48771; }
-        .action-bar { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; margin-top: 10px; padding: 10px; background-color: var(--highlight-color); border-radius: 8px; }
-        .step { padding: 2em 0; border-bottom: 1px solid var(--border-color); }
-        .nav-bar { text-align: center; margin-bottom: 2em; padding-bottom: 1em; border-bottom: 1px solid var(--border-color); }
-        .highlight-warning { background-color: var(--warning-color) !important; color: #1e1e1e !important; }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); z-index: 2000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
-        .modal-content { background-color: var(--surface-color); border: 1px solid var(--border-color); padding: 25px; border-radius: 10px; width: 80%; max-width: 800px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-        .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 2em; padding: 1em; background-color: var(--highlight-color); border-radius: 8px; }
-        .dashboard-card { background-color: var(--surface-color); padding: 15px; border-radius: 8px; text-align: center; border: 1px solid var(--border-color); }
-        #template-editor { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
-        #template-editor input, #template-editor textarea { width: 95%; padding: 10px; background-color: var(--background-color); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 4px; }
-        #notification-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
-        .notification { padding: 15px 20px; color: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); opacity: 0; transform: translateX(100%); animation: slideIn 0.5s forwards; min-width: 250px; }
-        .notification.hide { animation: slideOut 0.5s forwards; }
-        .notification.success { background-color: var(--success-color); } .notification.error { background-color: var(--error-color); } .notification.info { background-color: var(--primary-color); }
-        #offline-banner { display: none; background-color: var(--warning-color); color: #1e1e1e; font-weight: bold; text-align: center; padding: 10px; position: sticky; top: 0; z-index: 1500;}
-        #setup-overlay { display: none; }
-        .setup-content { text-align: center; max-width: 600px; }
-        .setup-content input { width: 95%; padding: 12px; margin: 20px 0; background-color: var(--background-color); color: var(--text-color); border: 1px solid var(--border-color); border-radius: 4px; font-size: 16px; }
-        #setup-error { color: var(--error-color); font-weight: bold; min-height: 20px; }
-        @keyframes slideIn { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
-        @keyframes slideOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(100%); } }
-    </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sigweb Pro v3.5</title>
+    <!-- Tailwind CSS JIT CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SheetJS for Excel Exports -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-</head>
-<body>
-    <div id="notification-container"></div>
-    <div id="offline-banner">🔴 Sin conexión. Los cambios no se guardarán en la nube.</div>
+    <!-- Babel Standalone for in-browser JSX transpilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
-    <div id="setup-overlay" class="modal-overlay">
-        <div class="setup-content modal-content">
-            <h2>Configuración Inicial Requerida</h2>
-            <p>Para conectar la herramienta con tu Google Sheet, pega la URL de la aplicación web que obtuviste en el paso 6 de las instrucciones.</p>
-            <input type="url" id="script-url-input" placeholder="Pega la URL aquí...">
-            <p id="setup-error"></p>
-            <button id="verify-url-btn">Guardar y Verificar Conexión</button>
-        </div>
-    </div>
-
-    <div class="container" id="main-app" style="display: none;">
-        <h1>Sigweb v3.4 - Versión Completa ☁️</h1>
-        <div class="nav-bar">
-             <a href="#area1" class="nav-btn">Área 1: Portal</a>
-             <a href="#area2" class="nav-btn">Área 2: PDF</a>
-             <a href="#area3" class="nav-btn">Área 3: Revisión</a>
-             <a href="#area4" class="nav-btn">Área 4: Seguimiento</a>
-             <button id="manage_templates_btn" class="nav-btn">Gestionar Plantillas</button>
-             <button id="clear_all_btn" title="Borra los datos de la sesión actual (Área 1, 2 y 3). No afecta los datos guardados en Google Sheets.">Limpiar Sesión</button>
-        </div>
-        <div id="dashboard" class="dashboard">
-             <div class="dashboard-card"><h4>Casos en Revisión</h4><p id="db_review_count">0</p></div>
-             <div class="dashboard-card"><h4>Seguimiento Activo</h4><p id="db_tracking_count">0</p></div>
-             <div class="dashboard-card"><h4>Casos Archivados</h4><p id="db_archived_count">0</p></div>
-             <div class="dashboard-card"><h4>Celdas Editadas</h4><p id="db_edits_count">0</p></div>
-        </div>
-        <div class="action-bar"><button id="export_report_btn">Descargar Reporte Detallado Excel</button></div>
-
-        <div id="area1" class="step">
-            <h2>Área 1: Datos del Portal</h2>
-            <div class="table-container">
-                <table id="portal_table">
-                    <thead><tr><th>Fecha Neg.</th><th>Sucursal</th><th>No. Orden</th><th>No. Cédula</th><th>Nombre</th><th>Motivo Negación</th><th>Auditor</th><th>Programa</th><th>Plan</th><th>Antiguedad</th><th>E.P.S</th><th>Teléfono</th><th>Celular</th><th>Dirección</th><th>Email</th><th>Edad</th><th>Tipo Usuario</th><th>Usuario Emitió</th><th>Regional</th><th>Gestión Negacion</th></tr></thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-            <button id="process_portal_btn">Paso 1: Procesar Datos del Portal</button>
-            <button id="clear_portal_btn">Limpiar Tabla Portal</button>
-        </div>
-
-        <div id="area2" class="step">
-            <h2>Área 2: Datos del PDF Extractor</h2>
-            <div class="table-container">
-                <table id="pdf_table">
-                    <thead><tr><th>Archivo (No. Orden)</th><th>Descripción</th><th>Justificación</th><th>Fundamento Legal</th><th>Código</th></tr></thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-            <button id="merge_pdf_btn" disabled>Paso 2: Combinar con Datos del PDF</button>
-            <button id="clear_pdf_btn">Limpiar Tabla PDF</button>
-        </div>
-
-        <div id="area3" class="step" style="display:none;">
-            <h2>Área 3: Revisión Final y Exportación</h2>
-            <div class="action-bar">
-                <input type="text" id="final_table_filter" placeholder="Buscar en la tabla de revisión...">
-                <button id="save_review_data_btn">💾 Guardar Revisión en la Nube</button>
-                <span style="flex-grow: 1;"></span>
-                <span>Acciones en Lote:</span>
-                <input type="checkbox" id="select_all_final_rows" title="Seleccionar todo">
-                <select id="bulk_action_selector"></select>
-                <button id="apply_bulk_action_btn">Aplicar</button>
-                <span id="selection_counter">0 filas seleccionadas</span>
-            </div>
-            <div id="final_table_container" class="table-container" style="max-height: 500px;"></div>
-            <div class="action-bar">
-                <button id="send_to_tracking_btn">Paso 3: Enviar a Seguimiento y Guardar</button>
-                <button id="export_btn">Paso 4: Exportar Excel para Envío</button>
-            </div>
-        </div>
-        
-        <div id="area4" class="step">
-            <h3>Área 4: Seguimiento de Complementariedad (Datos en la Nube)</h3>
-            <div class="action-bar">
-                <input type="text" id="tracking_filter_input" placeholder="Buscar en seguimiento...">
-                <button id="save_tracking_changes_btn">💾 Guardar Cambios de Seguimiento</button>
-                <button id="toggle_archived_btn">Mostrar Archivados (0)</button>
-                <button id="reconfigure_script_url_btn" title="Cambiar la URL del script de Google Sheets">⚙️</button>
-            </div>
-            <div id="tracking_table_container" class="table-container" style="max-height: 400px;">
-                <table id="tracking_table">
-                    <thead><tr><th>Fecha Ing.</th><th>No. Orden</th><th>Nombre</th><th>EPS</th><th>Radicado</th><th>Estado</th><th>Notas</th><th>Acción</th></tr></thead>
-                    <tbody id="tracking_body"></tbody>
-                </table>
-            </div>
-             <div id="archived_table_container" class="table-container" style="max-height: 400px; display: none;">
-                <h3>Casos Archivados</h3>
-                <table id="archived_table">
-                    <thead><tr><th>Fecha Ing.</th><th>No. Orden</th><th>Nombre</th><th>EPS</th><th>Radicado</th><th>Estado</th><th>Notas</th><th>Acción</th></tr></thead>
-                    <tbody id="archived_body"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    
-    <div id="preview-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h3>Vista Previa del Correo</h3>
-            <div id="preview-content" style="font-family: 'Times New Roman', Times, serif; background-color: white; color: black; padding: 20px; border-radius: 5px; max-height: 70vh; overflow-y: auto;"></div>
-            <button id="copy_email_btn">Copiar Contenido</button>
-            <button class="close-modal-btn">Cerrar</button>
-        </div>
-    </div>
-    <div id="template-manager-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h3>Gestionar Plantillas de Correo</h3>
-            <ul id="template-manager-list" style="list-style: none; padding: 0; max-height: 200px; overflow-y: auto;"></ul>
-            <button id="add_new_template_btn">Crear Nueva Plantilla</button>
-            <button id="restore_default_templates_btn" style="background-color: var(--warning-color); margin-left:10px;">Restaurar Plantillas Originales</button>
-            <div id="template-editor" style="display:none;">
-                <input type="hidden" id="template-id">
-                <input type="text" id="template-name" placeholder="Nombre de la Plantilla">
-                <textarea id="template-body" placeholder="Cuerpo de la plantilla..."></textarea>
-                <div class="placeholders-help" style="font-size: 12px; color: #aaa;">
-                    Placeholders: {{Fecha_Neg}}, {{No_Orden}}, {{Nombre}}, {{EPS}}, {{Motivo_Negacion}}, {{Descripcion_PDF}}, {{Justificacion_PDF}}, {{Fundamento_Legal_PDF}}, {{Radicado_Comp}}, {{Oficina_Virtual_EPS}}
-                </div>
-                <button id="save_template_btn">Guardar Plantilla</button>
-                <button id="cancel_edit_template_btn">Cancelar</button>
-            </div>
-            <button class="close-modal-btn" style="margin-top: 15px;">Cerrar</button>
-        </div>
-    </div>
-
     <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        let SCRIPT_URL = ''; 
-
-        const mainAppContainer = document.getElementById('main-app');
-        const setupOverlay = document.getElementById('setup-overlay');
-        const scriptUrlInput = document.getElementById('script-url-input');
-        const verifyUrlBtn = document.getElementById('verify-url-btn');
-        const setupError = document.getElementById('setup-error');
-
-        async function checkAndInitiateSetup() {
-            const storedUrl = localStorage.getItem('sigwebScriptUrl');
-            if (storedUrl) {
-                SCRIPT_URL = storedUrl;
-                mainAppContainer.style.display = 'block';
-                initApp();
-            } else {
-                setupOverlay.style.display = 'flex';
+      // Tailwind CSS Configuration
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              'primary': '#4e9fef',
+              'background': '#1e1e1e',
+              'surface': '#2d2d2d',
+              'text-primary': '#d4d4d4',
+              'text-secondary': '#a0a0a0',
+              'border-color': '#444',
+              'header': '#3a3a3a',
+              'highlight': '#252526',
+              'warning': '#6e550c',
+              'archive': '#3a3a3a',
+              'success': '#28a745',
+              'danger': '#a02d2d',
+              'danger-hover': '#c0392b',
+              'btn-primary': '#0e639c',
+              'btn-primary-hover': '#1a73e8',
+            },
+            animation: {
+              'flash-success': 'flash-success 1s ease-out',
+            },
+            keyframes: {
+              'flash-success': {
+                'from': { backgroundColor: '#28a745' },
+                'to': { backgroundColor: 'transparent' },
+              }
             }
+          }
+        }
+      }
+    </script>
+    
+    <!-- ES Module Import Map for React -->
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client"
+      }
+    }
+    </script>
+</head>
+<body class="bg-background text-text-primary">
+    <div id="root"></div>
+
+    <!-- 
+      ============================================
+      ENTIRE REACT APPLICATION BUNDLED BELOW
+      ============================================
+    -->
+    <script type="text/babel" data-presets="react" data-type="module">
+        import React, { useState, useEffect, useCallback, useMemo } from 'react';
+        import ReactDOM from 'react-dom/client';
+
+        // =================================================================================
+        // INLINED: constants.ts
+        // =================================================================================
+        const PORTAL_HEADERS = [
+          "Fecha_Neg", "Sucursal", "No_Orden", "No_Cedula", "Nombre", 
+          "Motivo_Negacion", "Auditor", "Programa", "Plan", "Antiguedad", 
+          "EPS", "Telefono", "Celular", "Direccion", "Email", 
+          "Edad", "Tipo_Usuario", "Usuario_Emitio", "Regional", "Gestion_Negacion"
+        ];
+
+        const PDF_HEADERS = [
+          "Archivo (No. Orden)", "Descripción", "Justificación", "Fundamento Legal", "Código"
+        ];
+
+        const TRACKING_STATUSES = ['Pendiente', 'En Gestión', 'Finalizado'];
+
+        const defaultTemplates = [
+            { id: 'tpl_neg_gen', name: 'Negación General', body: `Apreciado usuario; {{Nombre}},\n\nAgradecemos la confianza... acerca del servicio {{Motivo_Negacion}} que en esta oportunidad no está aprobado debido a que corresponde a EXCLUSIÓN ({{Descripcion_PDF}}), ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).\n\nEl servicio negado anteriormente; debe tramitarlo a través su EPS asignada. Adjuntamos soporte de la carta de negación.` },
+            { id: 'tpl_comp_rc', name: 'Comp. Red Coincidente', body: `Apreciado Usuario; {{Nombre}},\n\nAgradecemos la confianza... acerca del servicio ({{Descripcion_PDF}}) que no fue aprobado, debido a que ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).\n\nSin embargo, está en gestión a través de su EPS ({{EPS}}) con el número de radicado ({{Radicado_Comp}}), puede realizar seguimiento mediante la oficina virtual de la EPS ({{Oficina_Virtual_EPS}}).` },
+            { id: 'tpl_3', name: 'Template 3', body: 'This is the body for template 3. Case: {{No_Orden}}' },
+            { id: 'tpl_4', name: 'Template 4', body: 'This is the body for template 4. Case: {{No_Orden}}' },
+            { id: 'tpl_5', name: 'Template 5', body: 'This is the body for template 5. Case: {{No_Orden}}' },
+        ];
+
+
+        // =================================================================================
+        // INLINED: services/utilityService.ts
+        // =================================================================================
+        const capitalizeWords = (str) => {
+          if (!str) return '';
+          return str.toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
+        };
+
+        const processPastedData = (pastedText, headers) => {
+          return pastedText
+            .trim()
+            .split(/\r?\n/)
+            .map(rowText => {
+              const cells = rowText.split('\t');
+              const rowObject = {};
+              headers.forEach((header, index) => {
+                if (cells[index]) {
+                  rowObject[header] = cells[index].trim();
+                }
+              });
+              return rowObject;
+            });
+        };
+
+        const replacePlaceholders = (templateBody, data) => {
+          const getOficinaVirtual = (eps) => {
+            const e = (eps || "").toUpperCase();
+            if (e.includes("NUEVA EPS")) return `<a href='https://portal.nuevaeps.com.co/Portal/home.jspx' target='_blank' rel='noopener noreferrer'>NUEVA EPS</a>`;
+            if (e.includes("SALUD TOTAL")) return `<a href='https://saludtotal.com.co/' target='_blank' rel='noopener noreferrer'>SALUD TOTAL</a>`;
+            return eps;
+          };
+
+          const fullData = { ...data, Oficina_Virtual_EPS: getOficinaVirtual(data.EPS) };
+
+          return templateBody.replace(/\{\{(\w+)\}\}/g, (match, key) => {
+            return fullData[key] || match;
+          });
+        };
+
+        const exportDetailedReport = (finalData, trackingData, archivedData) => {
+          try {
+            const masterDataMap = new Map();
+
+            [...finalData, ...trackingData, ...archivedData].forEach(row => {
+              if (row.No_Orden) {
+                const key = row.No_Orden.trim();
+                const existing = masterDataMap.get(key) || {};
+                masterDataMap.set(key, { ...existing, ...row });
+              }
+            });
+            
+            const masterData = Array.from(masterDataMap.values());
+
+            if (masterData.length === 0) {
+              alert("No consolidated data to export.");
+              return;
+            }
+
+            const wb = XLSX.utils.book_new();
+            
+            if (finalData.length > 0) {
+              const ws1 = XLSX.utils.json_to_sheet(finalData);
+              XLSX.utils.book_append_sheet(wb, ws1, "Cases in Review");
+            }
+            
+            if (trackingData.length > 0) {
+              const ws2 = XLSX.utils.json_to_sheet(trackingData);
+              XLSX.utils.book_append_sheet(wb, ws2, "Active Tracking");
+            }
+
+            if (archivedData.length > 0) {
+              const ws3 = XLSX.utils.json_to_sheet(archivedData);
+              XLSX.utils.book_append_sheet(wb, ws3, "Archived Tracking");
+            }
+            
+            const ws4 = XLSX.utils.json_to_sheet(masterData);
+            XLSX.utils.book_append_sheet(wb, ws4, "Master Consolidated");
+
+            XLSX.writeFile(wb, `Sigweb_Detailed_Report_${new Date().toISOString().slice(0, 10)}.xlsx`);
+          } catch (error) {
+            console.error("Failed to export Excel report:", error);
+            alert("An error occurred while generating the report.");
+          }
+        };
+
+        // =================================================================================
+        // INLINED: services/templateService.ts
+        // =================================================================================
+        const TEMPLATE_STORAGE_KEY = 'sigweb_emailTemplates';
+
+        const loadTemplates = () => {
+          try {
+            const storedTemplates = localStorage.getItem(TEMPLATE_STORAGE_KEY);
+            if (storedTemplates) {
+              return JSON.parse(storedTemplates);
+            }
+          } catch (error) {
+            console.error("Failed to load templates from localStorage", error);
+          }
+          return defaultTemplates;
+        };
+
+        const saveTemplates = (templates) => {
+          try {
+            localStorage.setItem(TEMPLATE_STORAGE_KEY, JSON.stringify(templates));
+          } catch (error) {
+            console.error("Failed to save templates to localStorage", error);
+          }
+        };
+
+
+        // =================================================================================
+        // INLINED: services/googleSheetService.ts
+        // =================================================================================
+        const fetchData = async (url) => {
+            const response = await fetch(`${url}?action=getData`);
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            const data = await response.json();
+            return {
+                finalData: data.finalData || [],
+                trackingData: data.trackingData || [],
+                archivedData: data.archivedData || [],
+            };
+        };
+
+        const saveData = async (url, data) => {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'text/plain', 
+                },
+                body: JSON.stringify({
+                    action: 'saveData',
+                    payload: data,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to save data');
+            }
+            await response.json();
+        };
+
+
+        // =================================================================================
+        // INLINED: components/Spinner.tsx
+        // =================================================================================
+        const Spinner = () => {
+          return (
+            <div
+              className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
+              role="status"
+            >
+              <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
+                Loading...
+              </span>
+            </div>
+          );
+        };
+
+
+        // =================================================================================
+        // INLINED: components/Notification.tsx
+        // =================================================================================
+        const Notification = ({ message, type, onClose }) => {
+          const typeClasses = {
+            success: 'bg-green-600',
+            error: 'bg-red-600',
+            warning: 'bg-yellow-500',
+            info: 'bg-blue-600',
+          };
+          return (
+            <div className={`fixed top-5 right-5 z-50 p-4 rounded-lg shadow-lg text-white ${typeClasses[type]} flex items-center gap-4`}>
+              <span>{message}</span>
+              <button onClick={onClose} className="text-xl font-bold">&times;</button>
+            </div>
+          );
+        };
+
+        // =================================================================================
+        // INLINED: components/Header.tsx
+        // =================================================================================
+        const Header = ({ onSave, onManageTemplates }) => {
+          return (
+            <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-border-color">
+              <div>
+                <h1 className="text-3xl font-bold text-white">
+                  Sigweb Pro <span className="text-primary">v3.5</span> 🚀
+                </h1>
+                <p className="text-text-secondary">Integrated Workflow Management System</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button onClick={onManageTemplates} className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                  Manage Templates
+                </button>
+                <button onClick={onSave} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M5.5 16.5a2.5 2.5 0 01-5 0V4.414a1.5 1.5 0 01.44-1.06L4.354.439A1.5 1.5 0 015.414 0H12.5a2.5 2.5 0 012.5 2.5v2" />
+                        <path d="M5.5 16.5h8a2.5 2.5 0 002.5-2.5V8.5h-13v5.5a2.5 2.5 0 002.5 2.5z" />
+                        <path d="M10.5 10a.5.5 0 01.5-.5h2a.5.5 0 010 1h-2a.5.5 0 01-.5-.5z" />
+                    </svg>
+                    Save to Cloud
+                </button>
+              </div>
+            </header>
+          );
+        };
+        
+
+        // =================================================================================
+        // INLINED: components/Dashboard.tsx
+        // =================================================================================
+        const DashboardCard = ({ title, value, icon }) => (
+          <div className="bg-surface p-4 rounded-lg border border-border-color flex items-center">
+            <div className="text-3xl text-primary mr-4">{icon}</div>
+            <div>
+              <h4 className="text-sm font-semibold text-text-secondary uppercase tracking-wider">{title}</h4>
+              <p className="text-2xl font-bold text-text-primary">{value}</p>
+            </div>
+          </div>
+        );
+
+        const Dashboard = ({ reviewCount, trackingCount, archivedCount, editsCount }) => (
+          <section id="dashboard" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <DashboardCard title="Cases in Review" value={reviewCount} icon={'📋'} />
+            <DashboardCard title="Active Tracking" value={trackingCount} icon={'⏳'} />
+            <DashboardCard title="Archived Cases" value={archivedCount} icon={'🗄️'} />
+            <DashboardCard title="Session Edits" value={editsCount} icon={'✏️'} />
+          </section>
+        );
+
+
+        // =================================================================================
+        // INLINED: components/DataInputArea.tsx
+        // =================================================================================
+        function DataInputArea({
+          id,
+          title,
+          headers,
+          data,
+          onDataChange,
+          onProcess,
+          processButtonText = "Process Data",
+        }) {
+          
+          const handlePaste = useCallback((e) => {
+            e.preventDefault();
+            const pastedText = e.clipboardData.getData('text/plain');
+            const newRows = processPastedData(pastedText, headers);
+
+            const updatedData = [...data.filter(row => Object.values(row).some(val => val)), ...newRows];
+            
+            const emptyRowCount = updatedData.filter(row => !Object.values(row).some(val => val)).length;
+            if (emptyRowCount < 5) {
+                for (let i = 0; i < (5 - emptyRowCount); i++) {
+                    updatedData.push({});
+                }
+            }
+
+            onDataChange(updatedData);
+          }, [data, headers, onDataChange]);
+
+          const handleCellChange = (rowIndex, header, value) => {
+            const newData = [...data];
+            newData[rowIndex] = { ...newData[rowIndex], [header]: value };
+            
+            const emptyRowCount = newData.filter(row => !Object.values(row).some(val => val)).length;
+            if (emptyRowCount < 5) {
+                newData.push({});
+            }
+
+            onDataChange(newData);
+          };
+          
+          const clearTable = () => {
+            onDataChange(Array(5).fill({}));
+          }
+
+          return (
+            <section id={id} className="space-y-4">
+              <h2 className="text-2xl font-bold text-primary border-b border-border-color pb-2">{title}</h2>
+              <div className="table-container max-h-72 overflow-auto border border-border-color rounded-lg">
+                <table className="w-full text-sm text-left text-text-secondary">
+                  <thead className="text-xs text-text-primary uppercase bg-header sticky top-0">
+                    <tr>
+                      {headers.map(header => (
+                        <th key={header} scope="col" className="px-4 py-3 whitespace-nowrap">{header}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody onPaste={handlePaste}>
+                    {data.map((row, rowIndex) => (
+                      <tr key={rowIndex} className="border-b border-border-color hover:bg-highlight">
+                        {headers.map(header => (
+                          <td
+                            key={`${rowIndex}-${header}`}
+                            className="px-4 py-2 border-r border-border-color focus:bg-primary focus:text-black outline-none"
+                            contentEditable
+                            onBlur={(e) => handleCellChange(rowIndex, header, e.currentTarget.innerText)}
+                            suppressContentEditableWarning={true}
+                          >
+                            {row[header] || ''}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="flex gap-4">
+                <button onClick={onProcess} className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                  {processButtonText}
+                </button>
+                <button onClick={clearTable} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                  Clear Table
+                </button>
+              </div>
+            </section>
+          );
         }
 
-        async function verifyAndSaveUrl() {
-            const url = scriptUrlInput.value.trim();
+        // =================================================================================
+        // INLINED: components/ReviewArea.tsx
+        // =================================================================================
+        const ReviewArea = ({
+          data,
+          templates,
+          updateRow,
+          incrementEdits,
+          onSendToTracking,
+          onPreview,
+          sortConfig,
+          setSortConfig,
+        }) => {
+          const [selectedRows, setSelectedRows] = useState(new Set());
+          const [filter, setFilter] = useState('');
+          
+          const REVIEW_HEADERS = [
+              { key: 'Fecha_Neg', label: 'Fecha Neg.' },
+              { key: 'No_Orden', label: 'No. Orden' },
+              { key: 'No_Cedula', label: 'No. Cédula' },
+              { key: 'Nombre', label: 'Nombre' },
+              { key: 'EPS', label: 'EPS' },
+              { key: 'Programa', label: 'Programa', compact: true },
+              { key: 'Motivo_Negacion', label: 'Motivo Neg.', compact: true },
+              { key: 'Descripcion_PDF', label: 'Descripción', compact: true },
+              { key: 'Justificacion_PDF', label: 'Justificación', compact: true },
+              { key: 'Fundamento_Legal_PDF', label: 'Fund. Legal', compact: true },
+          ];
+
+          const filteredData = useMemo(() => {
+            if (!filter) return data;
+            const lowercasedFilter = filter.toLowerCase();
+            return data.filter(row =>
+              Object.values(row).some(value =>
+                String(value).toLowerCase().includes(lowercasedFilter)
+              )
+            );
+          }, [data, filter]);
+
+          const handleSelectRow = (originalIndex) => {
+            const newSelection = new Set(selectedRows);
+            if (newSelection.has(originalIndex)) {
+              newSelection.delete(originalIndex);
+            } else {
+              newSelection.add(originalIndex);
+            }
+            setSelectedRows(newSelection);
+          };
+
+          const handleSelectAll = (e) => {
+            if (e.target.checked) {
+              const allOriginalIndices = filteredData.map(row => data.indexOf(row));
+              setSelectedRows(new Set(allOriginalIndices));
+            } else {
+              setSelectedRows(new Set());
+            }
+          };
+
+          const handleCellBlur = (originalIndex, key, value) => {
+            const originalRow = data[originalIndex];
+            if (originalRow && originalRow[key] !== value) {
+              updateRow(originalIndex, { ...originalRow, [key]: value });
+              incrementEdits();
+            }
+          };
+          
+          const handleSelectChange = (originalIndex, value) => {
+            const originalRow = data[originalIndex];
+            const newRow = { ...originalRow, Tipo_Carta: value };
+            const template = templates.find(t => t.id === value);
+            if (!template || !template.name.toLowerCase().includes('comp')) {
+                newRow.Radicado_Comp = '';
+            }
+            updateRow(originalIndex, newRow);
+          };
+
+          const requestSort = (key) => {
+            let direction = 'ascending';
+            if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+                direction = 'descending';
+            }
+            setSortConfig({ key, direction });
+          };
+          
+          const getSortIndicator = (key) => {
+            if (sortConfig.key !== key) return null;
+            return sortConfig.direction === 'ascending' ? ' ▲' : ' ▼';
+          };
+
+          return (
+            <section id="area3" className="space-y-4">
+              <h2 className="text-2xl font-bold text-primary border-b border-border-color pb-2">Area 3: Final Review & Export</h2>
+              <div className="action-bar bg-highlight p-4 rounded-lg flex flex-wrap items-center gap-4">
+                <input
+                  type="text"
+                  placeholder="Search in review table..."
+                  className="bg-surface border border-border-color rounded-md px-3 py-2 text-text-primary placeholder-text-secondary w-full sm:w-auto"
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                />
+                <span className="text-text-primary">{selectedRows.size} row(s) selected</span>
+              </div>
+
+              <div className="table-container max-h-[500px] overflow-auto border border-border-color rounded-lg">
+                <table className="w-full text-sm text-left text-text-secondary table-auto">
+                  <thead className="text-xs text-text-primary uppercase bg-header sticky top-0">
+                    <tr>
+                      <th className="px-4 py-3"><input type="checkbox" onChange={handleSelectAll} checked={selectedRows.size === filteredData.length && filteredData.length > 0} /></th>
+                      <th className="px-4 py-3">👁️</th>
+                       {REVIEW_HEADERS.map(({ key, label, compact }) => (
+                        <th key={key} onClick={() => requestSort(key)} className={`px-4 py-3 cursor-pointer ${compact ? 'max-w-[150px]' : ''}`}>
+                            {label}{getSortIndicator(key)}
+                        </th>
+                      ))}
+                      <th className="px-4 py-3">Tipo de Carta</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredData.map((row) => {
+                      const originalIndex = data.indexOf(row);
+                      const template = templates.find(t => t.id === row.Tipo_Carta);
+                      const requiresRadicado = template && template.name.toLowerCase().includes('comp');
+                      
+                      return (
+                        <tr key={originalIndex} className="border-b border-border-color hover:bg-highlight">
+                          <td className="px-4 py-2"><input type="checkbox" checked={selectedRows.has(originalIndex)} onChange={() => handleSelectRow(originalIndex)} /></td>
+                          <td className="px-4 py-2 text-lg cursor-pointer" onClick={() => onPreview(row)}>👁️</td>
+                          {REVIEW_HEADERS.map(({ key, compact }) => (
+                            <td key={key} 
+                                className={`px-4 py-2 border-r border-border-color focus:bg-primary focus:text-black outline-none ${compact ? 'max-w-[150px] overflow-hidden text-ellipsis whitespace-nowrap' : ''}`}
+                                contentEditable
+                                onBlur={(e) => handleCellBlur(originalIndex, key, e.currentTarget.innerText)}
+                                suppressContentEditableWarning={true}
+                            >
+                                {row[key]}
+                            </td>
+                          ))}
+                          <td className="px-4 py-2">
+                            <div className="flex flex-col gap-1">
+                              <select 
+                                value={row.Tipo_Carta} 
+                                onChange={(e) => handleSelectChange(originalIndex, e.target.value)}
+                                className="bg-surface border border-border-color rounded-md px-2 py-1 text-text-primary w-full"
+                              >
+                                <option value="">-- Select --</option>
+                                {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                              </select>
+                              {requiresRadicado && (
+                                <input
+                                  type="text"
+                                  placeholder="Radicado..."
+                                  value={row.Radicado_Comp}
+                                  onChange={(e) => updateRow(originalIndex, { ...row, Radicado_Comp: e.target.value })}
+                                  onBlur={(e) => handleCellBlur(originalIndex, 'Radicado_Comp', e.target.value)}
+                                  className="bg-surface border border-border-color rounded-md px-2 py-1 text-text-primary w-full mt-1"
+                                />
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <div className="flex gap-4">
+                <button 
+                    onClick={() => onSendToTracking(Array.from(selectedRows))}
+                    className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                >
+                    Send to Tracking
+                </button>
+              </div>
+            </section>
+          );
+        };
+        
+
+        // =================================================================================
+        // INLINED: components/TrackingArea.tsx
+        // =================================================================================
+        const TrackingTable = ({ data, isArchived, onUpdate, onArchive, filter }) => {
+            
+          const [selectedRows, setSelectedRows] = useState(new Set());
+
+          const filteredData = useMemo(() => {
+            if (!filter) return data;
+            const lowercasedFilter = filter.toLowerCase();
+            return data.filter(row =>
+              Object.values(row).some(value =>
+                String(value).toLowerCase().includes(lowercasedFilter)
+              )
+            );
+          }, [data, filter]);
+
+          const handleSelectRow = (index) => {
+            const newSelection = new Set(selectedRows);
+            if (newSelection.has(index)) {
+              newSelection.delete(index);
+            } else {
+              newSelection.add(index);
+            }
+            setSelectedRows(newSelection);
+          };
+          
+          const handleSelectAll = (e) => {
+            if (e.target.checked) {
+              setSelectedRows(new Set(filteredData.map((_, index) => index)));
+            } else {
+              setSelectedRows(new Set());
+            }
+          };
+          
+          const handleBulkArchive = () => {
+            if (selectedRows.size > 0) {
+              onArchive(Array.from(selectedRows));
+              setSelectedRows(new Set());
+            }
+          };
+
+          return (
+            <div className="space-y-4">
+              <div className="flex justify-end">
+                 {selectedRows.size > 0 && (
+                     <button
+                        onClick={handleBulkArchive}
+                        className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                     >
+                        {isArchived ? `Unarchive ${selectedRows.size} Selected` : `Archive ${selectedRows.size} Selected`}
+                     </button>
+                 )}
+              </div>
+              <div className="table-container max-h-[400px] overflow-auto border border-border-color rounded-lg">
+                <table className="w-full text-sm text-left text-text-secondary">
+                  <thead className="text-xs text-text-primary uppercase bg-header sticky top-0">
+                    <tr>
+                      <th className="px-4 py-3"><input type="checkbox" onChange={handleSelectAll} checked={selectedRows.size === filteredData.length && filteredData.length > 0}/></th>
+                      <th className="px-4 py-3">Fecha Ing.</th>
+                      <th className="px-4 py-3">No. Orden</th>
+                      <th className="px-4 py-3">Nombre</th>
+                      <th className="px-4 py-3">EPS</th>
+                      <th className="px-4 py-3">Radicado</th>
+                      <th className="px-4 py-3">Estado</th>
+                      <th className="px-4 py-3">Notas</th>
+                      <th className="px-4 py-3">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredData.map((row, index) => {
+                      const originalIndex = data.indexOf(row);
+                      return (
+                      <tr key={originalIndex} className={`border-b border-border-color hover:bg-highlight ${isArchived ? 'bg-archive/50 text-text-secondary' : ''}`}>
+                        <td className="px-4 py-2"><input type="checkbox" checked={selectedRows.has(originalIndex)} onChange={() => handleSelectRow(originalIndex)} /></td>
+                        <td className="px-4 py-2">{row.Fecha_Ing}</td>
+                        <td className="px-4 py-2">{row.No_Orden}</td>
+                        <td className="px-4 py-2">{row.Nombre}</td>
+                        <td className="px-4 py-2">{row.EPS}</td>
+                        <td className="px-4 py-2">{row.Radicado}</td>
+                        <td className="px-4 py-2">
+                          <select
+                            value={row.Estado}
+                            onChange={e => onUpdate(originalIndex, { ...row, Estado: e.target.value })}
+                            className="bg-surface border border-border-color rounded-md px-2 py-1 text-text-primary"
+                          >
+                            {TRACKING_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                          </select>
+                        </td>
+                        <td className="px-4 py-2 outline-none focus:bg-primary focus:text-black" contentEditable onBlur={e => onUpdate(originalIndex, { ...row, Notas: e.currentTarget.innerText })} suppressContentEditableWarning={true}>{row.Notas}</td>
+                        <td className="px-4 py-2 text-lg cursor-pointer" onClick={() => onArchive([originalIndex])}>{isArchived ? '♻️' : '🗄️'}</td>
+                      </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          );
+        };
+
+        const TrackingArea = ({ trackingData, archivedData, updateTrackingData, archiveItems }) => {
+          const [showArchived, setShowArchived] = useState(false);
+          const [filter, setFilter] = useState('');
+
+          return (
+            <section id="area4" className="space-y-4">
+              <h2 className="text-2xl font-bold text-primary border-b border-border-color pb-2">Area 4: Tracking</h2>
+              <div className="action-bar bg-highlight p-4 rounded-lg flex flex-wrap items-center gap-4">
+                <input
+                  type="text"
+                  placeholder="Search in tracking..."
+                  className="bg-surface border border-border-color rounded-md px-3 py-2 text-text-primary placeholder-text-secondary w-full sm:w-auto"
+                  value={filter}
+                  onChange={e => setFilter(e.target.value)}
+                />
+                <button onClick={() => setShowArchived(!showArchived)} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg">
+                  {showArchived ? 'Hide' : 'Show'} Archived ({archivedData.length})
+                </button>
+              </div>
+
+              <h3 className="text-xl font-semibold text-white">Active Cases ({trackingData.length})</h3>
+              <TrackingTable
+                data={trackingData}
+                isArchived={false}
+                onUpdate={(index, row) => updateTrackingData(index, row, false)}
+                onArchive={(indices) => archiveItems(indices, false)}
+                filter={filter}
+              />
+
+              {showArchived && (
+                <div className="mt-8">
+                  <h3 className="text-xl font-semibold text-white">Archived Cases ({archivedData.length})</h3>
+                  <TrackingTable
+                    data={archivedData}
+                    isArchived={true}
+                    onUpdate={(index, row) => updateTrackingData(index, row, true)}
+                    onArchive={(indices) => archiveItems(indices, true)}
+                    filter={filter}
+                  />
+                </div>
+              )}
+            </section>
+          );
+        };
+
+        // =================================================================================
+        // INLINED: components/SetupModal.tsx
+        // =================================================================================
+        const SetupModal = ({ onSave }) => {
+          const [url, setUrl] = useState('');
+          const [isVerifying, setIsVerifying] = useState(false);
+
+          const handleSave = async () => {
             if (!url.startsWith('https://script.google.com/macros/s/')) {
-                setupError.textContent = 'La URL parece incorrecta. Debe empezar con "https://script.google.com...".';
+                alert("Please enter a valid Google Apps Script URL.");
                 return;
             }
-            verifyUrlBtn.disabled = true;
-            verifyUrlBtn.textContent = 'Verificando...';
-            setupError.textContent = '';
-            try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error(`El servidor respondió con un error: ${response.status}`);
-                const data = await response.json();
-                if (typeof data.finalData === 'undefined' || typeof data.trackingData === 'undefined' || typeof data.archivedData === 'undefined') {
-                    throw new Error("Respuesta del script inválida. Asegúrate de tener la última versión del script y las 3 hojas ('Revisión', 'Seguimiento', 'Archivados') en tu Google Sheet.");
-                }
-                localStorage.setItem('sigwebScriptUrl', url);
-                SCRIPT_URL = url;
-                setupOverlay.style.display = 'none';
-                mainAppContainer.style.display = 'block';
-                showNotification('✅ ¡Conexión exitosa!', 'success');
-                initApp();
-            } catch (error) {
-                console.error("Error de verificación:", error);
-                setupError.textContent = `Falló la conexión. Revisa la URL, los permisos del script ("Cualquier usuario") y que las 3 hojas existan.`;
-            } finally {
-                verifyUrlBtn.disabled = false;
-                verifyUrlBtn.textContent = 'Guardar y Verificar Conexión';
+            setIsVerifying(true);
+            await onSave(url);
+            setIsVerifying(false);
+          };
+
+          return (
+            <div className="fixed inset-0 bg-background bg-opacity-90 flex justify-center items-center z-50 p-4">
+              <div className="bg-surface rounded-lg shadow-xl w-full max-w-lg border border-border-color p-8 space-y-6">
+                <div className="text-center">
+                    <h2 className="text-2xl font-bold text-primary">Initial Setup Required</h2>
+                    <p className="text-text-secondary mt-2">
+                        Please provide the Google Apps Script URL to connect to your database.
+                    </p>
+                </div>
+                <div>
+                    <label htmlFor="script-url" className="block text-sm font-medium text-text-primary mb-1">
+                        Script URL
+                    </label>
+                    <input
+                        id="script-url"
+                        type="url"
+                        value={url}
+                        onChange={(e) => setUrl(e.target.value)}
+                        placeholder="https://script.google.com/macros/s/..."
+                        className="w-full bg-background border border-border-color rounded-md px-3 py-2 text-text-primary placeholder-text-secondary focus:ring-primary focus:border-primary"
+                    />
+                </div>
+                <button
+                    onClick={handleSave}
+                    disabled={isVerifying || !url}
+                    className="w-full bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
+                >
+                    {isVerifying ? 'Verifying...' : 'Save and Verify Connection'}
+                </button>
+              </div>
+            </div>
+          );
+        };
+
+        // =================================================================================
+        // INLINED: components/TemplateManagerModal.tsx
+        // =================================================================================
+        const TemplateManagerModal = ({ templates, onClose, onSave, onReset }) => {
+          const [currentTemplates, setCurrentTemplates] = useState(templates);
+          const [editingTemplate, setEditingTemplate] = useState(null);
+
+          const handleSave = () => {
+            onSave(currentTemplates);
+            onClose();
+          };
+
+          const handleAddNew = () => {
+            setEditingTemplate({ id: `tpl_${Date.now()}`, name: '', body: '' });
+          };
+          
+          const handleEdit = (template) => {
+            setEditingTemplate({ ...template });
+          };
+
+          const handleDelete = (id) => {
+            if (window.confirm('Are you sure you want to delete this template?')) {
+              setCurrentTemplates(currentTemplates.filter(t => t.id !== id));
             }
-        }
+          };
+          
+          const handleSaveTemplateEdit = () => {
+            if (!editingTemplate || !editingTemplate.name || !editingTemplate.body) {
+              alert('Template name and body cannot be empty.');
+              return;
+            }
+
+            const existing = currentTemplates.find(t => t.id === editingTemplate.id);
+            if (existing) {
+              setCurrentTemplates(currentTemplates.map(t => t.id === editingTemplate.id ? editingTemplate : t));
+            } else {
+              setCurrentTemplates([...currentTemplates, editingTemplate]);
+            }
+            setEditingTemplate(null);
+          };
+
+          return (
+            <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-40 p-4">
+              <div className="bg-surface rounded-lg shadow-xl w-full max-w-4xl border border-border-color flex flex-col max-h-[90vh]">
+                <div className="p-6 border-b border-border-color flex justify-between items-center">
+                  <h3 className="text-xl font-bold text-primary">Manage Email Templates</h3>
+                  <button onClick={onClose} className="text-text-secondary text-2xl">&times;</button>
+                </div>
+                
+                <div className="p-6 overflow-y-auto space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className="text-lg font-semibold mb-2">Current Templates</h4>
+                      <ul className="space-y-2 border border-border-color rounded-lg p-2 max-h-96 overflow-y-auto">
+                        {currentTemplates.map(template => (
+                          <li key={template.id} className="flex justify-between items-center p-2 bg-highlight rounded">
+                            <span className="text-text-primary">{template.name}</span>
+                            <div className="space-x-2">
+                              <button onClick={() => handleEdit(template)} className="text-sm bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded">Edit</button>
+                              <button onClick={() => handleDelete(template.id)} className="text-sm bg-danger hover:bg-danger-hover px-2 py-1 rounded">Delete</button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-lg font-semibold mb-2">{editingTemplate ? 'Edit Template' : 'Create New Template'}</h4>
+                      {editingTemplate ? (
+                        <div className="space-y-4 p-4 border border-border-color rounded-lg bg-highlight">
+                           <input
+                            type="text"
+                            placeholder="Template Name"
+                            value={editingTemplate.name || ''}
+                            onChange={(e) => setEditingTemplate({ ...editingTemplate, name: e.target.value })}
+                            className="w-full bg-background border border-border-color rounded-md px-3 py-2"
+                          />
+                          <textarea
+                            placeholder="Template Body..."
+                            value={editingTemplate.body || ''}
+                            onChange={(e) => setEditingTemplate({ ...editingTemplate, body: e.target.value })}
+                            className="w-full bg-background border border-border-color rounded-md px-3 py-2 h-40 resize-y"
+                          />
+                           <p className="text-xs text-text-secondary">Placeholders: {`{{Nombre}}`}, {`{{No_Orden}}`}, etc.</p>
+                          <div className="flex gap-2">
+                            <button onClick={handleSaveTemplateEdit} className="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm">Save Changes</button>
+                            <button onClick={() => setEditingTemplate(null)} className="bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm">Cancel</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button onClick={handleAddNew} className="w-full bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg">
+                          Add New Template
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-header flex justify-between items-center rounded-b-lg">
+                   <button onClick={onReset} className="bg-danger hover:bg-danger-hover text-white font-bold py-2 px-4 rounded-lg">
+                    Restore Defaults
+                  </button>
+                  <div className="flex gap-4">
+                    <button onClick={onClose} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg">
+                        Cancel
+                    </button>
+                    <button onClick={handleSave} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">
+                        Save & Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        // =================================================================================
+        // INLINED: components/PreviewModal.tsx
+        // =================================================================================
+        const PreviewModal = ({ data, template, onClose }) => {
+          const body = template ? replacePlaceholders(template.body, data) : '<b>Error:</b> Template not selected or not found.';
+
+          const copyToClipboard = () => {
+            navigator.clipboard.writeText(body.replace(/<br\s*\/?>/gi, '\n'))
+              .then(() => alert('Content copied to clipboard!'))
+              .catch(err => alert('Failed to copy content.'));
+          };
+
+          return (
+            <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-40 p-4">
+              <div className="bg-surface rounded-lg shadow-xl w-full max-w-3xl border border-border-color flex flex-col">
+                <div className="p-6 border-b border-border-color">
+                  <h3 className="text-xl font-bold text-primary">Email Preview</h3>
+                </div>
+                <div 
+                  className="p-6 overflow-y-auto max-h-[60vh] bg-white text-black font-serif"
+                  dangerouslySetInnerHTML={{ __html: body.replace(/\n/g, '<br>') }}
+                />
+                <div className="p-4 bg-header flex justify-end gap-4 rounded-b-lg">
+                  <button onClick={copyToClipboard} className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                    Copy Content
+                  </button>
+                  <button onClick={onClose} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        };
         
-        verifyUrlBtn.addEventListener('click', verifyAndSaveUrl);
-        
-        function initApp() {
-            const config = {
-                emptyRowsToAdd: 5,
-                trackingStatuses: ['Pendiente', 'En Gestión', 'Finalizado'],
-                finalTableHeaders: { preview: "👁️", checkbox: `<input type='checkbox' id='select_all_final_rows' title='Seleccionar todo'>`, Fecha_Neg: "Fecha Neg.", No_Orden: "No. Orden", Nombre: "Nombre", EPS: "EPS", Motivo_Negacion: "Motivo Neg.", Descripcion_PDF: "Descripción", Justificacion_PDF: "Justificación", Fundamento_Legal_PDF: "Fund. Legal", Tipo_Carta: "Tipo de Carta" },
-                portalHeaders: ["Fecha_Neg", "Sucursal", "No_Orden", "No_Cedula", "Nombre", "Motivo_Negacion", "Auditor", "Programa", "Plan", "Antiguedad", "EPS", "Telefono", "Celular", "Direccion", "Email", "Edad", "Tipo_Usuario", "Usuario_Emitio", "Regional", "Gestion_Negacion"],
-                importantPortalIndexes: [0, 2, 3, 4, 5, 7, 10, 14],
+
+        // =================================================================================
+        // INLINED: App.tsx (The main application component)
+        // =================================================================================
+        const App = () => {
+          const [state, setState] = useState({
+            finalData: [],
+            trackingData: [],
+            archivedData: [],
+            portalData: Array(5).fill({}),
+            pdfData: Array(5).fill({}),
+            templates: [],
+            scriptUrl: null,
+            isSetupNeeded: false,
+            isLoading: true,
+            isSaving: false,
+            isTemplateManagerOpen: false,
+            previewData: null,
+            notification: null,
+            editsCount: 0,
+            onlineStatus: true,
+          });
+
+          const [sortConfig, setSortConfig] = useState({
+            key: 'No_Orden',
+            direction: 'ascending',
+          });
+
+          const hideNotification = () =>
+            setState((prev) => ({ ...prev, notification: null }));
+
+          const showNotification = (message, type, duration = 5000) => {
+            setState((prev) => ({ ...prev, notification: { message, type } }));
+            setTimeout(hideNotification, duration);
+          };
+
+          const handleSetScriptUrl = async (url) => {
+            setState((prev) => ({ ...prev, isLoading: true }));
+            try {
+              const data = await fetchData(url);
+              localStorage.setItem('sigweb_scriptUrl', url);
+              setState((prev) => ({
+                ...prev,
+                ...data,
+                scriptUrl: url,
+                isSetupNeeded: false,
+                isLoading: false,
+              }));
+              showNotification('Connection successful and data loaded!', 'success');
+            } catch (error) {
+              console.error(error);
+              showNotification(
+                `Connection failed. Please check the URL and script permissions.`,
+                'error'
+              );
+              setState((prev) => ({ ...prev, isLoading: false }));
+            }
+          };
+
+          useEffect(() => {
+            const url = localStorage.getItem('sigweb_scriptUrl');
+            const loadedTemplates = loadTemplates();
+            setState((prev) => ({ ...prev, templates: loadedTemplates }));
+
+            if (url) {
+              handleSetScriptUrl(url);
+            } else {
+              setState((prev) => ({ ...prev, isSetupNeeded: true, isLoading: false }));
+            }
+
+            const updateOnlineStatus = () => {
+                setState(prev => ({ ...prev, onlineStatus: navigator.onLine }));
+                if (!navigator.onLine) {
+                    showNotification("You are offline. Data saving is disabled.", "warning", 10000);
+                }
             };
 
-            let finalData = [], trackingData = [], archivedData = [], emailTemplates = [], editCounter = 0, isSaving = false;
-            const finalTableContainer = document.getElementById('final_table_container');
-            const defaultTemplates = [
-                { id: "tpl_1", name: "PLANTILLA NEGACION GENERAL", body: "Apreciado usuario; {{Nombre}}\n\nAgradecemos la confianza... acerca del servicio {{Motivo_Negacion}} que en esta oportunidad no está aprobado debido a que corresponde a EXCLUSIÓN ({{Descripcion_PDF}}), ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).\n\nEl servicio negado anteriormente; debe tramitarlo a través su EPS asignada. Adjuntamos soporte de la carta de negación." },
-                { id: "tpl_2", name: "PLANTILLA NO PERTINENCIA Y TEMAS ESTETICOS", body: "Apreciado usuario; {{Nombre}}\n\nAgradecemos la confianza... acerca del servicio {{Motivo_Negacion}} que en esta oportunidad No está aprobado debido a que corresponde a NO PERTINENCIA ({{Descripcion_PDF}}), ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}})." },
-                { id: "tpl_3", name: "COMPLEMENTARIEDAD RED COINCIDENTE", body: "Apreciado Usuario; {{Nombre}}\n\nAgradecemos la confianza... acerca del servicio ({{Descripcion_PDF}}) que no fue aprobado, debido a que ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).\n\nSin embargo, está en gestión a través de su EPS ({{EPS}}) con el número de radicado ({{Radicado_Comp}}), puede realizar seguimiento mediante la oficina virtual de la EPS ({{Oficina_Virtual_EPS}}).\n\nAdicional estaremos haciendo seguimiento..." },
-                { id: "tpl_4", name: "COMPLEMENTARIEDAD RED NO COINCIDENTE", body: "Agradecemos la confianza... acerca del servicio ({{Descripcion_PDF}}) que no está aprobado, debido a que corresponde a ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).\n\nEl prestador actual solicitado, no tiene convenio... se radica la solicitud ante su EPS con el número ({{Radicado_Comp}}) por favor realizar seguimiento mediante la oficina virtual de la EPS ({{Oficina_Virtual_EPS}})." },
-                { id: "tpl_5", name: "COMPLEMENTARIEDAD AYUDAS DIAGNOSTICAS", body: "Apreciado usuario; {{Nombre}}\n\nAgradecemos la confianza... acerca del servicio ({{Descripcion_PDF}}) que no está aprobado debido a que corresponde a ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).\n\nSin embargo, se encuentra en gestión a través de su EPS con el número de radicado ({{Radicado_Comp}}), por favor realizar seguimiento mediante la oficina virtual. ({{Oficina_Virtual_EPS}})." }
-            ];
+            window.addEventListener('online', updateOnlineStatus);
+            window.addEventListener('offline', updateOnlineStatus);
+            updateOnlineStatus();
 
-            function showNotification(message, type = 'info', duration = 4000) { const container = document.getElementById('notification-container'); const notif = document.createElement('div'); notif.className = `notification ${type}`; notif.textContent = message; container.appendChild(notif); setTimeout(() => { notif.classList.add('hide'); notif.addEventListener('animationend', () => notif.remove()); }, duration); }
-            async function loadDataFromSheet() { showNotification("Cargando datos desde la nube...", "info", 3000); try { const response = await fetch(SCRIPT_URL); if (!response.ok) throw new Error(`Error del servidor: ${response.statusText}`); const data = await response.json(); if (data.error) throw new Error(data.error); finalData = data.finalData || []; trackingData = data.trackingData || []; archivedData = data.archivedData || []; displayFinalTable(); renderTrackingTable(); renderArchivedTable(); updateDashboard(); if (finalData.length > 0) document.getElementById('area3').style.display = 'block'; showNotification("✅ Datos cargados con éxito.", "success"); } catch (error) { console.error("Error al cargar datos:", error); showNotification(`🔴 Error al cargar: ${error.message}`, "error", 10000); } }
-            async function saveDataToSheet() { if (isSaving || !navigator.onLine) return; isSaving = true; const saveBtns = [document.getElementById('save_tracking_changes_btn'), document.getElementById('save_review_data_btn')]; saveBtns.forEach(btn => {btn.textContent = '💾 Guardando...'; btn.disabled = true;}); try { await fetch(SCRIPT_URL + '?token=SIGWEB_SECRET_KEY_123', { method: 'POST', mode: 'no-cors', body: JSON.stringify({ finalData, trackingData, archivedData }) }); showNotification("✅ Cambios guardados en la nube.", "success"); } catch (error) { console.error("Error al guardar:", error); showNotification(`🔴 Error al guardar: ${error.message}`, "error", 10000); } finally { isSaving = false; document.getElementById('save_review_data_btn').textContent = '💾 Guardar Revisión en la Nube'; document.getElementById('save_tracking_changes_btn').textContent = '💾 Guardar Cambios de Seguimiento'; saveBtns.forEach(btn => btn.disabled = false); } }
-            function loadTemplates() { const storedTemplates = localStorage.getItem('sigwebEmailTemplates'); emailTemplates = storedTemplates ? JSON.parse(storedTemplates) : JSON.parse(JSON.stringify(defaultTemplates)); renderTemplateList(); updateLetterSelectors(); }
-            function saveTemplatesAndRefresh() { localStorage.setItem('sigwebEmailTemplates', JSON.stringify(emailTemplates)); loadTemplates(); displayFinalTable(); }
-            function restoreDefaultTemplates() { if (confirm("¿Seguro que quieres restaurar las 5 plantillas originales?")) { emailTemplates = JSON.parse(JSON.stringify(defaultTemplates)); saveTemplatesAndRefresh(); showNotification("Plantillas originales restauradas.", "success"); } }
-            function renderTemplateList() { document.getElementById('template-manager-list').innerHTML = emailTemplates.map(tpl => `<li><span>${tpl.name}</span><div><button class="edit-template-btn" data-id="${tpl.id}">Editar</button><button class="delete-template-btn" data-id="${tpl.id}">Eliminar</button></div></li>`).join(''); }
-            function updateLetterSelectors() { document.getElementById('bulk_action_selector').innerHTML = `<option value="">-- Asignar Carta --</option>` + emailTemplates.map(tpl => `<option value="${tpl.id}">${tpl.name}</option>`).join(''); }
-            function handlePaste(e) { e.preventDefault(); const text = (e.clipboardData || window.clipboardData).getData('text/plain'); const pastedRowsData = text.trim().split(/\r?\n/); const tbody = e.target.closest('tbody'); let startRowIndex = Array.from(tbody.rows).findIndex(row => !row.cells[0] || row.cells[0].innerText.trim() === ''); if (startRowIndex === -1) startRowIndex = tbody.rows.length; const headersCount = tbody.parentElement.tHead.rows[0].cells.length; pastedRowsData.forEach((rowData, i) => { const cellsData = rowData.split('\t'); let targetRow = tbody.rows[startRowIndex + i]; if (!targetRow) { targetRow = tbody.insertRow(); for (let j = 0; j < headersCount; j++) targetRow.insertCell().setAttribute('contenteditable', 'true'); } cellsData.forEach((cellData, j) => { if (targetRow.cells[j]) targetRow.cells[j].innerText = cellData.trim(); }); }); const emptyRowCount = Array.from(tbody.rows).filter(r => r.innerText.trim() === '').length; if(emptyRowCount < config.emptyRowsToAdd) { addEmptyRows(tbody, headersCount, config.emptyRowsToAdd - emptyRowCount); } }
-            function addEmptyRows(tbody, cellCount, rowCount) { for (let i = 0; i < rowCount; i++) { const row = tbody.insertRow(); for (let j = 0; j < cellCount; j++) row.insertCell().setAttribute('contenteditable', 'true'); } }
-            function setupPasteGrid(tableId) { const table = document.getElementById(tableId); if (!table) return; const headersCount = table.querySelector('thead tr').cells.length; const tbody = table.querySelector('tbody'); tbody.innerHTML = ''; addEmptyRows(tbody, headersCount, config.emptyRowsToAdd); table.addEventListener('paste', handlePaste); }
-            function processPortalData() { const tableRows = document.getElementById('portal_table').querySelector('tbody').rows; for (const row of tableRows) { const cells = row.cells; if (cells.length > 2 && cells[2].innerText.trim()) { let rowObject = {}; config.importantPortalIndexes.forEach(index => { let value = cells[index]?.innerText.trim() || ''; const header = config.portalHeaders[index]; if (header === 'Nombre') value = value.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()); rowObject[header] = value; }); rowObject = {...rowObject, Descripcion_PDF: '(pendiente)', Justificacion_PDF: '(pendiente)', Fundamento_Legal_PDF: '(pendiente)', Tipo_Carta: '', Radicado_Comp: ''}; finalData.push(rowObject); } } if (finalData.length) { document.getElementById('area3').style.display = 'block'; document.getElementById('merge_pdf_btn').disabled = false; displayFinalTable(); } }
-            function mergePdfData() { const pdfData = new Map(); const pdfTableRows = document.getElementById('pdf_table').querySelector('tbody').rows; for (const row of pdfTableRows) { const key = row.cells[0]?.innerText.trim(); if (key) pdfData.set(key, { Descripcion_PDF: row.cells[1]?.innerText.trim() || '', Justificacion_PDF: row.cells[2]?.innerText.trim() || '', Fundamento_Legal_PDF: row.cells[3]?.innerText.trim() || '' }); } finalData.forEach(row => { if (pdfData.has(row.No_Orden)) Object.assign(row, pdfData.get(row.No_Orden)); }); displayFinalTable(); }
-            function displayFinalTable() { if (!finalTableContainer.querySelector('table')) { const table = document.createElement('table'); table.id = 'final_table'; const thead = table.createTHead(); table.createTBody().id = 'final_table_body'; const headerRow = thead.insertRow(); Object.entries(config.finalTableHeaders).forEach(([key, text]) => { const th = document.createElement('th'); th.innerHTML = `${text} <span class="sort-indicator"></span>`; th.dataset.key = key; headerRow.appendChild(th); }); finalTableContainer.innerHTML = ''; finalTableContainer.appendChild(table); } const tbody = document.getElementById('final_table_body'); const filter = document.getElementById('final_table_filter').value.toUpperCase(); const filteredData = finalData.filter(row => Object.values(row).join(' ').toUpperCase().includes(filter)); tbody.innerHTML = filteredData.map(getFinalTableRowHTML).join(''); updateDashboard(); }
-            function getFinalTableRowHTML(row) { const rowIndex = finalData.indexOf(row); if (rowIndex === -1) return ''; const template = emailTemplates.find(t => t.id === row.Tipo_Carta); const requiresRadicado = template && template.name.toLowerCase().includes('comp'); let warnings = []; if (!row.Email || !row.Email.includes('@')) warnings.push("Email inválido"); if (requiresRadicado && !(row.Radicado_Comp || "").trim()) warnings.push("Falta radicado"); const letterOptions = `<option value="">-- Seleccionar --</option>` + emailTemplates.map(tpl => `<option value="${tpl.id}" ${tpl.id === row.Tipo_Carta ? 'selected' : ''}>${tpl.name}</option>`).join(''); return `<tr data-row-index="${rowIndex}" class="${warnings.length ? 'highlight-warning' : ''}" title="${warnings.join(', ')}"><td class="preview-icon">👁️</td><td><input type="checkbox" class="row-selector"></td><td contenteditable="true" data-key="Fecha_Neg">${row.Fecha_Neg || ''}</td><td contenteditable="true" data-key="No_Orden">${row.No_Orden || ''}</td><td contenteditable="true" data-key="Nombre">${row.Nombre || ''}</td><td contenteditable="true" data-key="EPS">${row.EPS || ''}</td><td contenteditable="true" data-key="Motivo_Negacion" class="compact-cell">${row.Motivo_Negacion || ''}</td><td contenteditable="true" data-key="Descripcion_PDF" class="compact-cell">${row.Descripcion_PDF || ''}</td><td contenteditable="true" data-key="Justificacion_PDF" class="compact-cell">${row.Justificacion_PDF || ''}</td><td contenteditable="true" data-key="Fundamento_Legal_PDF" class="compact-cell">${row.Fundamento_Legal_PDF || ''}</td><td><select class="letter-selector">${letterOptions}</select>${requiresRadicado ? `<div class="extra-input-container"><input type="text" class="radicado-input" value="${row.Radicado_Comp || ''}" placeholder="Radicado..."></div>` : ''}</td></tr>`; }
-            function updateFinalTableRow(index) { const rowElement = finalTableContainer.querySelector(`tr[data-row-index="${index}"]`); if (rowElement) { const isChecked = rowElement.querySelector('.row-selector')?.checked; rowElement.outerHTML = getFinalTableRowHTML(finalData[index]); const newRowElement = finalTableContainer.querySelector(`tr[data-row-index="${index}"]`); if(newRowElement && isChecked) newRowElement.querySelector('.row-selector').checked = true; } }
-            function renderTrackingTable() { document.getElementById('tracking_body').innerHTML = trackingData.map(item => getTrackingTableRowHTML(item, false)).join(''); updateDashboard(); }
-            function renderArchivedTable() { document.getElementById('archived_body').innerHTML = archivedData.map(item => getTrackingTableRowHTML(item, true)).join(''); document.getElementById('toggle_archived_btn').innerText = `Mostrar Archivados (${archivedData.length})`; }
-            function getTrackingTableRowHTML(item, isArchived) { const dataArray = isArchived ? archivedData : trackingData; const index = dataArray.indexOf(item); const statusOptions = config.trackingStatuses.map(s => `<option value="${s}" ${s === item.Estado ? 'selected' : ''}>${s}</option>`).join(''); const actionIcon = isArchived ? `<td class="action-icon" data-action="unarchive" title="Restaurar">♻️</td>` : `<td class="action-icon" data-action="archive" title="Archivar">🗄️</td>`; return `<tr data-index="${index}" data-is-archived="${isArchived}" class="${isArchived ? 'archived-row' : ''}"><td>${item.Fecha_Neg || ''}</td><td>${item.No_Orden || ''}</td><td>${item.Nombre || ''}</td><td>${item.EPS || ''}</td><td>${item.Radicado || ''}</td><td><select class="status-selector">${statusOptions}</select></td><td contenteditable="true" class="notes-cell">${item.Notas || ''}</td>${actionIcon}</tr>`;}
-            function setupEventListeners() {
-                document.getElementById('reconfigure_script_url_btn').addEventListener('click', () => { if(confirm("¿Seguro que quieres cambiar la URL de conexión? Deberás reiniciar la página.")){ localStorage.removeItem('sigwebScriptUrl'); location.reload(); }});
-                document.getElementById('process_portal_btn').addEventListener('click', () => processPortalData());
-                document.getElementById('merge_pdf_btn').addEventListener('click', () => mergePdfData());
-                document.getElementById('clear_all_btn').addEventListener('click', () => { if (confirm("¿Seguro que quieres limpiar los datos de las tablas de entrada? Esto no afectará los datos en la nube.")) { finalData = []; displayFinalTable(); document.getElementById('portal_table').querySelector('tbody').innerHTML = ''; setupPasteGrid('portal_table'); document.getElementById('pdf_table').querySelector('tbody').innerHTML = ''; setupPasteGrid('pdf_table');} });
-                document.getElementById('clear_portal_btn').addEventListener('click', () => { document.getElementById('portal_table').querySelector('tbody').innerHTML = ''; setupPasteGrid('portal_table'); });
-                document.getElementById('clear_pdf_btn').addEventListener('click', () => { document.getElementById('pdf_table').querySelector('tbody').innerHTML = ''; setupPasteGrid('pdf_table'); });
-                document.getElementById('final_table_filter').addEventListener('keyup', () => displayFinalTable());
-                document.getElementById('select_all_final_rows').addEventListener('change', (e) => { finalTableContainer.querySelectorAll('.row-selector').forEach(cb => cb.checked = e.target.checked); updateSelectionCounter(); });
-                document.getElementById('apply_bulk_action_btn').addEventListener('click', applyBulkAction);
-                document.getElementById('send_to_tracking_btn').addEventListener('click', sendToTracking);
-                document.getElementById('export_btn').addEventListener('click', exportFinalData);
-                document.getElementById('export_report_btn').addEventListener('click', exportComprehensiveReport);
-                finalTableContainer.addEventListener('click', handleFinalTableClick);
-                finalTableContainer.addEventListener('change', handleFinalTableChange);
-                finalTableContainer.addEventListener('input', handleFinalTableInput);
-                finalTableContainer.addEventListener('blur', handleFinalTableBlur, true);
-                document.getElementById('save_review_data_btn').addEventListener('click', saveDataToSheet);
-                document.getElementById('save_tracking_changes_btn').addEventListener('click', saveDataToSheet);
-                document.getElementById('toggle_archived_btn').addEventListener('click', () => { document.getElementById('archived_table_container').style.display = document.getElementById('archived_table_container').style.display === 'none' ? 'block' : 'none'; });
-                document.getElementById('tracking_table').tBodies[0].addEventListener('click', handleTrackingTableInteraction);
-                document.getElementById('archived_table').tBodies[0].addEventListener('click', handleTrackingTableInteraction);
-                document.getElementById('tracking_table').tBodies[0].addEventListener('change', handleTrackingTableInteraction);
-                document.getElementById('archived_table').tBodies[0].addEventListener('change', handleTrackingTableInteraction);
-                document.querySelectorAll('.close-modal-btn').forEach(btn => btn.addEventListener('click', (e) => e.target.closest('.modal-overlay').style.display = 'none'));
-                document.getElementById('copy_email_btn').addEventListener('click', copyEmailToClipboard);
-                document.getElementById('manage_templates_btn').addEventListener('click', () => { document.getElementById('template-manager-modal').style.display = 'flex'; });
-                document.getElementById('add_new_template_btn').addEventListener('click', () => { document.getElementById('template-editor').style.display = 'flex'; document.getElementById('template-id').value = ''; document.getElementById('template-name').value = ''; document.getElementById('template-body').value = ''; });
-                document.getElementById('restore_default_templates_btn').addEventListener('click', restoreDefaultTemplates);
-                document.getElementById('save_template_btn').addEventListener('click', saveTemplateFromEditor);
-                document.getElementById('cancel_edit_template_btn').addEventListener('click', () => document.getElementById('template-editor').style.display = 'none');
-                document.getElementById('template-manager-list').addEventListener('click', handleTemplateListClick);
-                window.addEventListener('online', () => { document.getElementById('offline-banner').style.display = 'none'; showNotification("✅ Conexión a internet restaurada.", "success"); loadDataFromSheet(); });
-                window.addEventListener('offline', () => { document.getElementById('offline-banner').style.display = 'block'; showNotification("🔴 Sin conexión. No se pueden guardar cambios.", "error", 10000); });
+            return () => {
+                window.removeEventListener('online', updateOnlineStatus);
+                window.removeEventListener('offline', updateOnlineStatus);
+            };
+          }, []);
+
+          const incrementEdits = () =>
+            setState((prev) => ({ ...prev, editsCount: prev.editsCount + 1 }));
+
+          const handleSave = async () => {
+            if (!state.scriptUrl) {
+              showNotification('Cannot save. Script URL is not configured.', 'error');
+              return;
             }
-            function handleFinalTableClick(e) { const target = e.target; if (target.classList.contains('preview-icon')) { previewEmail(target.closest('tr').dataset.rowIndex); } else if (target.classList.contains('row-selector')) { updateSelectionCounter(); } else if(target.closest('th')?.dataset.key) { sortTable(target.closest('th').dataset.key); } }
-            function handleFinalTableChange(e) { const target = e.target; const rowIndex = target.closest('tr').dataset.rowIndex; if (rowIndex === null) return; const index = parseInt(rowIndex, 10); if (target.classList.contains('letter-selector')) { finalData[index].Tipo_Carta = target.value; if (!emailTemplates.find(t => t.id === target.value)?.name.toLowerCase().includes('comp')) { finalData[index].Radicado_Comp = ''; } updateFinalTableRow(index); } }
-            function handleFinalTableInput(e) { const target = e.target; const rowIndex = target.closest('tr')?.dataset.rowIndex; if (rowIndex && target.classList.contains('radicado-input')) { finalData[parseInt(rowIndex, 10)].Radicado_Comp = target.value; } }
-            function handleFinalTableBlur(e) { const target = e.target; const rowIndex = target.closest('tr')?.dataset.rowIndex; const dataKey = target.dataset.key; if (rowIndex && dataKey && target.isContentEditable) { const newValue = target.innerText.trim(); const index = parseInt(rowIndex, 10); if (finalData[index][dataKey] !== newValue) { finalData[index][dataKey] = newValue; editCounter++; updateDashboard(); updateFinalTableRow(index); } } else if (rowIndex && target.classList.contains('radicado-input')) { updateFinalTableRow(parseInt(rowIndex, 10)); } }
-            function handleTrackingTableInteraction(e) { const tr = e.target.closest('tr'); if (!tr) return; const index = parseInt(tr.dataset.index, 10); const isArchived = tr.dataset.isArchived === 'true'; const dataArray = isArchived ? archivedData : trackingData; let item = dataArray[index]; if (!item) return; if(e.target.classList.contains('status-selector')) { item.Estado = e.target.value; } else if (e.target.isContentEditable) { item.Notas = e.target.innerText; } else if (e.target.dataset.action === 'archive') { archivedData.push(trackingData.splice(index, 1)[0]); renderTrackingTable(); renderArchivedTable(); } else if (e.target.dataset.action === 'unarchive') { trackingData.push(archivedData.splice(index, 1)[0]); renderTrackingTable(); renderArchivedTable(); } }
-            function handleTemplateListClick(e) { const id = e.target.dataset.id; if (e.target.classList.contains('edit-template-btn')) { const template = emailTemplates.find(t => t.id === id); document.getElementById('template-editor').style.display = 'flex'; document.getElementById('template-id').value = template.id; document.getElementById('template-name').value = template.name; document.getElementById('template-body').value = template.body; } else if (e.target.classList.contains('delete-template-btn')) { if(confirm("¿Seguro?")) { emailTemplates = emailTemplates.filter(t => t.id !== id); saveTemplatesAndRefresh(); } } }
-            function saveTemplateFromEditor() { const id = document.getElementById('template-id').value; const name = document.getElementById('template-name').value.trim(); const body = document.getElementById('template-body').value.trim(); if (!name || !body) return alert("El nombre y el cuerpo no pueden estar vacíos."); if (id) { const index = emailTemplates.findIndex(t => t.id === id); if (index !== -1) emailTemplates[index] = { id, name, body }; } else { emailTemplates.push({ id: `tpl_${Date.now()}`, name, body }); } saveTemplatesAndRefresh(); document.getElementById('template-editor').style.display = 'none'; }
-            function sortTable(key) { finalData.sort((a,b) => (a[key] > b[key]) ? 1 : ((b[key] > a[key]) ? -1 : 0)); displayFinalTable(); }
-            function previewEmail(index) { const rowData = finalData[parseInt(index, 10)]; const template = emailTemplates.find(tpl => tpl.id === rowData.Tipo_Carta); let body = `<b>Error: Plantilla no encontrada.</b>`; if (template) { const getOficinaVirtual = (eps) => { const e = (eps || "").toUpperCase(); if (e.includes("NUEVA EPS")) return `<a href='https://portal.nuevaeps.com.co/'>NUEVA EPS</a>`; if (e.includes("SALUD TOTAL")) return `<a href='https://saludtotal.com.co/'>SALUD TOTAL</a>`; return eps; }; const fullData = { ...rowData, Oficina_Virtual_EPS: getOficinaVirtual(rowData.EPS) }; body = template.body.replace(/\{\{(\w+)\}\}/g, (match, key) => fullData[key] || match); } document.getElementById('preview-content').innerHTML = body.replace(/\n/g, '<br>'); document.getElementById('preview-modal').style.display = 'flex'; }
-            function updateSelectionCounter() { document.getElementById('selection_counter').textContent = `${finalTableContainer.querySelectorAll('.row-selector:checked').length} fila(s) seleccionada(s)`; }
-            function applyBulkAction() { const selectedAction = document.getElementById('bulk_action_selector').value; if (!selectedAction) return; finalTableContainer.querySelectorAll('.row-selector:checked').forEach(cb => { const rowIndex = cb.closest('tr').dataset.rowIndex; finalData[parseInt(rowIndex, 10)].Tipo_Carta = selectedAction; updateFinalTableRow(parseInt(rowIndex, 10)); }); }
-            function sendToTracking() { const itemsToSend = finalData.filter(row => { const template = emailTemplates.find(t => t.id === row.Tipo_Carta); return template && template.name.toLowerCase().includes('comp') && row.Radicado_Comp?.trim(); }); itemsToSend.forEach(row => { const existingIndex = trackingData.findIndex(item => item.No_Orden === row.No_Orden); if (existingIndex === -1) trackingData.push({ Fecha_Neg: row.Fecha_Neg, No_Orden: row.No_Orden, Nombre: row.Nombre, EPS: row.EPS, Radicado: row.Radicado_Comp, Estado: 'Pendiente', Notas: '' }); }); renderTrackingTable(); saveDataToSheet(); showNotification(`${itemsToSend.length} caso(s) enviados a seguimiento.`, 'info'); }
-            async function copyEmailToClipboard() { await navigator.clipboard.writeText(document.getElementById('preview-content').innerText); showNotification('Contenido copiado.', 'success'); }
-            function exportFinalData() { if (!finalData.length) return alert("No hay datos para exportar."); const ws = XLSX.utils.json_to_sheet(finalData); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "DatosParaEnvio"); XLSX.writeFile(wb, "Sigweb_Procesado.xlsx"); } 
-            function exportComprehensiveReport() { const masterDataMap = new Map(); [...finalData, ...trackingData, ...archivedData].forEach(row => { if (row.No_Orden && row.No_Orden.trim()) { const key = row.No_Orden.trim(); if (!masterDataMap.has(key)) { masterDataMap.set(key, { ...row }); } else { masterDataMap.set(key, { ...masterDataMap.get(key), ...row }); } } }); if(masterDataMap.size === 0) return alert("No hay datos para exportar."); const wb = XLSX.utils.book_new(); const ws = XLSX.utils.json_to_sheet(Array.from(masterDataMap.values())); XLSX.utils.book_append_sheet(wb, ws, "Consolidado Maestro"); XLSX.writeFile(wb, `Sigweb_Reporte_Detallado.xlsx`); }
-            function updateDashboard(){ document.getElementById('db_review_count').textContent = finalData.length; document.getElementById('db_tracking_count').textContent = trackingData.length; document.getElementById('db_archived_count').textContent = archivedData.length; document.getElementById('db_edits_count').textContent = editCounter; }
+            setState((prev) => ({ ...prev, isSaving: true }));
+            try {
+              await saveData(state.scriptUrl, {
+                finalData: state.finalData,
+                trackingData: state.trackingData,
+                archivedData: state.archivedData,
+              });
+              showNotification('All data saved successfully to the cloud!', 'success');
+            } catch (error) {
+              console.error(error);
+              showNotification('Failed to save data. Please try again.', 'error');
+            } finally {
+              setState((prev) => ({ ...prev, isSaving: false }));
+            }
+          };
 
-            setupEventListeners();
-            setupPasteGrid('portal_table'); setupPasteGrid('pdf_table');
-            loadTemplates();
-            if (navigator.onLine) { loadDataFromSheet(); } 
-            else { document.getElementById('offline-banner').style.display = 'block'; showNotification("🔴 Sin conexión.", "error", 10000); }
+          const processPortalData = useCallback(() => {
+            const processedData = state.portalData
+              .filter((row) => row.No_Orden && String(row.No_Orden).trim())
+              .map((row) => ({
+                Fecha_Neg: row.Fecha_Neg || '',
+                Sucursal: row.Sucursal || '',
+                No_Orden: row.No_Orden || '',
+                No_Cedula: row.No_Cedula || '',
+                Nombre: capitalizeWords(row.Nombre || ''),
+                Motivo_Negacion: row.Motivo_Negacion || '',
+                Auditor: row.Auditor || '',
+                Programa: row.Programa || '',
+                Plan: row.Plan || '',
+                Antiguedad: row.Antiguedad || '',
+                EPS: (row.EPS || '').toUpperCase(),
+                Telefono: row.Telefono || '',
+                Celular: row.Celular || '',
+                Direccion: row.Direccion || '',
+                Email: row.Email || '',
+                Edad: row.Edad || '',
+                Tipo_Usuario: row.Tipo_Usuario || '',
+                Usuario_Emitio: row.Usuario_Emitio || '',
+                Regional: row.Regional || '',
+                Gestion_Negacion: row.Gestion_Negacion || '',
+                Descripcion_PDF: '(pendiente)',
+                Justificacion_PDF: '(pendiente)',
+                Fundamento_Legal_PDF: '(pendiente)',
+                Tipo_Carta: '',
+                Radicado_Comp: '',
+              }));
+
+            setState((prev) => ({ ...prev, finalData: processedData }));
+            showNotification(
+              `${processedData.length} rows processed from Portal data.`,
+              'success'
+            );
+          }, [state.portalData]);
+
+          const mergePdfData = useCallback(() => {
+            const pdfMap = new Map();
+            state.pdfData
+              .filter((row) => row['Archivo (No. Orden)']?.trim())
+              .forEach((row) => {
+                pdfMap.set(row['Archivo (No. Orden)'].trim(), {
+                  Descripcion_PDF: row.Descripción || '',
+                  Justificacion_PDF: row.Justificación || '',
+                  Fundamento_Legal_PDF: row['Fundamento Legal'] || '',
+                });
+              });
+
+            const mergedData = state.finalData.map((finalRow) => {
+              const pdfMatch = pdfMap.get(finalRow.No_Orden.trim());
+              return pdfMatch ? { ...finalRow, ...pdfMatch } : finalRow;
+            });
+
+            setState((prev) => ({ ...prev, finalData: mergedData }));
+            showNotification(`PDF data merged into Review Area.`, 'success');
+          }, [state.pdfData, state.finalData]);
+
+          const updateFinalDataRow = (index, updatedRow) => {
+            const newData = [...state.finalData];
+            newData[index] = updatedRow;
+            setState((prev) => ({ ...prev, finalData: newData }));
+          };
+
+          const handleSendToTracking = (selectedIndices) => {
+            const itemsToSend = selectedIndices
+              .map((index) => state.finalData[index])
+              .filter((row) => {
+                const template = state.templates.find((t) => t.id === row.Tipo_Carta);
+                return (
+                  template &&
+                  template.name.toLowerCase().includes('comp') &&
+                  row.Radicado_Comp &&
+                  row.Radicado_Comp.trim() !== ''
+                );
+              });
+
+            if (itemsToSend.length === 0) {
+              showNotification(
+                "No items to send. Ensure they are 'Complementariedad' type and have a 'Radicado'.",
+                'warning'
+              );
+              return;
+            }
+
+            let newTrackingData = [...state.trackingData];
+            let newFinalData = [...state.finalData];
+            let addedCount = 0;
+            let updatedCount = 0;
+
+            itemsToSend.forEach((item) => {
+              const existingIndex = newTrackingData.findIndex((t) => t.No_Orden === item.No_Orden);
+              if (existingIndex !== -1) {
+                 if(window.confirm(`Case ${item.No_Orden} is already in tracking. Do you want to update it?`)) {
+                    newTrackingData[existingIndex].Radicado = item.Radicado_Comp;
+                    updatedCount++;
+                 }
+              } else {
+                  newTrackingData.push({
+                      Fecha_Ing: item.Fecha_Neg,
+                      No_Orden: item.No_Orden,
+                      Nombre: item.Nombre,
+                      EPS: item.EPS,
+                      Radicado: item.Radicado_Comp,
+                      Estado: 'Pendiente',
+                      Notas: '',
+                  });
+                  addedCount++;
+              }
+            });
+            
+            const itemsSentOrderNumbers = itemsToSend.map(i => i.No_Orden);
+            newFinalData = newFinalData.filter(f => !itemsSentOrderNumbers.includes(f.No_Orden));
+
+
+            setState((prev) => ({
+              ...prev,
+              trackingData: newTrackingData,
+              finalData: newFinalData,
+            }));
+            showNotification(`${addedCount} new items sent, ${updatedCount} items updated in tracking.`, 'success');
+          };
+
+          const updateTrackingData = (index, updatedRow, isArchived) => {
+            const dataKey = isArchived ? 'archivedData' : 'trackingData';
+            const currentData = [...state[dataKey]];
+            currentData[index] = updatedRow;
+            setState((prev) => ({ ...prev, [dataKey]: currentData }));
+          };
+
+          const archiveItems = (indices, fromArchived) => {
+            if (fromArchived) { // Unarchive
+              const itemsToMove = indices.map(i => state.archivedData[i]).filter(Boolean);
+              const remainingArchived = state.archivedData.filter((_, i) => !indices.includes(i));
+              setState(prev => ({
+                ...prev,
+                trackingData: [...prev.trackingData, ...itemsToMove],
+                archivedData: remainingArchived,
+              }));
+            } else { // Archive
+              const itemsToMove = indices.map(i => state.trackingData[i]).filter(Boolean);
+              const remainingTracking = state.trackingData.filter((_, i) => !indices.includes(i));
+              setState(prev => ({
+                ...prev,
+                archivedData: [...prev.archivedData, ...itemsToMove],
+                trackingData: remainingTracking,
+              }));
+            }
+          };
+
+          const handleSaveTemplates = (newTemplates) => {
+            setState((prev) => ({ ...prev, templates: newTemplates }));
+            saveTemplates(newTemplates);
+            showNotification('Email templates saved.', 'success');
+          };
+
+          const handleResetTemplates = () => {
+            if (window.confirm('Are you sure you want to restore default templates?')) {
+              handleSaveTemplates(defaultTemplates);
+            }
+          };
+
+          const sortedFinalData = React.useMemo(() => {
+            let sortableItems = [...state.finalData];
+            sortableItems.sort((a, b) => {
+                const aVal = a[sortConfig.key] || '';
+                const bVal = b[sortConfig.key] || '';
+                if (aVal < bVal) {
+                    return sortConfig.direction === 'ascending' ? -1 : 1;
+                }
+                if (aVal > bVal) {
+                    return sortConfig.direction === 'ascending' ? 1 : -1;
+                }
+                return 0;
+            });
+            return sortableItems;
+          }, [state.finalData, sortConfig]);
+
+          if (state.isLoading) {
+            return <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50"><Spinner /> <span className="ml-4 text-xl">Loading Data...</span></div>;
+          }
+
+          if (state.isSetupNeeded) {
+            return <SetupModal onSave={handleSetScriptUrl} />;
+          }
+
+          return (
+            <div className="p-4 sm:p-8 bg-background min-h-screen">
+              {state.notification && (
+                <Notification
+                  message={state.notification.message}
+                  type={state.notification.type}
+                  onClose={hideNotification}
+                />
+              )}
+              {!state.onlineStatus && (
+                 <div className="bg-yellow-600 text-white text-center p-2 fixed top-0 left-0 w-full z-50">
+                   You are currently offline. Data synchronization is paused.
+                 </div>
+              )}
+
+              <main className="max-w-screen-2xl mx-auto bg-surface p-4 sm:p-6 rounded-xl border border-border-color space-y-8">
+                <Header onSave={handleSave} onManageTemplates={() => setState(prev => ({ ...prev, isTemplateManagerOpen: true }))} />
+                <Dashboard
+                  reviewCount={state.finalData.length}
+                  trackingCount={state.trackingData.length}
+                  archivedCount={state.archivedData.length}
+                  editsCount={state.editsCount}
+                />
+                <div className="text-right">
+                     <button
+                        onClick={() => exportDetailedReport(state.finalData, state.trackingData, state.archivedData)}
+                        className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                    >
+                        Download Detailed Report
+                    </button>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <DataInputArea
+                    id="portal-area"
+                    title="Area 1: Portal Data"
+                    headers={PORTAL_HEADERS}
+                    data={state.portalData}
+                    onDataChange={(newData) => setState(prev => ({ ...prev, portalData: newData }))}
+                    onProcess={processPortalData}
+                  />
+                  <DataInputArea
+                    id="pdf-area"
+                    title="Area 2: PDF Extractor Data"
+                    headers={PDF_HEADERS}
+                    data={state.pdfData}
+                    onDataChange={(newData) => setState(prev => ({ ...prev, pdfData: newData }))}
+                    onProcess={mergePdfData}
+                    processButtonText="Merge with PDF Data"
+                  />
+                </div>
+
+                <ReviewArea
+                  data={sortedFinalData}
+                  templates={state.templates}
+                  updateRow={updateFinalDataRow}
+                  incrementEdits={incrementEdits}
+                  onSendToTracking={handleSendToTracking}
+                  onPreview={(row) => setState(prev => ({ ...prev, previewData: row }))}
+                  sortConfig={sortConfig}
+                  setSortConfig={setSortConfig}
+                />
+
+                <TrackingArea
+                  trackingData={state.trackingData}
+                  archivedData={state.archivedData}
+                  updateTrackingData={updateTrackingData}
+                  archiveItems={archiveItems}
+                />
+                
+                {state.isSaving && <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50"><Spinner /> <span className="ml-4 text-xl">Saving Data...</span></div>}
+              </main>
+
+              {state.isTemplateManagerOpen && (
+                <TemplateManagerModal
+                  templates={state.templates}
+                  onClose={() => setState(prev => ({...prev, isTemplateManagerOpen: false}))}
+                  onSave={handleSaveTemplates}
+                  onReset={handleResetTemplates}
+                />
+              )}
+
+              {state.previewData && (
+                <PreviewModal
+                  data={state.previewData}
+                  template={state.templates.find(t => t.id === state.previewData?.Tipo_Carta)}
+                  onClose={() => setState(prev => ({...prev, previewData: null}))}
+                />
+              )}
+            </div>
+          );
+        };
+
+        // =================================================================================
+        // INLINED: index.tsx (Render the application)
+        // =================================================================================
+        const rootElement = document.getElementById('root');
+        if (!rootElement) {
+          throw new Error("Could not find root element to mount to");
         }
+        const root = ReactDOM.createRoot(rootElement);
+        root.render(<App />);
 
-        checkAndInitiateSetup();
-    });
     </script>
 </body>
 </html>
