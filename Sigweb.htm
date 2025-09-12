@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -85,14 +86,15 @@
 
         const TRACKING_STATUSES = ['Pendiente', 'En Gestión', 'Finalizado'];
         
-        const COMMON_EMAIL_FOOTER = `\n\nSi tiene alguna duda puede contactarse por medio de los canales que tenemos disponibles para usted:\n· Nuestra línea nacional 018000931666. O con nuestras líneas locales: Cali (602) 489 0073, Bogotá (601) 743 5485, Medellín (604) 604 4507, Barranquilla (605) 385 3165, Bucaramanga (607) 697 3350, Cartagena (605) 693 9853, Tuluá (602) 235 9483, Valledupar (605)588 5699, Pereira (606) 340 2635.\n· WhatsApp: 317-224-07-94\n\nGracias por su Atención.`;
+        const COMMON_EMAIL_BODY = `<br><br><b>Si tiene alguna duda puede contactarse por medio de los canales que tenemos disponibles para usted:</b><br>· Nuestra línea nacional 018000931666. O con nuestras líneas locales: Cali (602) 489 0073, Bogotá (601) 743 5485, Medellín (604) 604 4507, Barranquilla (605) 385 3165, Bucaramanga (607) 697 3350, Cartagena (605) 693 9853, Tuluá (602) 235 9483, Valledupar (605)588 5699, Pereira (606) 340 2635.<br>· WhatsApp: 317-224-07-94<br><br>Gracias por su Atención.`;
+        const SIGNATURE = `<br><br>Cordialmente,<br><br><b>Juan Ricardo Morales Agudelo</b><br>Ejecutivo De Atención Integral<br>Coomeva Medicina Prepagada<br>Cra. 13 No.11-12 Centro Médico Circunvalar<br>Coomeva Medicina Prepagada Pereira, Risaralda<br><br><i>Este correo es generado automáticamente, por favor no responda este mensaje.</i>`;
 
         const defaultTemplates = [
-            { id: 'tpl_neg_gen', name: 'PLANTILLA NEGACION GENERAL', body: `Apreciado usuario;\n\nAgradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y la de su familia. Por medio de este correo queremos brindar información acerca del servicio {{Motivo_Negacion}} que en esta oportunidad no está aprobado debido a que corresponde a EXCLUSIÓN ({{Descripcion_PDF}}), ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).\n\nEl servicio negado anteriormente; debe tramitarlo a través su EPS asignada. Adjuntamos soporte de la carta de negación.` + COMMON_EMAIL_FOOTER },
-            { id: 'tpl_neg_pert', name: 'PLANTILLA NO PERTINENCIA Y TEMAS ESTETICOS', body: `Apreciado usuario;\n\nAgradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y la de su familia. Por medio de este correo queremos brindar información acerca del servicio {{Motivo_Negacion}} que en esta oportunidad No está aprobado debido a que corresponde a NO PERTINENCIA ({{Descripcion_PDF}}), ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).` + COMMON_EMAIL_FOOTER },
-            { id: 'tpl_comp_coinc', name: 'COMPLEMENTARIEDAD RED COINCIDENTE', body: `Apreciado Usuario;\n\nAgradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y el de su familia. Por medio de este correo queremos brindar información acerca del servicio ({{Descripcion_PDF}}) que en esta oportunidad no fue aprobado, debido a que ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).\n\nSin embargo, está en gestión a través de su EPS ({{EPS}}) con el número de radicado ({{Radicado_Comp}}), puede realizar seguimiento mediante la oficina virtual de la EPS ({{Oficina_Virtual_EPS}}).\n\nAdicional estaremos haciendo seguimiento al radicado y una vez se encuentre gestionado por la EPS, le notificaremos por medio de correo electrónico.` + COMMON_EMAIL_FOOTER },
-            { id: 'tpl_comp_no_coinc', name: 'COMPLEMENTARIEDAD RED NO COINCIDENTE', body: `Agradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y la de su familia. Por medio de este correo queremos brindar información acerca del servicio ({{Descripcion_PDF}}) que en esta oportunidad no está aprobado, debido a que corresponde a ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).\n\nEl prestador actual solicitado, no tiene convenio con la EPS, por lo que los costos adicionales del servicio o insumo estarán a cargo del paciente. Sin embargo; se radica la solicitud ante su EPS con el número ({{Radicado_Comp}}) por favor realizar seguimiento mediante la oficina virtual de la EPS ({{Oficina_Virtual_EPS}}).` + COMMON_EMAIL_FOOTER },
-            { id: 'tpl_comp_ayudas', name: 'COMPLEMENTARIEDAD AYUDAS DIAGNOSTICAS', body: `Apreciado usuario;\n\nAgradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y la de su familia. Por medio de este correo queremos brindar información acerca del servicio ({{Descripcion_PDF}}) que en esta oportunidad no está aprobado debido a que corresponde a ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).\n\nSin embargo, se encuentra en gestión a través de su EPS con el número de radicado ({{Radicado_Comp}}), por favor realizar seguimiento mediante la oficina virtual. ({{Oficina_Virtual_EPS}}).` + COMMON_EMAIL_FOOTER },
+            { id: 'tpl_neg_gen', name: 'PLANTILLA NEGACION GENERAL', body: `Apreciado usuario;<br><br>Agradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y la de su familia. Por medio de este correo queremos brindar información acerca del servicio {{Motivo_Negacion}} que en esta oportunidad no está aprobado debido a que corresponde a EXCLUSIÓN ({{Descripcion_PDF}}), ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).<br><br>El servicio negado anteriormente; debe tramitarlo a través su EPS asignada. Adjuntamos soporte de la carta de negación.` },
+            { id: 'tpl_neg_pert', name: 'PLANTILLA NO PERTINENCIA Y TEMAS ESTETICOS', body: `Apreciado usuario;<br><br>Agradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y la de su familia. Por medio de este correo queremos brindar información acerca del servicio {{Motivo_Negacion}} que en esta oportunidad No está aprobado debido a que corresponde a NO PERTINENCIA ({{Descripcion_PDF}}), ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).<br><br>` },
+            { id: 'tpl_comp_coinc', name: 'COMPLEMENTARIEDAD RED COINCIDENTE', body: `Apreciado Usuario;<br><br>Agradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y el de su familia. Por medio de este correo queremos brindar información acerca del servicio ({{Descripcion_PDF}}) que en esta oportunidad no fue aprobado, debido a que ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).<br><br>Sin embargo, está en gestión a través de su EPS ({{EPS}}) con el número de radicado ({{Radicado_Comp}}), puede realizar seguimiento mediante la oficina virtual de la EPS ({{Oficina_Virtual_EPS}}).<br><br>Adicional estaremos haciendo seguimiento al radicado y una vez se encuentre gestionado por la EPS, le notificaremos por medio de correo electrónico.` },
+            { id: 'tpl_comp_no_coinc', name: 'COMPLEMENTARIEDAD RED NO COINCIDENTE', body: `Agradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y la de su familia. Por medio de este correo queremos brindar información acerca del servicio ({{Descripcion_PDF}}) que en esta oportunidad no está aprobado, debido a que corresponde a ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).<br><br>El prestador actual solicitado, no tiene convenio con la EPS, por lo que los costos adicionales del servicio o insumo estarán a cargo del paciente. Sin embargo; se radica la solicitud ante su EPS con el número ({{Radicado_Comp}}) por favor realizar seguimiento mediante la oficina virtual de la EPS ({{Oficina_Virtual_EPS}}).` },
+            { id: 'tpl_comp_ayudas', name: 'COMPLEMENTARIEDAD AYUDAS DIAGNOSTICAS', body: `Apreciado usuario;<br><br>Agradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y la de su familia. Por medio de este correo queremos brindar información acerca del servicio ({{Descripcion_PDF}}) que en esta oportunidad no está aprobado debido a que corresponde a ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).<br><br>Sin embargo, se encuentra en gestión a través de su EPS con el número de radicado ({{Radicado_Comp}}), por favor realizar seguimiento mediante la oficina virtual. ({{Oficina_Virtual_EPS}}).` },
         ];
 
 
@@ -190,10 +192,15 @@
           try {
             const storedTemplates = localStorage.getItem(TEMPLATE_STORAGE_KEY);
             if (storedTemplates) {
-              return JSON.parse(storedTemplates);
+              // Basic validation to prevent loading corrupted data
+              const parsed = JSON.parse(storedTemplates);
+              if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].id && parsed[0].name) {
+                return parsed;
+              }
             }
           } catch (error) {
-            console.error("Falló la carga de plantillas desde localStorage", error);
+            console.error("Falló la carga de plantillas desde localStorage, se usarán las predeterminadas.", error);
+            localStorage.removeItem(TEMPLATE_STORAGE_KEY);
           }
           return defaultTemplates;
         };
@@ -941,10 +948,14 @@
         // INLINED: components/PreviewModal.tsx
         // =================================================================================
         const PreviewModal = ({ data, template, onClose }) => {
-          const body = template ? replacePlaceholders(template.body, data) : '<b>Error:</b> Plantilla no seleccionada o no encontrada.';
+          const bodyContent = template ? replacePlaceholders(template.body, data) : '<b>Error:</b> Plantilla no seleccionada o no encontrada.';
+          const fullBody = bodyContent + COMMON_EMAIL_BODY + SIGNATURE;
 
           const copyToClipboard = () => {
-            navigator.clipboard.writeText(body.replace(/<br\s*\/?>/gi, '\n'))
+            const tempEl = document.createElement('div');
+            tempEl.innerHTML = fullBody;
+            const textContent = tempEl.innerText || "";
+            navigator.clipboard.writeText(textContent)
               .then(() => alert('¡Contenido copiado al portapapeles!'))
               .catch(err => alert('Falló al copiar el contenido.'));
           };
@@ -957,7 +968,7 @@
                 </div>
                 <div 
                   className="p-6 overflow-y-auto max-h-[60vh] bg-white text-black font-serif"
-                  dangerouslySetInnerHTML={{ __html: body.replace(/\n/g, '<br>') }}
+                  dangerouslySetInnerHTML={{ __html: fullBody }}
                 />
                 <div className="p-4 bg-header flex justify-end gap-4 rounded-b-lg">
                   <button onClick={copyToClipboard} className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors">
@@ -1075,8 +1086,8 @@
             }
             setState((prev) => ({ ...prev, isSaving: true }));
             try {
-              // Solo se envían los datos que están actualmente en la vista de revisión
-              // para la operación de "upsert". Los datos de seguimiento y archivados se envían completos.
+              // El backend ahora tiene una protección para no borrar la hoja de 'Revisión'
+              // si se envía un array vacío, así que es seguro enviar el estado actual.
               await saveData(state.scriptUrl, {
                 finalData: state.finalData,
                 trackingData: state.trackingData,
@@ -1229,19 +1240,19 @@
                   return;
               }
               const dataToExport = data.map(row => ({
-                  "Fecha_Neg": row.Fecha_Neg,
-                  "Numero_Orden": row.No_Orden,
-                  "Numero_Cedula": row.No_Cedula,
-                  "Nombre_Afiliado": row.Nombre,
+                  "Fecha": row.Fecha_Neg, // Nombre de columna corregido para VBA
+                  "Orden": row.No_Orden,
+                  "Cedula": row.No_Cedula,
+                  "Nombre": row.Nombre,
                   "EPS": row.EPS,
                   "Programa": row.Programa,
                   "Email": row.Email,
-                  "Motivo_Negacion": row.Motivo_Negacion,
-                  "Descripcion_PDF": row.Descripcion_PDF,
-                  "Justificacion_PDF": row.Justificacion_PDF,
-                  "Fundamento_Legal_PDF": row.Fundamento_Legal_PDF,
-                  "Tipo_Carta": state.templates.find(t => t.id === row.Tipo_Carta)?.name || row.Tipo_Carta, // Use template name
-                  "Radicado_Comp": row.Radicado_Comp
+                  "Motivo": row.Motivo_Negacion,
+                  "Desc": row.Descripcion_PDF,
+                  "Just": row.Justificacion_PDF,
+                  "Fund": row.Fundamento_Legal_PDF,
+                  "Carta": state.templates.find(t => t.id === row.Tipo_Carta)?.name || "NO_SELECCIONADA",
+                  "Radicado": row.Radicado_Comp
               }));
               const ws = XLSX.utils.json_to_sheet(dataToExport);
               const wb = XLSX.utils.book_new();
@@ -1284,7 +1295,7 @@
           };
 
           const handleResetTemplates = () => {
-            if (window.confirm('¿Estás seguro de que quieres restaurar las plantillas predeterminadas?')) {
+            if (window.confirm('¿Estás seguro de que quieres restaurar las plantillas predeterminadas? Se perderán las plantillas personalizadas.')) {
               handleSaveTemplates(defaultTemplates);
             }
           };
