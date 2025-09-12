@@ -1199,23 +1199,37 @@
           };
 
           const handleSendToTracking = (selectedOrderNumbers) => {
-            const itemsToSend = state.finalData
-              .filter(row => selectedOrderNumbers.includes(row.No_Orden))
-              .filter((row) => {
+            const selectedRows = state.finalData.filter(row => selectedOrderNumbers.includes(row.No_Orden));
+            
+            const itemsToSend = [];
+            const itemsWithErrors = [];
+
+            selectedRows.forEach(row => {
                 const template = state.templates.find((t) => t.id === row.Tipo_Carta);
-                return (
-                  template &&
-                  template.requiresTracking &&
-                  row.Radicado_Comp &&
-                  row.Radicado_Comp.trim() !== ''
-                );
-              });
+                const requiresTracking = template && template.requiresTracking;
+                const hasRadicado = row.Radicado_Comp && row.Radicado_Comp.trim() !== '';
+
+                if (requiresTracking) {
+                    if (hasRadicado) {
+                        itemsToSend.push(row);
+                    } else {
+                        itemsWithErrors.push(row.No_Orden);
+                    }
+                }
+            });
+
+            if (itemsWithErrors.length > 0) {
+                const errorDetails = `Los siguientes casos requieren 'Radicado': ${itemsWithErrors.join(', ')}.`;
+                showNotification(errorDetails, 'error', 10000);
+            }
 
             if (itemsToSend.length === 0) {
-              showNotification(
-                "No hay ítems para enviar. Asegúrate de que la plantilla requiera seguimiento y tenga un 'Radicado'.",
-                'warning'
-              );
+              if (itemsWithErrors.length === 0) {
+                showNotification(
+                  "Ningún ítem seleccionado requiere ser enviado a seguimiento.",
+                  'warning'
+                );
+              }
               return;
             }
 
