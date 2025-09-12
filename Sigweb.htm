@@ -273,7 +273,7 @@
         // =================================================================================
         // INLINED: components/Header.tsx
         // =================================================================================
-        const Header = ({ onSave, onManageTemplates }) => {
+        const Header = ({ onSave, onManageTemplates, onReconfigure }) => {
           return (
             <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-border-color">
               <div>
@@ -285,6 +285,12 @@
               <div className="flex flex-wrap gap-2">
                 <button onClick={onManageTemplates} className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors">
                   Gestionar Plantillas
+                </button>
+                <button onClick={onReconfigure} className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0L8.21 5.15a1.5 1.5 0 01-1.25.82l-2.09.28c-1.68.23-2.34 2.26-1.09 3.42l1.52 1.48a1.5 1.5 0 01-.42 2.1l-1.83 1.25c-1.38.94-.92 3.01.7 3.42l2.05.51a1.5 1.5 0 011.1.98l.8 2.07c.43 1.12 2.29 1.12 2.72 0l.8-2.07a1.5 1.5 0 011.1-.98l2.05-.51c1.62-.4 2.08-2.48.7-3.42l-1.83-1.25a1.5 1.5 0 01-.42-2.1l1.52-1.48c1.25-1.16.59-3.19-1.09-3.42L13 5.97a1.5 1.5 0 01-1.25-.82l-.3-1.98zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+                    </svg>
+                    Reconfigurar Conexión
                 </button>
                 <button onClick={onSave} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -757,8 +763,8 @@
         // =================================================================================
         // INLINED: components/SetupModal.tsx
         // =================================================================================
-        const SetupModal = ({ onSave }) => {
-          const [url, setUrl] = useState('');
+        const SetupModal = ({ onSave, onClose, initialUrl = '' }) => {
+          const [url, setUrl] = useState(initialUrl);
           const [isVerifying, setIsVerifying] = useState(false);
 
           const handleSave = async () => {
@@ -775,9 +781,9 @@
             <div className="fixed inset-0 bg-background bg-opacity-90 flex justify-center items-center z-50 p-4">
               <div className="bg-surface rounded-lg shadow-xl w-full max-w-lg border border-border-color p-8 space-y-6">
                 <div className="text-center">
-                    <h2 className="text-2xl font-bold text-primary">Configuración Inicial Requerida</h2>
+                    <h2 className="text-2xl font-bold text-primary">Configuración de Conexión</h2>
                     <p className="text-text-secondary mt-2">
-                        Por favor, proporciona la URL de Google Apps Script para conectar a tu base de datos.
+                        Proporciona la URL de Google Apps Script para conectar a tu base de datos.
                     </p>
                 </div>
                 <div>
@@ -793,13 +799,21 @@
                         className="w-full bg-background border border-border-color rounded-md px-3 py-2 text-text-primary placeholder-text-secondary focus:ring-primary focus:border-primary"
                     />
                 </div>
-                <button
-                    onClick={handleSave}
-                    disabled={isVerifying || !url}
-                    className="w-full bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
-                >
-                    {isVerifying ? 'Verificando...' : 'Guardar y Verificar Conexión'}
-                </button>
+                <div className="flex justify-end gap-4">
+                    <button
+                        onClick={onClose}
+                        className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        onClick={handleSave}
+                        disabled={isVerifying || !url}
+                        className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
+                    >
+                        {isVerifying ? 'Verificando...' : 'Guardar y Verificar'}
+                    </button>
+                </div>
               </div>
             </div>
           );
@@ -970,6 +984,7 @@
             templates: [],
             scriptUrl: null,
             isSetupNeeded: false,
+            isReconfiguring: false,
             isLoading: true,
             isSaving: false,
             isTemplateManagerOpen: false,
@@ -1002,6 +1017,7 @@
                 ...data,
                 scriptUrl: url,
                 isSetupNeeded: false,
+                isReconfiguring: false,
                 isLoading: false,
               }));
               showNotification('¡Conexión exitosa y datos cargados!', 'success');
@@ -1293,8 +1309,8 @@
             return <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50"><Spinner /> <span className="ml-4 text-xl">Cargando Datos...</span></div>;
           }
 
-          if (state.isSetupNeeded) {
-            return <SetupModal onSave={handleSetScriptUrl} />;
+          if (state.isSetupNeeded || state.isReconfiguring) {
+            return <SetupModal onSave={handleSetScriptUrl} onClose={() => setState(prev => ({ ...prev, isReconfiguring: false }))} initialUrl={state.scriptUrl || ''} />;
           }
 
           return (
@@ -1313,7 +1329,11 @@
               )}
 
               <main className="max-w-screen-2xl mx-auto bg-surface p-4 sm:p-6 rounded-xl border border-border-color space-y-8">
-                <Header onSave={handleSave} onManageTemplates={() => setState(prev => ({ ...prev, isTemplateManagerOpen: true }))} />
+                <Header 
+                    onSave={handleSave} 
+                    onManageTemplates={() => setState(prev => ({ ...prev, isTemplateManagerOpen: true }))}
+                    onReconfigure={() => setState(prev => ({ ...prev, isReconfiguring: true }))}
+                />
                 <Dashboard
                   reviewCount={state.finalData.length}
                   trackingCount={state.trackingData.length}
