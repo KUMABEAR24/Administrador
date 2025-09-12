@@ -1,1492 +1,702 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GESTION NEGACIONES EJE CAFETERO</title>
-    <!-- Tailwind CSS JIT CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- SheetJS for Excel Exports -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- Babel Standalone for in-browser JSX transpilation -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
-    <script>
-      // Tailwind CSS Configuration
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              'primary': '#4e9fef',
-              'background': '#1e1e1e',
-              'surface': '#2d2d2d',
-              'text-primary': '#d4d4d4',
-              'text-secondary': '#a0a0a0',
-              'border-color': '#444',
-              'header': '#3a3a3a',
-              'highlight': '#252526',
-              'warning': '#6e550c',
-              'archive': '#3a3a3a',
-              'success': '#28a745',
-              'danger': '#a02d2d',
-              'danger-hover': '#c0392b',
-              'btn-primary': '#0e639c',
-              'btn-primary-hover': '#1a73e8',
-            },
-            animation: {
-              'flash-success': 'flash-success 1s ease-out',
-            },
-            keyframes: {
-              'flash-success': {
-                'from': { backgroundColor: '#28a745' },
-                'to': { backgroundColor: 'transparent' },
-              }
-            }
-          }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sigweb Pro v3.5 (ES) - Versión Unificada</title>
+    <style>
+        :root {
+            --background-color: #1e1e1e;
+            --surface-color: #2d2d2d;
+            --primary-color: #0d6efd;
+            --primary-hover-color: #0b5ed7;
+            --secondary-color: #6c757d;
+            --secondary-hover-color: #5c636a;
+            --success-color: #198754;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --text-color: #e0e0e0;
+            --text-muted-color: #a0a0a0;
+            --border-color: #444;
+            --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            --border-radius: 6px;
+            --box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            --input-background: #3a3a3a;
         }
-      }
-    </script>
-    
-    <!-- ES Module Import Map for React -->
-    <script type="importmap">
-    {
-      "imports": {
-        "react": "https://esm.sh/react@18.2.0",
-        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client"
-      }
-    }
-    </script>
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            font-size: 14px;
+        }
+
+        #root {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .area-container {
+            background-color: var(--surface-color);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--box-shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        h1, h2, h3 {
+            color: var(--primary-color);
+            margin-top: 0;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+        }
+        
+        h1 { font-size: 2em; }
+        h2 { font-size: 1.5em; }
+        h3 { font-size: 1.2em; }
+
+        .data-input-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 200px;
+            background-color: var(--input-background);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 10px;
+            box-sizing: border-box;
+            resize: vertical;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 5px var(--primary-color);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        button {
+            padding: 10px 20px;
+            border-radius: var(--border-radius);
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s, transform 0.1s;
+            font-size: 14px;
+        }
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        button:active:not(:disabled) {
+            transform: translateY(1px);
+        }
+
+        .btn-primary { background-color: var(--primary-color); color: white; }
+        .btn-primary:hover:not(:disabled) { background-color: var(--primary-hover-color); }
+        .btn-secondary { background-color: var(--secondary-color); color: white; }
+        .btn-secondary:hover:not(:disabled) { background-color: var(--secondary-hover-color); }
+        .btn-success { background-color: var(--success-color); color: white; }
+        .btn-danger { background-color: var(--danger-color); color: white; }
+        .btn-warning { background-color: var(--warning-color); color: #1e1e1e; }
+
+        .btn-special {
+            background: linear-gradient(45deg, #6a11cb 0%, #2575fc 100%);
+            color: white;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            max-height: 500px;
+            margin-top: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            text-align: left;
+            white-space: nowrap;
+        }
+        
+        th {
+            background-color: #3a3a3a;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+        
+        tbody tr:nth-child(even) { background-color: #333; }
+        tbody tr:hover { background-color: #4a4a4a; }
+        
+        input[type="text"], input[type="date"], input[type="search"], select {
+            width: 100%;
+            background-color: var(--input-background);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary-color);
+        }
+        
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+            display: inline-block;
+            text-align: center;
+            min-width: 80px;
+        }
+        .status-PENDIENTE { background-color: #ffc107; color: #1e1e1e; }
+        .status-GESTIONADO { background-color: #198754; }
+        .status-DEVUELTO { background-color: #dc3545; }
+        .status-REVISADO { background-color: #0dcaf0; color: #1e1e1e; }
+
+        .filter-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .spinner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .spinner {
+            border: 6px solid var(--surface-color);
+            border-top: 6px solid var(--primary-color);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: var(--border-radius);
+            color: white;
+            z-index: 1001;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .notification.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .notification.success { background-color: var(--success-color); }
+        .notification.error { background-color: var(--danger-color); }
+        .notification.info { background-color: var(--primary-color); }
+        
+        .saving-indicator {
+            font-size: 0.9em;
+            color: var(--text-muted-color);
+            margin-left: 15px;
+            transition: opacity 0.3s;
+        }
+    </style>
 </head>
-<body class="bg-background text-text-primary">
+<body>
     <div id="root"></div>
+    <script type="module">
+        import React, { useState, useEffect, useCallback, useMemo } from 'https://esm.sh/react@18.2.0';
+        import ReactDOM from 'https://esm.sh/react-dom@18.2.0/client';
 
-    <!-- 
-      ============================================
-      ENTIRE REACT APPLICATION BUNDLED BELOW
-      ============================================
-    -->
-    <script type="text/babel" data-presets="react" data-type="module">
-        import React, { useState, useEffect, useCallback, useMemo } from 'react';
-        import ReactDOM from 'react-dom/client';
+        // --- CONSTANTS ---
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwOa-d_aC7iY4A7V8u1pL_1J4_p9l2eXb3qP_tG9n-XyA7_Z0w5K9r-L8jA/exec';
+        const REQUIRED_HEADERS_1 = ["No_Orden", "FECHA_NEGACION", "NO_CEDULA", "NOMBRE", "EPS", "PROGRAMA", "MOTIVO_NEGACION"];
+        const REQUIRED_HEADERS_2 = ["No_Orden", "DESCRIPCION", "JUSTIFICACION", "FUNDAMENTO_LEGAL"];
 
-        // =================================================================================
-        // INLINED: constants.ts
-        // =================================================================================
-        const PORTAL_HEADERS = [
-          "Fecha_Neg", "Sucursal", "No_Orden", "No_Cedula", "Nombre", 
-          "Motivo_Negacion", "Auditor", "Programa", "Plan", "Antiguedad", 
-          "EPS", "Telefono", "Celular", "Direccion", "Email", 
-          "Edad", "Tipo_Usuario", "Usuario_Emitio", "Regional", "Gestion_Negacion"
-        ];
-
-        const PDF_HEADERS = [
-          "Archivo (No. Orden)", "Descripción", "Justificación", "Fundamento Legal", "Código"
-        ];
-
-        const TRACKING_STATUSES = ['Pendiente', 'En Gestión', 'Finalizado'];
-        
-        const COMMON_EMAIL_BODY = `<br><br><b>Si tiene alguna duda puede contactarse por medio de los canales que tenemos disponibles para usted:</b><br>· Nuestra línea nacional 018000931666. O con nuestras líneas locales: Cali (602) 489 0073, Bogotá (601) 743 5485, Medellín (604) 604 4507, Barranquilla (605) 385 3165, Bucaramanga (607) 697 3350, Cartagena (605) 693 9853, Tuluá (602) 235 9483, Valledupar (605)588 5699, Pereira (606) 340 2635.<br>· WhatsApp: 317-224-07-94<br><br>Gracias por su Atención.`;
-        const SIGNATURE = `<br><br>Cordialmente,<br><br><b>Juan Ricardo Morales Agudelo</b><br>Ejecutivo De Atención Integral<br>Coomeva Medicina Prepagada<br>Cra. 13 No.11-12 Centro Médico Circunvalar<br>Coomeva Medicina Prepagada Pereira, Risaralda<br><br><i>Este correo es generado automáticamente, por favor no responda este mensaje.</i>`;
-
-        const defaultTemplates = [
-            { id: 'tpl_neg_gen', name: 'PLANTILLA NEGACION GENERAL', body: `Apreciado usuario;<br><br>Agradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y la de su familia. Por medio de este correo queremos brindar información acerca del servicio {{Motivo_Negacion}} que en esta oportunidad no está aprobado debido a que corresponde a EXCLUSIÓN ({{Descripcion_PDF}}), ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).<br><br>El servicio negado anteriormente; debe tramitarlo a través su EPS asignada. Adjuntamos soporte de la carta de negación.` },
-            { id: 'tpl_neg_pert', name: 'PLANTILLA NO PERTINENCIA Y TEMAS ESTETICOS', body: `Apreciado usuario;<br><br>Agradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y la de su familia. Por medio de este correo queremos brindar información acerca del servicio {{Motivo_Negacion}} que en esta oportunidad No está aprobado debido a que corresponde a NO PERTINENCIA ({{Descripcion_PDF}}), ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).<br><br>` },
-            { id: 'tpl_comp_coinc', name: 'COMPLEMENTARIEDAD RED COINCIDENTE', body: `Apreciado Usuario;<br><br>Agradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y el de su familia. Por medio de este correo queremos brindar información acerca del servicio ({{Descripcion_PDF}}) que en esta oportunidad no fue aprobado, debido a que ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).<br><br>Sin embargo, está en gestión a través de su EPS ({{EPS}}) con el número de radicado ({{Radicado_Comp}}), puede realizar seguimiento mediante la oficina virtual de la EPS ({{Oficina_Virtual_EPS}}).<br><br>Adicional estaremos haciendo seguimiento al radicado y una vez se encuentre gestionado por la EPS, le notificaremos por medio de correo electrónico.`, requiresTracking: true },
-            { id: 'tpl_comp_no_coinc', name: 'COMPLEMENTARIEDAD RED NO COINCIDENTE', body: `Agradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y la de su familia. Por medio de este correo queremos brindar información acerca del servicio ({{Descripcion_PDF}}) que en esta oportunidad no está aprobado, debido a que corresponde a ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).<br><br>El prestador actual solicitado, no tiene convenio con la EPS, por lo que los costos adicionales del servicio o insumo estarán a cargo del paciente. Sin embargo; se radica la solicitud ante su EPS con el número ({{Radicado_Comp}}) por favor realizar seguimiento mediante la oficina virtual de la EPS ({{Oficina_Virtual_EPS}}).`, requiresTracking: true },
-            { id: 'tpl_comp_ayudas', name: 'COMPLEMENTARIEDAD AYUDAS DIAGNOSTICAS', body: `Apreciado usuario;<br><br>Agradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y la de su familia. Por medio de este correo queremos brindar información acerca del servicio ({{Descripcion_PDF}}) que en esta oportunidad no está aprobado debido a que corresponde a ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).<br><br>Sin embargo, se encuentra en gestión a través de su EPS con el número de radicado ({{Radicado_Comp}}), por favor realizar seguimiento mediante la oficina virtual. ({{Oficina_Virtual_EPS}}).`, requiresTracking: true },
-        ];
-
-
-        // =================================================================================
-        // INLINED: services/utilityService.ts
-        // =================================================================================
-        const capitalizeWords = (str) => {
-          if (!str) return '';
-          return str.toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
-        };
-
-        const processPastedData = (pastedText, headers) => {
-          return pastedText
-            .trim()
-            .split(/\r?\n/)
-            .map(rowText => {
-              const cells = rowText.split('\t');
-              const rowObject = {};
-              headers.forEach((header, index) => {
-                if (cells[index]) {
-                  rowObject[header] = cells[index].trim();
-                }
-              });
-              return rowObject;
-            });
-        };
-
-        const replacePlaceholders = (templateBody, data) => {
-          const getOficinaVirtual = (eps) => {
-            const e = (eps || "").toUpperCase();
-            if (e.includes("NUEVA EPS")) return `<a href='https://portal.nuevaeps.com.co/Portal/home.jspx' target='_blank' rel='noopener noreferrer'>NUEVA EPS</a>`;
-            if (e.includes("SALUD TOTAL")) return `<a href='https://saludtotal.com.co/' target='_blank' rel='noopener noreferrer'>SALUD TOTAL</a>`;
-            return eps;
-          };
-
-          const fullData = { ...data, Oficina_Virtual_EPS: getOficinaVirtual(data.EPS) };
-
-          return templateBody.replace(/\{\{(\w+)\}\}/g, (match, key) => {
-            return fullData[key] || match;
-          });
-        };
-
-        const exportDetailedReport = (finalData, trackingData, archivedData) => {
-          try {
-            const masterDataMap = new Map();
-
-            [...finalData, ...trackingData, ...archivedData].forEach(row => {
-              if (row.No_Orden) {
-                const key = row.No_Orden.trim();
-                const existing = masterDataMap.get(key) || {};
-                masterDataMap.set(key, { ...existing, ...row });
-              }
-            });
-            
-            const masterData = Array.from(masterDataMap.values());
-
-            if (masterData.length === 0) {
-              alert("No hay datos consolidados para exportar.");
-              return;
-            }
-
-            const wb = XLSX.utils.book_new();
-            
-            if (finalData.length > 0) {
-              const ws1 = XLSX.utils.json_to_sheet(finalData);
-              XLSX.utils.book_append_sheet(wb, ws1, "Casos en Revisión");
-            }
-            
-            if (trackingData.length > 0) {
-              const ws2 = XLSX.utils.json_to_sheet(trackingData);
-              XLSX.utils.book_append_sheet(wb, ws2, "Seguimiento Activo");
-            }
-
-            if (archivedData.length > 0) {
-              const ws3 = XLSX.utils.json_to_sheet(archivedData);
-              XLSX.utils.book_append_sheet(wb, ws3, "Seguimiento Archivado");
-            }
-            
-            const ws4 = XLSX.utils.json_to_sheet(masterData);
-            XLSX.utils.book_append_sheet(wb, ws4, "Maestro Consolidado");
-
-            XLSX.writeFile(wb, `Sigweb_Reporte_Detallado_${new Date().toISOString().slice(0, 10)}.xlsx`);
-          } catch (error) {
-            console.error("Falló la exportación del reporte Excel:", error);
-            alert("Ocurrió un error al generar el reporte.");
-          }
-        };
-
-        const debounce = (func, delay) => {
-            let timeout;
-            return function(...args) {
-                const context = this;
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func.apply(context, args), delay);
-            };
-        };
-
-        // =================================================================================
-        // INLINED: services/templateService.ts
-        // =================================================================================
-        const TEMPLATE_STORAGE_KEY = 'sigweb_emailTemplates';
-
-        const loadTemplates = () => {
-          try {
-            const storedTemplates = localStorage.getItem(TEMPLATE_STORAGE_KEY);
-            if (storedTemplates) {
-              const parsed = JSON.parse(storedTemplates);
-              if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].id && parsed[0].name) {
-                return parsed;
-              }
-            }
-          } catch (error) {
-            console.error("Falló la carga de plantillas desde localStorage, se usarán las predeterminadas.", error);
-            localStorage.removeItem(TEMPLATE_STORAGE_KEY);
-          }
-          return defaultTemplates;
-        };
-
-        const saveTemplates = (templates) => {
-          try {
-            localStorage.setItem(TEMPLATE_STORAGE_KEY, JSON.stringify(templates));
-          } catch (error) {
-            console.error("Falló el guardado de plantillas en localStorage", error);
-          }
-        };
-
-
-        // =================================================================================
-        // INLINED: services/googleSheetService.ts
-        // =================================================================================
-        const fetchData = async (url) => {
-            const response = await fetch(`${url}?action=getData`);
-            if (!response.ok) throw new Error('La respuesta de la red no fue correcta');
-            const data = await response.json();
-            return {
-                finalData: data.finalData || [],
-                trackingData: data.trackingData || [],
-                archivedData: data.archivedData || [],
-            };
-        };
-        
-        const addCasesToSheet = async (url, cases) => {
-            const response = await fetch(url, {
+        // --- SERVICES (API CALLS) ---
+        const callGoogleScript = async (action, payload) => {
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify({ action: 'addReviewCases', data: cases }),
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action, payload })
             });
-            if (!response.ok) throw new Error('Falló al añadir casos.');
-            return await response.json();
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Error en la comunicación con el servidor: ${errorText}`);
+            }
+            const result = await response.json();
+            if (result.status === 'error') {
+                throw new Error(result.message);
+            }
+            return result.data;
         };
 
-        const saveTrackingAndArchived = async (url, trackingData, archivedData) => {
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify({ action: 'saveTrackingAndArchived', data: { trackingData, archivedData } }),
-            });
-            if (!response.ok) throw new Error('Falló al guardar datos de seguimiento.');
-            return await response.json();
+        const fetchData = () => callGoogleScript('getData', {});
+        const addCasesToCloud = (finalData) => callGoogleScript('addCases', { cases: finalData });
+        const saveTrackingAndArchivedData = (trackingData, archivedData) => callGoogleScript('saveData', { trackingData, archivedData });
+
+        // --- COMPONENTS ---
+
+        const Spinner = ({ message = 'Cargando...' }) => {
+            return React.createElement('div', { className: 'spinner-overlay' },
+                React.createElement('div', { className: 'spinner' }),
+                React.createElement('span', null, message)
+            );
         };
 
-
-        // =================================================================================
-        // INLINED: components/Spinner.tsx
-        // =================================================================================
-        const Spinner = () => {
-          return (
-            <div
-              className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
-              role="status"
-            >
-              <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
-                Cargando...
-              </span>
-            </div>
-          );
-        };
-
-
-        // =================================================================================
-        // INLINED: components/Notification.tsx
-        // =================================================================================
-        const Notification = ({ message, type, onClose }) => {
-          const typeClasses = {
-            success: 'bg-green-600',
-            error: 'bg-red-600',
-            warning: 'bg-yellow-500',
-            info: 'bg-blue-600',
-          };
-          return (
-            <div className={`fixed top-5 right-5 z-50 p-4 rounded-lg shadow-lg text-white ${typeClasses[type]} flex items-center gap-4`}>
-              <span>{message}</span>
-              <button onClick={onClose} className="text-xl font-bold">&times;</button>
-            </div>
-          );
-        };
-
-        // =================================================================================
-        // INLINED: components/Header.tsx
-        // =================================================================================
-        const Header = ({ onManageTemplates, onReconfigure }) => {
-          return (
-            <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-border-color">
-              <div>
-                <h1 className="text-3xl font-bold text-white">
-                  GESTION NEGACIONES EJE CAFETERO
-                </h1>
-                <p className="text-text-secondary">Sistema Integrado de Gestión de Flujos de Trabajo</p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <button onClick={onManageTemplates} className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors">
-                  Gestionar Plantillas
-                </button>
-                <button onClick={onReconfigure} className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0L8.21 5.15a1.5 1.5 0 01-1.25.82l-2.09.28c-1.68.23-2.34 2.26-1.09 3.42l1.52 1.48a1.5 1.5 0 01-.42 2.1l-1.83 1.25c-1.38.94-.92 3.01.7 3.42l2.05.51a1.5 1.5 0 011.1.98l.8 2.07c.43 1.12 2.29 1.12 2.72 0l.8-2.07a1.5 1.5 0 011.1-.98l2.05-.51c1.62-.4 2.08-2.48.7-3.42l-1.83-1.25a1.5 1.5 0 01-.42-2.1l1.52-1.48c1.25-1.16.59-3.19-1.09-3.42L13 5.97a1.5 1.5 0 01-1.25-.82l-.3-1.98zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
-                    </svg>
-                    Reconfigurar Conexión
-                </button>
-              </div>
-            </header>
-          );
-        };
-        
-
-        // =================================================================================
-        // INLINED: components/Dashboard.tsx
-        // =================================================================================
-        const DashboardCard = ({ title, value, icon }) => (
-          <div className="bg-surface p-4 rounded-lg border border-border-color flex items-center">
-            <div className="text-3xl text-primary mr-4">{icon}</div>
-            <div>
-              <h4 className="text-sm font-semibold text-text-secondary uppercase tracking-wider">{title}</h4>
-              <p className="text-2xl font-bold text-text-primary">{value}</p>
-            </div>
-          </div>
-        );
-
-        const Dashboard = ({ reviewCount, trackingCount, archivedCount, editsCount }) => (
-          <section id="dashboard" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <DashboardCard title="Casos en Revisión" value={reviewCount} icon={'📋'} />
-            <DashboardCard title="Seguimiento Activo" value={trackingCount} icon={'⏳'} />
-            <DashboardCard title="Casos Archivados" value={archivedCount} icon={'🗄️'} />
-            <DashboardCard title="Ediciones en Sesión" value={editsCount} icon={'✏️'} />
-          </section>
-        );
-
-
-        // =================================================================================
-        // INLINED: components/DataInputArea.tsx
-        // =================================================================================
-        function DataInputArea({
-          id,
-          title,
-          headers,
-          data,
-          onDataChange,
-          onProcess,
-          processButtonText = "Procesar Datos",
-        }) {
-          
-          const handlePaste = useCallback((e) => {
-            e.preventDefault();
-            const pastedText = e.clipboardData.getData('text/plain');
-            const newRows = processPastedData(pastedText, headers);
-
-            const updatedData = [...data.filter(row => Object.values(row).some(val => val)), ...newRows];
-            
-            const emptyRowCount = updatedData.filter(row => !Object.values(row).some(val => val)).length;
-            if (emptyRowCount < 5) {
-                for (let i = 0; i < (5 - emptyRowCount); i++) {
-                    updatedData.push({});
+        const Notification = ({ message, type, onDismiss }) => {
+            useEffect(() => {
+                if (message) {
+                    const timer = setTimeout(onDismiss, 5000);
+                    return () => clearTimeout(timer);
                 }
-            }
+            }, [message, onDismiss]);
 
-            onDataChange(updatedData);
-          }, [data, headers, onDataChange]);
+            if (!message) return null;
 
-          const handleCellChange = (rowIndex, header, value) => {
-            const newData = [...data];
-            newData[rowIndex] = { ...newData[rowIndex], [header]: value };
-            
-            const emptyRowCount = newData.filter(row => !Object.values(row).some(val => val)).length;
-            if (emptyRowCount < 5) {
-                newData.push({});
-            }
-
-            onDataChange(newData);
-          };
-          
-          const clearTable = () => {
-            onDataChange(Array(5).fill({}));
-          }
-
-          return (
-            <section id={id} className="space-y-4">
-              <h2 className="text-2xl font-bold text-primary border-b border-border-color pb-2">{title}</h2>
-              <div className="table-container max-h-72 overflow-auto border border-border-color rounded-lg">
-                <table className="w-full text-sm text-left text-text-secondary">
-                  <thead className="text-xs text-text-primary uppercase bg-header sticky top-0">
-                    <tr>
-                      {headers.map(header => (
-                        <th key={header} scope="col" className="px-4 py-3 whitespace-nowrap">{header}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody onPaste={handlePaste}>
-                    {data.map((row, rowIndex) => (
-                      <tr key={rowIndex} className="border-b border-border-color hover:bg-highlight">
-                        {headers.map(header => (
-                          <td
-                            key={`${rowIndex}-${header}`}
-                            className="px-4 py-2 border-r border-border-color focus:bg-primary focus:text-black outline-none"
-                            contentEditable
-                            onBlur={(e) => handleCellChange(rowIndex, header, e.currentTarget.innerText)}
-                            suppressContentEditableWarning={true}
-                          >
-                            {row[header] || ''}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="flex gap-4">
-                <button onClick={onProcess} className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors">
-                  {processButtonText}
-                </button>
-                <button onClick={clearTable} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
-                  Limpiar Tabla
-                </button>
-              </div>
-            </section>
-          );
-        }
-
-        // =================================================================================
-        // INLINED: components/ReviewArea.tsx
-        // =================================================================================
-        const ReviewArea = ({
-          data,
-          templates,
-          updateRow,
-          incrementEdits,
-          onSendToTracking,
-          onAddCasesToCloud,
-          onPreview,
-          onExportForMailMerge,
-          sortConfig,
-          setSortConfig,
-          isSaving,
-        }) => {
-          const [selectedRows, setSelectedRows] = useState(new Set());
-          const [filter, setFilter] = useState('');
-          
-          const REVIEW_HEADERS = [
-              { key: 'Fecha_Neg', label: 'Fecha Neg.' },
-              { key: 'No_Orden', label: 'No. Orden' },
-              { key: 'No_Cedula', label: 'No. Cédula' },
-              { key: 'Nombre', label: 'Nombre' },
-              { key: 'EPS', label: 'EPS' },
-              { key: 'Programa', label: 'Programa', compact: true },
-              { key: 'Motivo_Negacion', label: 'Motivo Neg.', compact: true },
-              { key: 'Descripcion_PDF', label: 'Descripción', compact: true },
-              { key: 'Justificacion_PDF', label: 'Justificación', compact: true },
-              { key: 'Fundamento_Legal_PDF', label: 'Fund. Legal', compact: true },
-          ];
-
-          const filteredData = useMemo(() => {
-            if (!filter) return data;
-            const lowercasedFilter = filter.toLowerCase();
-            return data.filter(row =>
-              Object.values(row).some(value =>
-                String(value).toLowerCase().includes(lowercasedFilter)
-              )
-            );
-          }, [data, filter]);
-
-          const handleSelectRow = (noOrden) => {
-            const newSelection = new Set(selectedRows);
-            if (newSelection.has(noOrden)) {
-              newSelection.delete(noOrden);
-            } else {
-              newSelection.add(noOrden);
-            }
-            setSelectedRows(newSelection);
-          };
-
-          const handleSelectAll = (e) => {
-            if (e.target.checked) {
-              const allOrderNumbers = filteredData.map(row => row.No_Orden);
-              setSelectedRows(new Set(allOrderNumbers));
-            } else {
-              setSelectedRows(new Set());
-            }
-          };
-
-          const handleCellBlur = (noOrden, key, value) => {
-            const originalRow = data.find(r => r.No_Orden === noOrden);
-            if (originalRow && originalRow[key] !== value) {
-              updateRow(noOrden, { [key]: value });
-              incrementEdits();
-            }
-          };
-          
-          const handleSelectChange = (noOrden, value) => {
-            const changes = { Tipo_Carta: value };
-            const template = templates.find(t => t.id === value);
-            if (!template || !template.requiresTracking) {
-                changes.Radicado_Comp = '';
-            }
-            updateRow(noOrden, changes);
-          };
-
-          const requestSort = (key) => {
-            let direction = 'ascending';
-            if (sortConfig.key === key && sortConfig.direction === 'ascending') {
-                direction = 'descending';
-            }
-            setSortConfig({ key, direction });
-          };
-          
-          const getSortIndicator = (key) => {
-            if (sortConfig.key !== key) return null;
-            return sortConfig.direction === 'ascending' ? ' ▲' : ' ▼';
-          };
-
-          return (
-            <section id="area3" className="space-y-4">
-              <h2 className="text-2xl font-bold text-primary border-b border-border-color pb-2">Área 3: Revisión Final y Exportación</h2>
-              <div className="action-bar bg-highlight p-4 rounded-lg flex flex-wrap items-center gap-4">
-                <input
-                  type="text"
-                  placeholder="Buscar en tabla de revisión..."
-                  className="bg-surface border border-border-color rounded-md px-3 py-2 text-text-primary placeholder-text-secondary w-full sm:w-auto"
-                  value={filter}
-                  onChange={(e) => setFilter(e.target.value)}
-                />
-                <span className="text-text-primary">{selectedRows.size} fila(s) seleccionada(s)</span>
-              </div>
-
-              <div className="table-container max-h-[700px] overflow-auto border border-border-color rounded-lg">
-                <table className="w-full text-sm text-left text-text-secondary table-auto">
-                  <thead className="text-xs text-text-primary uppercase bg-header sticky top-0">
-                    <tr>
-                      <th className="px-4 py-3"><input type="checkbox" onChange={handleSelectAll} checked={selectedRows.size === filteredData.length && filteredData.length > 0} /></th>
-                      <th className="px-4 py-3">👁️</th>
-                       {REVIEW_HEADERS.map(({ key, label, compact }) => (
-                        <th key={key} onClick={() => requestSort(key)} className={`px-4 py-3 cursor-pointer ${compact ? 'max-w-[150px]' : ''}`}>
-                            {label}{getSortIndicator(key)}
-                        </th>
-                      ))}
-                      <th className="px-4 py-3">Tipo de Carta</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredData.map((row) => {
-                      const template = templates.find(t => t.id === row.Tipo_Carta);
-                      const requiresRadicado = template && template.requiresTracking;
-                      
-                      return (
-                        <tr key={row.No_Orden} className={`border-b border-border-color hover:bg-highlight ${requiresRadicado ? 'bg-indigo-900/50' : ''}`}>
-                          <td className="px-4 py-2"><input type="checkbox" checked={selectedRows.has(row.No_Orden)} onChange={() => handleSelectRow(row.No_Orden)} /></td>
-                          <td className="px-4 py-2 text-lg cursor-pointer" onClick={() => onPreview(row)}>👁️</td>
-                          {REVIEW_HEADERS.map(({ key, compact }) => (
-                            <td key={key} 
-                                className={`px-4 py-2 border-r border-border-color focus:bg-primary focus:text-black outline-none ${compact ? 'max-w-[150px] overflow-hidden text-ellipsis whitespace-nowrap' : ''}`}
-                                contentEditable
-                                onBlur={(e) => handleCellBlur(row.No_Orden, key, e.currentTarget.innerText)}
-                                suppressContentEditableWarning={true}
-                            >
-                                {row[key]}
-                            </td>
-                          ))}
-                          <td className="px-4 py-2">
-                            <div className="flex flex-col gap-1">
-                              <select 
-                                value={row.Tipo_Carta || ''}
-                                onChange={(e) => handleSelectChange(row.No_Orden, e.target.value)}
-                                className="bg-surface border border-border-color rounded-md px-2 py-1 text-text-primary w-full"
-                              >
-                                <option value="">-- Seleccionar --</option>
-                                {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                              </select>
-                              {requiresRadicado && (
-                                <input
-                                  type="text"
-                                  placeholder="Radicado..."
-                                  value={row.Radicado_Comp || ''}
-                                  onChange={(e) => updateRow(row.No_Orden, { Radicado_Comp: e.target.value })}
-                                  className="bg-surface border border-border-color rounded-md px-2 py-1 text-text-primary w-full mt-1"
-                                />
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-              <div className="flex flex-wrap gap-4">
-                <button 
-                    onClick={() => onAddCasesToCloud(Array.from(selectedRows))}
-                    disabled={selectedRows.size === 0 || isSaving}
-                    className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
-                >
-                    {isSaving ? 'Agregando...' : `Agregar ${selectedRows.size} Casos a la Nube`}
-                </button>
-                <button 
-                    onClick={() => onSendToTracking(Array.from(selectedRows))}
-                    disabled={selectedRows.size === 0}
-                    className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:bg-gray-500"
-                >
-                    Enviar a Seguimiento
-                </button>
-                 <button 
-                    onClick={() => onExportForMailMerge(data)}
-                    className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
-                >
-                    Exportar para Envío Masivo
-                </button>
-              </div>
-            </section>
-          );
-        };
-        
-
-        // =================================================================================
-        // INLINED: components/TrackingArea.tsx
-        // =================================================================================
-        const TrackingTable = ({ data, isArchived, onUpdate, onArchive, filter }) => {
-            
-          const [selectedRows, setSelectedRows] = useState(new Set());
-          
-          const statusClasses = {
-            'Pendiente': 'bg-yellow-600/20',
-            'En Gestión': 'bg-blue-600/20',
-            'Finalizado': 'bg-green-600/20',
-          };
-
-          const filteredData = useMemo(() => {
-            if (!filter) return data;
-            const lowercasedFilter = filter.toLowerCase();
-            return data.filter(row =>
-              Object.values(row).some(value =>
-                String(value).toLowerCase().includes(lowercasedFilter)
-              )
-            );
-          }, [data, filter]);
-
-          const handleSelectRow = (index) => {
-            const newSelection = new Set(selectedRows);
-            if (newSelection.has(index)) {
-              newSelection.delete(index);
-            } else {
-              newSelection.add(index);
-            }
-            setSelectedRows(newSelection);
-          };
-          
-          const handleSelectAll = (e) => {
-            if (e.target.checked) {
-              setSelectedRows(new Set(filteredData.map((_, index) => index)));
-            } else {
-              setSelectedRows(new Set());
-            }
-          };
-          
-          const handleBulkArchive = () => {
-            if (selectedRows.size > 0) {
-              onArchive(Array.from(selectedRows));
-              setSelectedRows(new Set());
-            }
-          };
-
-          return (
-            <div className="space-y-4">
-              <div className="flex justify-end">
-                 {selectedRows.size > 0 && (
-                     <button
-                        onClick={handleBulkArchive}
-                        className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors"
-                     >
-                        {isArchived ? `Restaurar ${selectedRows.size} Seleccionados` : `Archivar ${selectedRows.size} Seleccionados`}
-                     </button>
-                 )}
-              </div>
-              <div className="table-container max-h-[400px] overflow-auto border border-border-color rounded-lg">
-                <table className="w-full text-sm text-left text-text-secondary">
-                  <thead className="text-xs text-text-primary uppercase bg-header sticky top-0">
-                    <tr>
-                      <th className="px-4 py-3"><input type="checkbox" onChange={handleSelectAll} checked={selectedRows.size === filteredData.length && filteredData.length > 0}/></th>
-                      <th className="px-4 py-3">Fecha Ing.</th>
-                      <th className="px-4 py-3">No. Orden</th>
-                      <th className="px-4 py-3">Nombre</th>
-                      <th className="px-4 py-3">EPS</th>
-                      <th className="px-4 py-3">Radicado</th>
-                      <th className="px-4 py-3">Estado</th>
-                      <th className="px-4 py-3">Notas</th>
-                      <th className="px-4 py-3">Acción</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredData.map((row, index) => {
-                      const originalIndex = data.indexOf(row);
-                      return (
-                      <tr key={originalIndex} className={`border-b border-border-color hover:bg-highlight transition-colors ${isArchived ? 'bg-archive/50 text-text-secondary' : statusClasses[row.Estado] || ''}`}>
-                        <td className="px-4 py-2"><input type="checkbox" checked={selectedRows.has(originalIndex)} onChange={() => handleSelectRow(originalIndex)} /></td>
-                        <td className="px-4 py-2">{row.Fecha_Ing}</td>
-                        <td className="px-4 py-2">{row.No_Orden}</td>
-                        <td className="px-4 py-2">{row.Nombre}</td>
-                        <td className="px-4 py-2">{row.EPS}</td>
-                        <td className="px-4 py-2">{row.Radicado}</td>
-                        <td className="px-4 py-2">
-                          <select
-                            value={row.Estado}
-                            onChange={e => onUpdate(originalIndex, { ...row, Estado: e.target.value })}
-                            className="bg-surface border border-border-color rounded-md px-2 py-1 text-text-primary"
-                          >
-                            {TRACKING_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
-                          </select>
-                        </td>
-                        <td className="px-4 py-2 outline-none focus:bg-primary focus:text-black" contentEditable onBlur={e => onUpdate(originalIndex, { ...row, Notas: e.currentTarget.innerText })} suppressContentEditableWarning={true}>{row.Notas}</td>
-                        <td className="px-4 py-2 text-lg cursor-pointer" onClick={() => onArchive([originalIndex])}>{isArchived ? '♻️' : '🗄️'}</td>
-                      </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          );
+            return React.createElement('div', { className: `notification ${type} show` }, message);
         };
 
-        const TrackingArea = ({ trackingData, archivedData, updateTrackingData, archiveItems }) => {
-          const [showArchived, setShowArchived] = useState(false);
-          const [filter, setFilter] = useState('');
+        const DataInputArea = ({ setFinalData, showNotification }) => {
+            const [rawInput1, setRawInput1] = useState('');
+            const [rawInput2, setRawInput2] = useState('');
 
-          return (
-            <section id="area4" className="space-y-4">
-              <h2 className="text-2xl font-bold text-primary border-b border-border-color pb-2">Área 4: Seguimiento (Guardado Automático)</h2>
-              <div className="action-bar bg-highlight p-4 rounded-lg flex flex-wrap items-center gap-4">
-                <input
-                  type="text"
-                  placeholder="Buscar en seguimiento..."
-                  className="bg-surface border border-border-color rounded-md px-3 py-2 text-text-primary placeholder-text-secondary w-full sm:w-auto"
-                  value={filter}
-                  onChange={e => setFilter(e.target.value)}
-                />
-                <button onClick={() => setShowArchived(!showArchived)} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg">
-                  {showArchived ? 'Ocultar' : 'Mostrar'} Archivados ({archivedData.length})
-                </button>
-              </div>
-
-              <h3 className="text-xl font-semibold text-white">Casos Activos ({trackingData.length})</h3>
-              <TrackingTable
-                data={trackingData}
-                isArchived={false}
-                onUpdate={(index, row) => updateTrackingData(index, row, false)}
-                onArchive={(indices) => archiveItems(indices, false)}
-                filter={filter}
-              />
-
-              {showArchived && (
-                <div className="mt-8">
-                  <h3 className="text-xl font-semibold text-white">Casos Archivados ({archivedData.length})</h3>
-                  <TrackingTable
-                    data={archivedData}
-                    isArchived={true}
-                    onUpdate={(index, row) => updateTrackingData(index, row, true)}
-                    onArchive={(indices) => archiveItems(indices, true)}
-                    filter={filter}
-                  />
-                </div>
-              )}
-            </section>
-          );
-        };
-
-        // =================================================================================
-        // INLINED: components/SetupModal.tsx
-        // =================================================================================
-        const SetupModal = ({ onSave, onClose, initialUrl = '' }) => {
-          const [url, setUrl] = useState(initialUrl);
-          const [isVerifying, setIsVerifying] = useState(false);
-
-          const handleSave = async () => {
-            if (!url.startsWith('https://script.google.com/macros/s/')) {
-                alert("Por favor, introduce una URL válida de Google Apps Script.");
-                return;
-            }
-            setIsVerifying(true);
-            await onSave(url);
-            setIsVerifying(false);
-          };
-
-          return (
-            <div className="fixed inset-0 bg-background bg-opacity-90 flex justify-center items-center z-50 p-4">
-              <div className="bg-surface rounded-lg shadow-xl w-full max-w-lg border border-border-color p-8 space-y-6">
-                <div className="text-center">
-                    <h2 className="text-2xl font-bold text-primary">Configuración de Conexión</h2>
-                    <p className="text-text-secondary mt-2">
-                        Proporciona la URL de Google Apps Script para conectar a tu base de datos.
-                    </p>
-                </div>
-                <div>
-                    <label htmlFor="script-url" className="block text-sm font-medium text-text-primary mb-1">
-                        URL del Script
-                    </label>
-                    <input
-                        id="script-url"
-                        type="url"
-                        value={url}
-                        onChange={(e) => setUrl(e.target.value)}
-                        placeholder="https://script.google.com/macros/s/..."
-                        className="w-full bg-background border border-border-color rounded-md px-3 py-2 text-text-primary placeholder-text-secondary focus:ring-primary focus:border-primary"
-                    />
-                </div>
-                <div className="flex justify-end gap-4">
-                    <button
-                        onClick={onClose}
-                        className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        onClick={handleSave}
-                        disabled={isVerifying || !url}
-                        className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
-                    >
-                        {isVerifying ? 'Verificando...' : 'Guardar y Verificar'}
-                    </button>
-                </div>
-              </div>
-            </div>
-          );
-        };
-
-        // =================================================================================
-        // INLINED: components/TemplateManagerModal.tsx
-        // =================================================================================
-        const TemplateManagerModal = ({ templates, onClose, onSave, onReset }) => {
-          const [currentTemplates, setCurrentTemplates] = useState(templates);
-          const [editingTemplate, setEditingTemplate] = useState(null);
-
-          const handleSave = () => {
-            onSave(currentTemplates);
-            onClose();
-          };
-
-          const handleAddNew = () => {
-            setEditingTemplate({ id: `tpl_${Date.now()}`, name: '', body: '' });
-          };
-          
-          const handleEdit = (template) => {
-            setEditingTemplate({ ...template });
-          };
-
-          const handleDelete = (id) => {
-            if (window.confirm('¿Estás seguro de que quieres eliminar esta plantilla?')) {
-              setCurrentTemplates(currentTemplates.filter(t => t.id !== id));
-            }
-          };
-          
-          const handleSaveTemplateEdit = () => {
-            if (!editingTemplate || !editingTemplate.name || !editingTemplate.body) {
-              alert('El nombre y el cuerpo de la plantilla no pueden estar vacíos.');
-              return;
-            }
-
-            const existing = currentTemplates.find(t => t.id === editingTemplate.id);
-            if (existing) {
-              setCurrentTemplates(currentTemplates.map(t => t.id === editingTemplate.id ? editingTemplate : t));
-            } else {
-              setCurrentTemplates([...currentTemplates, editingTemplate]);
-            }
-            setEditingTemplate(null);
-          };
-
-          return (
-            <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-40 p-4">
-              <div className="bg-surface rounded-lg shadow-xl w-full max-w-4xl border border-border-color flex flex-col max-h-[90vh]">
-                <div className="p-6 border-b border-border-color flex justify-between items-center">
-                  <h3 className="text-xl font-bold text-primary">Gestionar Plantillas de Correo</h3>
-                  <button onClick={onClose} className="text-text-secondary text-2xl">&times;</button>
-                </div>
-                
-                <div className="p-6 overflow-y-auto space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <h4 className="text-lg font-semibold mb-2">Plantillas Actuales</h4>
-                      <ul className="space-y-2 border border-border-color rounded-lg p-2 max-h-96 overflow-y-auto">
-                        {currentTemplates.map(template => (
-                          <li key={template.id} className="flex justify-between items-center p-2 bg-highlight rounded">
-                            <span className="text-text-primary">{template.name}</span>
-                            <div className="space-x-2">
-                              <button onClick={() => handleEdit(template)} className="text-sm bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded">Editar</button>
-                              <button onClick={() => handleDelete(template.id)} className="text-sm bg-danger hover:bg-danger-hover px-2 py-1 rounded">Borrar</button>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+            const parsePastedData = (pastedText, requiredHeaders) => {
+                try {
+                    const rows = pastedText.trim().split('\n').map(row => row.split('\t'));
+                    if (rows.length < 2) return [];
+                    const headers = rows[0].map(h => h.trim());
                     
-                    <div>
-                      <h4 className="text-lg font-semibold mb-2">{editingTemplate ? 'Editar Plantilla' : 'Crear Nueva Plantilla'}</h4>
-                      {editingTemplate ? (
-                        <div className="space-y-4 p-4 border border-border-color rounded-lg bg-highlight">
-                           <input
-                            type="text"
-                            placeholder="Nombre de la Plantilla"
-                            value={editingTemplate.name || ''}
-                            onChange={(e) => setEditingTemplate({ ...editingTemplate, name: e.target.value })}
-                            className="w-full bg-background border border-border-color rounded-md px-3 py-2"
-                          />
-                          <textarea
-                            placeholder="Cuerpo de la Plantilla..."
-                            value={editingTemplate.body || ''}
-                            onChange={(e) => setEditingTemplate({ ...editingTemplate, body: e.target.value })}
-                            className="w-full bg-background border border-border-color rounded-md px-3 py-2 h-40 resize-y"
-                          />
-                           <p className="text-xs text-text-secondary">Marcadores: {`{{Nombre}}`}, {`{{No_Orden}}`}, etc.</p>
-                          <div className="flex gap-2">
-                            <button onClick={handleSaveTemplateEdit} className="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm">Guardar Cambios</button>
-                            <button onClick={() => setEditingTemplate(null)} className="bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm">Cancelar</button>
-                          </div>
-                        </div>
-                      ) : (
-                        <button onClick={handleAddNew} className="w-full bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg">
-                          Añadir Nueva Plantilla
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                    const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
+                    if(missingHeaders.length > 0) {
+                        showNotification(`Faltan columnas: ${missingHeaders.join(', ')}`, 'error');
+                        return [];
+                    }
 
-                <div className="p-4 bg-header flex justify-between items-center rounded-b-lg">
-                   <button onClick={onReset} className="bg-danger hover:bg-danger-hover text-white font-bold py-2 px-4 rounded-lg">
-                    Restaurar Predeterminadas
-                  </button>
-                  <div className="flex gap-4">
-                    <button onClick={onClose} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg">
-                        Cancelar
-                    </button>
-                    <button onClick={handleSave} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">
-                        Guardar y Cerrar
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        };
+                    return rows.slice(1).map(row => {
+                        const rowData = {};
+                        headers.forEach((header, index) => {
+                            rowData[header] = row[index] || '';
+                        });
+                        return rowData;
+                    });
+                } catch (error) {
+                    showNotification(`Error al procesar datos: ${error.message}`, 'error');
+                    return [];
+                }
+            };
 
-        // =================================================================================
-        // INLINED: components/PreviewModal.tsx
-        // =================================================================================
-        const PreviewModal = ({ data, template, onClose }) => {
-          const bodyContent = template ? replacePlaceholders(template.body, data) : '<b>Error:</b> Plantilla no seleccionada o no encontrada.';
-          const fullBody = bodyContent + COMMON_EMAIL_BODY + SIGNATURE;
+            const handleCombineAndProcess = () => {
+                if (!rawInput1 || !rawInput2) {
+                    showNotification("Ambas áreas de datos deben contener información.", "warning");
+                    return;
+                }
+                const parsedData1 = parsePastedData(rawInput1, REQUIRED_HEADERS_1);
+                const parsedData2 = parsePastedData(rawInput2, REQUIRED_HEADERS_2);
 
-          const copyToClipboard = () => {
-            const tempEl = document.createElement('div');
-            tempEl.innerHTML = fullBody;
-            const textContent = tempEl.innerText || "";
-            navigator.clipboard.writeText(textContent)
-              .then(() => alert('¡Contenido copiado al portapapeles!'))
-              .catch(err => alert('Falló al copiar el contenido.'));
-          };
+                if (parsedData1.length === 0 || parsedData2.length === 0) {
+                    showNotification("No se pudieron procesar los datos. Revisa el formato y las cabeceras.", "error");
+                    return;
+                }
 
-          return (
-            <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-40 p-4">
-              <div className="bg-surface rounded-lg shadow-xl w-full max-w-3xl border border-border-color flex flex-col">
-                <div className="p-6 border-b border-border-color">
-                  <h3 className="text-xl font-bold text-primary">Vista Previa del Correo</h3>
-                </div>
-                <div 
-                  className="p-6 overflow-y-auto max-h-[60vh] bg-white text-black font-serif"
-                  dangerouslySetInnerHTML={{ __html: fullBody }}
-                />
-                <div className="p-4 bg-header flex justify-end gap-4 rounded-b-lg">
-                  <button onClick={copyToClipboard} className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors">
-                    Copiar Contenido
-                  </button>
-                  <button onClick={onClose} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
-                    Cerrar
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
+                const data2Map = new Map(parsedData2.map(item => [item.No_Orden, item]));
+
+                const combined = parsedData1.map(item1 => {
+                    const item2 = data2Map.get(item1.No_Orden);
+                    return {
+                        ...item1,
+                        DESCRIPCION: item2 ? item2.DESCRIPCION : '(pendiente)',
+                        JUSTIFICACION: item2 ? item2.JUSTIFICACION : '(pendiente)',
+                        FUNDAMENTO_LEGAL: item2 ? item2.FUNDAMENTO_LEGAL : '(pendiente)',
+                        Tipo_de_Carta: '-- Seleccionar --',
+                        Radicado: ''
+                    };
+                }).filter(item => item.No_Orden);
+
+                setFinalData(prevFinalData => {
+                    const existingOrderNumbers = new Set(prevFinalData.map(row => row.No_Orden));
+                    const newUniqueCases = combined.filter(newCase => !existingOrderNumbers.has(newCase.No_Orden));
+                    const addedCount = newUniqueCases.length;
+                    const skippedCount = combined.length - addedCount;
+
+                    if (addedCount > 0) {
+                        showNotification(`Proceso completado. Agregados: ${addedCount}, Omitidos (duplicados): ${skippedCount}.`, 'success');
+                    } else if (skippedCount > 0) {
+                        showNotification(`No se agregaron casos nuevos. Se omitieron ${skippedCount} duplicados.`, 'info');
+                    } else {
+                        showNotification("No se encontraron casos válidos para agregar.", 'warning');
+                    }
+
+                    setRawInput1('');
+                    setRawInput2('');
+                    return [...prevFinalData, ...newUniqueCases];
+                });
+            };
+
+            return React.createElement('div', { className: 'area-container' },
+                React.createElement('h2', null, 'Área 1: Ingreso de Datos'),
+                React.createElement('div', { className: 'data-input-grid' },
+                    React.createElement('div', null,
+                        React.createElement('h3', null, 'Datos Principales'),
+                        React.createElement('textarea', {
+                            placeholder: 'Pega aquí los datos principales (incluyendo cabeceras)...',
+                            value: rawInput1,
+                            onChange: e => setRawInput1(e.target.value)
+                        })
+                    ),
+                    React.createElement('div', null,
+                        React.createElement('h3', null, 'Datos Complementarios'),
+                        React.createElement('textarea', {
+                            placeholder: 'Pega aquí los datos complementarios (incluyendo cabeceras)...',
+                            value: rawInput2,
+                            onChange: e => setRawInput2(e.target.value)
+                        })
+                    )
+                ),
+                React.createElement('div', { className: 'button-group' },
+                    React.createElement('button', {
+                        className: 'btn-special',
+                        onClick: handleCombineAndProcess,
+                        disabled: !rawInput1 || !rawInput2
+                    }, 'Combinar y Procesar Datos')
+                )
+            );
         };
         
-
-        // =================================================================================
-        // INLINED: App.tsx (The main application component)
-        // =================================================================================
-        const App = () => {
-          const [state, setState] = useState({
-            finalData: [],
-            trackingData: [],
-            archivedData: [],
-            portalData: Array(5).fill({}),
-            pdfData: Array(5).fill({}),
-            templates: [],
-            scriptUrl: null,
-            isSetupNeeded: false,
-            isReconfiguring: false,
-            isLoading: true,
-            isSaving: false,
-            isTemplateManagerOpen: false,
-            previewData: null,
-            notification: null,
-            editsCount: 0,
-            onlineStatus: true,
-          });
-
-          const [sortConfig, setSortConfig] = useState({
-            key: 'No_Orden',
-            direction: 'ascending',
-          });
-
-          const hideNotification = () =>
-            setState((prev) => ({ ...prev, notification: null }));
-
-          const showNotification = (message, type, duration = 5000) => {
-            setState((prev) => ({ ...prev, notification: { message, type } }));
-            setTimeout(hideNotification, duration);
-          };
-
-          const handleSetScriptUrl = async (url) => {
-            setState((prev) => ({ ...prev, isLoading: true }));
-            try {
-              const data = await fetchData(url);
-              localStorage.setItem('sigweb_scriptUrl', url);
-              setState((prev) => ({
-                ...prev,
-                ...data,
-                scriptUrl: url,
-                isSetupNeeded: false,
-                isReconfiguring: false,
-                isLoading: false,
-              }));
-              showNotification('¡Conexión exitosa y datos cargados!', 'success');
-            } catch (error) {
-              console.error(error);
-              showNotification(
-                `Falló la conexión. Por favor, revisa la URL y los permisos del script.`,
-                'error'
-              );
-              setState((prev) => ({ ...prev, isLoading: false }));
-            }
-          };
-
-          useEffect(() => {
-            const url = localStorage.getItem('sigweb_scriptUrl');
-            const loadedTemplates = loadTemplates();
-            setState((prev) => ({ ...prev, templates: loadedTemplates }));
-
-            if (url) {
-              handleSetScriptUrl(url);
-            } else {
-              setState((prev) => ({ ...prev, isSetupNeeded: true, isLoading: false }));
-            }
-
-            const updateOnlineStatus = () => {
-                setState(prev => ({ ...prev, onlineStatus: navigator.onLine }));
-                if (!navigator.onLine) {
-                    showNotification("Estás desconectado. El guardado de datos está deshabilitado.", "warning", 10000);
+        const ReviewArea = ({
+            filteredFinalData, selectedRows, setSelectedRows, reviewSearchTerm, 
+            setReviewSearchTerm, handleFinalDataChange, addCasesToCloud, 
+            handleSendToTracking, finalDataCount
+        }) => {
+            const handleSelectAll = (e) => {
+                if (e.target.checked) {
+                    const allIds = new Set(filteredFinalData.map(row => row.No_Orden));
+                    setSelectedRows(allIds);
+                } else {
+                    setSelectedRows(new Set());
                 }
             };
-
-            window.addEventListener('online', updateOnlineStatus);
-            window.addEventListener('offline', updateOnlineStatus);
-            updateOnlineStatus();
-
-            return () => {
-                window.removeEventListener('online', updateOnlineStatus);
-                window.removeEventListener('offline', updateOnlineStatus);
+            
+            const handleSelectRow = (noOrden) => {
+                const newSelection = new Set(selectedRows);
+                if (newSelection.has(noOrden)) {
+                    newSelection.delete(noOrden);
+                } else {
+                    newSelection.add(noOrden);
+                }
+                setSelectedRows(newSelection);
             };
-          }, []);
 
-          const incrementEdits = () =>
-            setState((prev) => ({ ...prev, editsCount: prev.editsCount + 1 }));
-          
-          const handleAddCasesToCloud = async (selectedOrderNumbers) => {
-            if (!state.scriptUrl || !state.onlineStatus) {
-                showNotification('No se puede guardar. Revisa tu conexión o configuración.', 'error');
-                return;
-            }
-            if (selectedOrderNumbers.length === 0) {
-                showNotification('Por favor, selecciona al menos un caso para agregar.', 'warning');
-                return;
-            }
-
-            setState((prev) => ({ ...prev, isSaving: true }));
-            try {
-                const casesToAdd = state.finalData.filter(row => selectedOrderNumbers.includes(row.No_Orden));
-                const response = await addCasesToSheet(state.scriptUrl, casesToAdd);
-                
-                showNotification(response.message, 'success');
-
-                // Opcional: remover los casos añadidos del área de revisión para limpiar la UI
-                if (response.data && response.data.added > 0) {
-                    const addedOrderNumbers = new Set(casesToAdd.map(c => c.No_Orden));
-                    setState(prev => ({
-                        ...prev,
-                        finalData: prev.finalData.filter(row => !addedOrderNumbers.has(row.No_Orden))
-                    }));
-                }
-            } catch (error) {
-                console.error(error);
-                showNotification('Falló al agregar los casos. Inténtalo de nuevo.', 'error');
-            } finally {
-                setState((prev) => ({ ...prev, isSaving: false }));
-            }
-          };
-          
-          const debouncedSaveTracking = useCallback(
-            debounce((url, trackingData, archivedData) => {
-                if (!url || !navigator.onLine) return;
-                saveTrackingAndArchived(url, trackingData, archivedData)
-                    .then(response => showNotification(response.message, 'info', 2000))
-                    .catch(err => showNotification('Error al guardar cambios de seguimiento.', 'error'));
-            }, 2500),
-            []
-          );
-
-          const processPortalData = useCallback(() => {
-            const processedData = state.portalData
-              .filter((row) => row.No_Orden && String(row.No_Orden).trim())
-              .map((row) => ({
-                Fecha_Neg: row.Fecha_Neg || '',
-                Sucursal: row.Sucursal || '',
-                No_Orden: row.No_Orden || '',
-                No_Cedula: row.No_Cedula || '',
-                Nombre: capitalizeWords(row.Nombre || ''),
-                Motivo_Negacion: row.Motivo_Negacion || '',
-                Auditor: row.Auditor || '',
-                Programa: row.Programa || '',
-                Plan: row.Plan || '',
-                Antiguedad: row.Antiguedad || '',
-                EPS: (row.EPS || '').toUpperCase(),
-                Telefono: row.Telefono || '',
-                Celular: row.Celular || '',
-                Direccion: row.Direccion || '',
-                Email: row.Email || '',
-                Edad: row.Edad || '',
-                Tipo_Usuario: row.Tipo_Usuario || '',
-                Usuario_Emitio: row.Usuario_Emitio || '',
-                Regional: row.Regional || '',
-                Gestion_Negacion: row.Gestion_Negacion || '',
-                Descripcion_PDF: '(pendiente)',
-                Justificacion_PDF: '(pendiente)',
-                Fundamento_Legal_PDF: '(pendiente)',
-                Tipo_Carta: '',
-                Radicado_Comp: '',
-              }));
-              
-            // AÑADIR sin duplicar, en lugar de reemplazar
-            setState((prev) => {
-                const existingOrderNumbers = new Set(prev.finalData.map(r => r.No_Orden));
-                const newUniqueData = processedData.filter(r => !existingOrderNumbers.has(r.No_Orden));
-                if (newUniqueData.length < processedData.length) {
-                    showNotification(`Se omitieron ${processedData.length - newUniqueData.length} casos duplicados.`, 'info');
-                }
-                return { ...prev, finalData: [...prev.finalData, ...newUniqueData] };
-            });
-            showNotification(
-              `${processedData.length} filas procesadas desde los datos del Portal.`,
-              'success'
+            return React.createElement('div', { className: 'area-container' },
+                React.createElement('h2', null, `Área 2: Revisión Final (${finalDataCount} casos)`),
+                React.createElement('div', { className: 'filter-controls' },
+                    React.createElement('input', {
+                        type: 'search',
+                        placeholder: 'Buscar en tabla de revisión...',
+                        value: reviewSearchTerm,
+                        onChange: e => setReviewSearchTerm(e.target.value),
+                        style: { flexGrow: 1 }
+                    })
+                ),
+                React.createElement('div', { className: 'table-wrapper' },
+                    React.createElement('table', null,
+                        React.createElement('thead', null, React.createElement('tr', null,
+                            React.createElement('th', null, React.createElement('input', { type: 'checkbox', onChange: handleSelectAll, checked: selectedRows.size === filteredFinalData.length && filteredFinalData.length > 0 })),
+                            ['No_Orden', 'FECHA_NEGACION', 'NO_CEDULA', 'NOMBRE', 'EPS', 'PROGRAMA', 'MOTIVO_NEGACION', 'DESCRIPCION', 'JUSTIFICACION', 'FUNDAMENTO_LEGAL', 'Tipo_de_Carta', 'Radicado']
+                            .map(header => React.createElement('th', { key: header }, header.replace(/_/g, ' ')))
+                        )),
+                        React.createElement('tbody', null,
+                            filteredFinalData.map(row => React.createElement('tr', { key: row.No_Orden },
+                                React.createElement('td', null, React.createElement('input', { type: 'checkbox', checked: selectedRows.has(row.No_Orden), onChange: () => handleSelectRow(row.No_Orden) })),
+                                React.createElement('td', {key: 'No_Orden'}, row.No_Orden),
+                                React.createElement('td', {key: 'FECHA_NEGACION'}, row.FECHA_NEGACION),
+                                React.createElement('td', {key: 'NO_CEDULA'}, row.NO_CEDULA),
+                                React.createElement('td', {key: 'NOMBRE'}, row.NOMBRE),
+                                React.createElement('td', {key: 'EPS'}, row.EPS),
+                                React.createElement('td', {key: 'PROGRAMA'}, row.PROGRAMA),
+                                React.createElement('td', {key: 'MOTIVO_NEGACION'}, row.MOTIVO_NEGACION),
+                                React.createElement('td', {key: 'DESCRIPCION'}, row.DESCRIPCION),
+                                React.createElement('td', {key: 'JUSTIFICACION'}, row.JUSTIFICACION),
+                                React.createElement('td', {key: 'FUNDAMENTO_LEGAL'}, row.FUNDAMENTO_LEGAL),
+                                React.createElement('td', { key: 'Tipo_de_Carta' }, React.createElement('select', { value: row.Tipo_de_Carta, onChange: e => handleFinalDataChange(row.No_Orden, 'Tipo_de_Carta', e.target.value) },
+                                    React.createElement('option', { value: '-- Seleccionar --' }, '-- Seleccionar --'),
+                                    React.createElement('option', { value: 'NEGACION' }, 'NEGACION'),
+                                    React.createElement('option', { value: 'COMPLEMENTARIEDAD' }, 'COMPLEMENTARIEDAD')
+                                )),
+                                React.createElement('td', { key: 'Radicado' }, React.createElement('input', { type: 'text', value: row.Radicado, onChange: e => handleFinalDataChange(row.No_Orden, 'Radicado', e.target.value) }))
+                            ))
+                        )
+                    )
+                ),
+                React.createElement('div', { className: 'button-group' },
+                    React.createElement('button', { className: 'btn-success', onClick: handleSendToTracking, disabled: selectedRows.size === 0 }, `Enviar a Seguimiento (${selectedRows.size})`),
+                    React.createElement('button', { className: 'btn-primary', onClick: addCasesToCloud, disabled: finalDataCount === 0 }, 'Agregar Casos a la Nube')
+                )
             );
-          }, [state.portalData]);
-
-          const mergePdfData = useCallback(() => {
-            const pdfMap = new Map();
-            state.pdfData
-              .filter((row) => row['Archivo (No. Orden)']?.trim())
-              .forEach((row) => {
-                pdfMap.set(row['Archivo (No. Orden)'].trim(), {
-                  Descripcion_PDF: row.Descripción || '',
-                  Justificacion_PDF: row.Justificación || '',
-                  Fundamento_Legal_PDF: row['Fundamento Legal'] || '',
-                });
-              });
-
-            const mergedData = state.finalData.map((finalRow) => {
-              const pdfMatch = pdfMap.get(finalRow.No_Orden.trim());
-              return pdfMatch ? { ...finalRow, ...pdfMatch } : finalRow;
-            });
-
-            setState((prev) => ({ ...prev, finalData: mergedData }));
-            showNotification(`Datos del PDF combinados en el Área de Revisión.`, 'success');
-          }, [state.pdfData, state.finalData]);
-
-          const updateFinalDataRow = (noOrden, partialUpdate) => {
-            const newData = state.finalData.map(row => 
-                row.No_Orden === noOrden ? { ...row, ...partialUpdate } : row
-            );
-            setState((prev) => ({ ...prev, finalData: newData }));
-          };
-
-          const handleSendToTracking = (selectedOrderNumbers) => {
-            const selectedRows = state.finalData.filter(row => selectedOrderNumbers.includes(row.No_Orden));
-            
-            const itemsToSend = [];
-            const itemsWithErrors = [];
-
-            selectedRows.forEach(row => {
-                const template = state.templates.find((t) => t.id === row.Tipo_Carta);
-                const requiresTracking = template && template.requiresTracking;
-                const hasRadicado = row.Radicado_Comp && row.Radicado_Comp.trim() !== '';
-
-                if (requiresTracking) {
-                    if (hasRadicado) {
-                        itemsToSend.push(row);
-                    } else {
-                        itemsWithErrors.push(row.No_Orden);
-                    }
-                }
-            });
-
-            if (itemsWithErrors.length > 0) {
-                const errorDetails = `Los siguientes casos requieren 'Radicado': ${itemsWithErrors.join(', ')}.`;
-                showNotification(errorDetails, 'error', 10000);
-            }
-
-            if (itemsToSend.length === 0) {
-              if (itemsWithErrors.length === 0) {
-                showNotification(
-                  "Ningún ítem seleccionado requiere ser enviado a seguimiento.",
-                  'warning'
-                );
-              }
-              return;
-            }
-
-            let newTrackingData = [...state.trackingData];
-            let newFinalData = [...state.finalData];
-            let addedCount = 0;
-            let updatedCount = 0;
-
-            itemsToSend.forEach((item) => {
-              const existingIndex = newTrackingData.findIndex((t) => t.No_Orden === item.No_Orden);
-              if (existingIndex !== -1) {
-                 if(window.confirm(`El caso ${item.No_Orden} ya está en seguimiento. ¿Quieres actualizarlo?`)) {
-                    newTrackingData[existingIndex].Radicado = item.Radicado_Comp;
-                    updatedCount++;
-                 }
-              } else {
-                  newTrackingData.push({
-                      Fecha_Ing: item.Fecha_Neg,
-                      No_Orden: item.No_Orden,
-                      Nombre: item.Nombre,
-                      EPS: item.EPS,
-                      Radicado: item.Radicado_Comp,
-                      Estado: 'Pendiente',
-                      Notas: '',
-                  });
-                  addedCount++;
-              }
-            });
-            
-            const itemsSentOrderNumbers = itemsToSend.map(i => i.No_Orden);
-            newFinalData = newFinalData.filter(f => !itemsSentOrderNumbers.includes(f.No_Orden));
-
-            setState((prev) => {
-              const newState = {
-                ...prev,
-                trackingData: newTrackingData,
-                finalData: newFinalData,
-              };
-              debouncedSaveTracking(newState.scriptUrl, newState.trackingData, newState.archivedData);
-              return newState;
-            });
-            showNotification(`${addedCount} nuevos ítems enviados, ${updatedCount} ítems actualizados en seguimiento.`, 'success');
-          };
-          
-          const exportForMailMerge = (data) => {
-              if (!data || data.length === 0) {
-                  showNotification("No hay datos en revisión para exportar.", "warning");
-                  return;
-              }
-              const dataToExport = data.map(row => ({
-                  "Fecha": row.Fecha_Neg,
-                  "Orden": row.No_Orden,
-                  "Cedula": row.No_Cedula,
-                  "Nombre": row.Nombre,
-                  "EPS": row.EPS,
-                  "Programa": row.Programa,
-                  "Email": row.Email,
-                  "Motivo": row.Motivo_Negacion,
-                  "Desc": row.Descripcion_PDF,
-                  "Just": row.Justificacion_PDF,
-                  "Fund": row.Fundamento_Legal_PDF,
-                  "Carta": state.templates.find(t => t.id === row.Tipo_Carta)?.name || "NO_SELECCIONADA",
-                  "Radicado": row.Radicado_Comp
-              }));
-              const ws = XLSX.utils.json_to_sheet(dataToExport);
-              const wb = XLSX.utils.book_new();
-              XLSX.utils.book_append_sheet(wb, ws, "DatosParaEnvio");
-              XLSX.writeFile(wb, "Sigweb_Procesado.xlsx");
-          };
-
-
-          const updateTrackingData = (index, updatedRow, isArchived) => {
-            const dataKey = isArchived ? 'archivedData' : 'trackingData';
-            setState((prev) => {
-                const currentData = [...prev[dataKey]];
-                currentData[index] = updatedRow;
-                const newState = { ...prev, [dataKey]: currentData };
-                debouncedSaveTracking(newState.scriptUrl, newState.trackingData, newState.archivedData);
-                return newState;
-            });
-          };
-
-          const archiveItems = (indices, fromArchived) => {
-            if (fromArchived) { // Unarchive
-              setState(prev => {
-                const itemsToMove = indices.map(i => prev.archivedData[i]).filter(Boolean);
-                const remainingArchived = prev.archivedData.filter((_, i) => !indices.includes(i));
-                const newState = {
-                  ...prev,
-                  trackingData: [...prev.trackingData, ...itemsToMove],
-                  archivedData: remainingArchived,
-                };
-                debouncedSaveTracking(newState.scriptUrl, newState.trackingData, newState.archivedData);
-                return newState;
-              });
-            } else { // Archive
-              setState(prev => {
-                const itemsToMove = indices.map(i => prev.trackingData[i]).filter(Boolean);
-                const remainingTracking = prev.trackingData.filter((_, i) => !indices.includes(i));
-                const newState = {
-                  ...prev,
-                  archivedData: [...prev.archivedData, ...itemsToMove],
-                  trackingData: remainingTracking,
-                };
-                debouncedSaveTracking(newState.scriptUrl, newState.trackingData, newState.archivedData);
-                return newState;
-              });
-            }
-          };
-
-          const handleSaveTemplates = (newTemplates) => {
-            setState((prev) => ({ ...prev, templates: newTemplates }));
-            saveTemplates(newTemplates);
-            showNotification('Plantillas de correo guardadas.', 'success');
-          };
-
-          const handleResetTemplates = () => {
-            if (window.confirm('¿Estás seguro de que quieres restaurar las plantillas predeterminadas? Se perderán las plantillas personalizadas.')) {
-              handleSaveTemplates(defaultTemplates);
-            }
-          };
-
-          const sortedFinalData = React.useMemo(() => {
-            let sortableItems = [...state.finalData];
-            if (sortConfig.key) {
-                sortableItems.sort((a, b) => {
-                    const aVal = a[sortConfig.key] || '';
-                    const bVal = b[sortConfig.key] || '';
-                    if (aVal < bVal) {
-                        return sortConfig.direction === 'ascending' ? -1 : 1;
-                    }
-                    if (aVal > bVal) {
-                        return sortConfig.direction === 'ascending' ? 1 : -1;
-                    }
-                    return 0;
-                });
-            }
-            return sortableItems;
-          }, [state.finalData, sortConfig]);
-
-          if (state.isLoading) {
-            return <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50"><Spinner /> <span className="ml-4 text-xl">Cargando Datos...</span></div>;
-          }
-
-          if (state.isSetupNeeded || state.isReconfiguring) {
-            return <SetupModal onSave={handleSetScriptUrl} onClose={() => setState(prev => ({ ...prev, isReconfiguring: false }))} initialUrl={state.scriptUrl || ''} />;
-          }
-
-          return (
-            <div className="p-4 sm:p-8 bg-background min-h-screen">
-              {state.notification && (
-                <Notification
-                  message={state.notification.message}
-                  type={state.notification.type}
-                  onClose={hideNotification}
-                />
-              )}
-              {!state.onlineStatus && (
-                 <div className="bg-yellow-600 text-white text-center p-2 fixed top-0 left-0 w-full z-50">
-                   Actualmente estás desconectado. La sincronización de datos está en pausa.
-                 </div>
-              )}
-
-              <main className="max-w-screen-2xl mx-auto bg-surface p-4 sm:p-6 rounded-xl border border-border-color space-y-8">
-                <Header 
-                    onManageTemplates={() => setState(prev => ({ ...prev, isTemplateManagerOpen: true }))}
-                    onReconfigure={() => setState(prev => ({ ...prev, isReconfiguring: true }))}
-                />
-                <Dashboard
-                  reviewCount={state.finalData.length}
-                  trackingCount={state.trackingData.length}
-                  archivedCount={state.archivedData.length}
-                  editsCount={state.editsCount}
-                />
-                <div className="text-right">
-                     <button
-                        onClick={() => exportDetailedReport(state.finalData, state.trackingData, state.archivedData)}
-                        className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
-                    >
-                        Descargar Reporte Detallado
-                    </button>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <DataInputArea
-                    id="portal-area"
-                    title="Área 1: Datos del Portal"
-                    headers={PORTAL_HEADERS}
-                    data={state.portalData}
-                    onDataChange={(newData) => setState(prev => ({ ...prev, portalData: newData }))}
-                    onProcess={processPortalData}
-                  />
-                  <DataInputArea
-                    id="pdf-area"
-                    title="Área 2: Datos del Extractor PDF"
-                    headers={PDF_HEADERS}
-                    data={state.pdfData}
-                    onDataChange={(newData) => setState(prev => ({ ...prev, pdfData: newData }))}
-                    onProcess={mergePdfData}
-                    processButtonText="Combinar con Datos del PDF"
-                  />
-                </div>
-
-                <ReviewArea
-                  data={sortedFinalData}
-                  templates={state.templates}
-                  updateRow={updateFinalDataRow}
-                  incrementEdits={incrementEdits}
-                  onSendToTracking={handleSendToTracking}
-                  onAddCasesToCloud={handleAddCasesToCloud}
-                  onPreview={(row) => setState(prev => ({ ...prev, previewData: row }))}
-                  onExportForMailMerge={exportForMailMerge}
-                  sortConfig={sortConfig}
-                  setSortConfig={setSortConfig}
-                  isSaving={state.isSaving}
-                />
-
-                <TrackingArea
-                  trackingData={state.trackingData}
-                  archivedData={state.archivedData}
-                  updateTrackingData={updateTrackingData}
-                  archiveItems={archiveItems}
-                />
-                
-                {state.isSaving && <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50"><Spinner /> <span className="ml-4 text-xl">Guardando Datos...</span></div>}
-              </main>
-
-              {state.isTemplateManagerOpen && (
-                <TemplateManagerModal
-                  templates={state.templates}
-                  onClose={() => setState(prev => ({...prev, isTemplateManagerOpen: false}))}
-                  onSave={handleSaveTemplates}
-                  onReset={handleResetTemplates}
-                />
-              )}
-
-              {state.previewData && (
-                <PreviewModal
-                  data={state.previewData}
-                  template={state.templates.find(t => t.id === state.previewData?.Tipo_Carta)}
-                  onClose={() => setState(prev => ({...prev, previewData: null}))}
-                />
-              )}
-            </div>
-          );
         };
 
-        // =================================================================================
-        // INLINED: index.tsx (Render the application)
-        // =================================================================================
-        const rootElement = document.getElementById('root');
-        if (!rootElement) {
-          throw new Error("Could not find root element to mount to");
-        }
-        const root = ReactDOM.createRoot(rootElement);
-        root.render(<App />);
+        const TrackingArea = ({
+            isSaving, filteredTrackingData, trackingSearchTerm, setTrackingSearchTerm, 
+            handleTrackingDataChange, handleArchiveCase
+        }) => {
+            return React.createElement('div', { className: 'area-container' },
+                React.createElement('h2', null, 'Área 3: Seguimiento'),
+                 React.createElement('div', { className: 'filter-controls' },
+                    React.createElement('input', {
+                        type: 'search',
+                        placeholder: 'Buscar en tabla de seguimiento...',
+                        value: trackingSearchTerm,
+                        onChange: e => setTrackingSearchTerm(e.target.value),
+                        style: { flexGrow: 1 }
+                    }),
+                    React.createElement('span', { className: 'saving-indicator', style: { opacity: isSaving ? 1 : 0 } }, 'Guardando en la nube...')
+                ),
+                React.createElement('div', { className: 'table-wrapper' },
+                    React.createElement('table', null,
+                        React.createElement('thead', null, React.createElement('tr', null,
+                             ['Estado', 'Nota', 'No_Orden', 'FECHA_NEGACION', 'NOMBRE', 'EPS', 'PROGRAMA', 'MOTIVO_NEGACION', 'Tipo_de_Carta', 'Radicado', 'Fecha_a_Seguimiento', 'Acción']
+                            .map(header => React.createElement('th', { key: header }, header.replace(/_/g, ' ')))
+                        )),
+                        React.createElement('tbody', null, 
+                            filteredTrackingData.map(row => React.createElement('tr', { key: row.No_Orden },
+                                React.createElement('td', null, React.createElement('select', { value: row.Estado, onChange: e => handleTrackingDataChange(row.No_Orden, 'Estado', e.target.value) },
+                                    ['PENDIENTE', 'GESTIONADO', 'DEVUELTO', 'REVISADO'].map(status => React.createElement('option', { key: status, value: status }, status))
+                                )),
+                                React.createElement('td', null, React.createElement('input', { type: 'text', value: row.Nota || '', onChange: e => handleTrackingDataChange(row.No_Orden, 'Nota', e.target.value) })),
+                                ['No_Orden', 'FECHA_NEGACION', 'NOMBRE', 'EPS', 'PROGRAMA', 'MOTIVO_NEGACION', 'Tipo_de_Carta', 'Radicado', 'Fecha_a_Seguimiento'].map(key => React.createElement('td', { key }, row[key])),
+                                React.createElement('td', null, React.createElement('button', { className: 'btn-secondary', onClick: () => handleArchiveCase(row.No_Orden) }, 'Archivar'))
+                            ))
+                        )
+                    )
+                )
+            );
+        };
 
+        // --- MAIN APP COMPONENT ---
+        const App = () => {
+            const [finalData, setFinalData] = useState([]);
+            const [trackingData, setTrackingData] = useState([]);
+            const [archivedData, setArchivedData] = useState([]);
+            const [isLoading, setIsLoading] = useState(true);
+            const [isSaving, setIsSaving] = useState(false);
+            const [notification, setNotification] = useState({ message: '', type: 'info' });
+            const [reviewSearchTerm, setReviewSearchTerm] = useState('');
+            const [trackingSearchTerm, setTrackingSearchTerm] = useState('');
+            const [selectedRows, setSelectedRows] = useState(new Set());
+
+            const showNotification = (message, type = 'info') => {
+                setNotification({ message, type });
+            };
+
+            const dismissNotification = () => {
+                setNotification({ message: '', type: 'info' });
+            };
+            
+            const filteredFinalData = useMemo(() => {
+                if (!reviewSearchTerm) return finalData;
+                const lowercasedFilter = reviewSearchTerm.toLowerCase();
+                return finalData.filter(row =>
+                    Object.values(row).some(value =>
+                        String(value).toLowerCase().includes(lowercasedFilter)
+                    )
+                );
+            }, [finalData, reviewSearchTerm]);
+
+            const filteredTrackingData = useMemo(() => {
+                if (!trackingSearchTerm) return trackingData;
+                const lowercasedFilter = trackingSearchTerm.toLowerCase();
+                return trackingData.filter(row =>
+                    Object.values(row).some(value =>
+                        String(value).toLowerCase().includes(lowercasedFilter)
+                    )
+                );
+            }, [trackingData, trackingSearchTerm]);
+
+            const handleFetchData = async () => {
+                setIsLoading(true);
+                try {
+                    const data = await fetchData();
+                    setFinalData(data.finalData || []);
+                    setTrackingData(data.trackingData || []);
+                    setArchivedData(data.archivedData || []);
+                    showNotification("Datos cargados correctamente desde la nube.", "success");
+                } catch (error) {
+                    showNotification(`Error al cargar datos: ${error.message}`, 'error');
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+            
+            const handleAddCasesToCloud = async () => {
+                if (finalData.length === 0) {
+                    showNotification("No hay casos en la tabla de revisión para agregar.", 'warning');
+                    return;
+                }
+                setIsLoading(true);
+                try {
+                    const result = await addCasesToCloud(finalData);
+                    showNotification(result.message, 'success');
+                    setFinalData([]);
+                    setSelectedRows(new Set());
+                } catch (error) {
+                    showNotification(`Error al guardar en la nube: ${error.message}`, 'error');
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            const handleSaveTrackingAndArchived = useCallback(async (currentTrackingData, currentArchivedData) => {
+                setIsSaving(true);
+                try {
+                    await saveTrackingAndArchivedData(currentTrackingData, currentArchivedData);
+                } catch (error) {
+                    showNotification(`Error de guardado automático: ${error.message}`, 'error');
+                } finally {
+                    setIsSaving(false);
+                }
+            }, []);
+
+            useEffect(() => {
+                handleFetchData();
+            }, []);
+            
+            useEffect(() => {
+                if (isLoading) return; // Don't save on initial load
+                const handler = setTimeout(() => {
+                     handleSaveTrackingAndArchived(trackingData, archivedData);
+                }, 1500); // Debounce saving
+                return () => clearTimeout(handler);
+            }, [trackingData, archivedData, isLoading, handleSaveTrackingAndArchived]);
+            
+            const handleFinalDataChange = (noOrden, field, value) => {
+                setFinalData(currentData =>
+                    currentData.map(row =>
+                        row.No_Orden === noOrden ? { ...row, [field]: value } : row
+                    )
+                );
+            };
+            
+            const handleTrackingDataChange = (noOrden, field, value) => {
+                setTrackingData(currentData =>
+                    currentData.map(row =>
+                        row.No_Orden === noOrden ? { ...row, [field]: value } : row
+                    )
+                );
+            };
+
+            const handleArchiveCase = (noOrden) => {
+                const caseToArchive = trackingData.find(row => row.No_Orden === noOrden);
+                if (!caseToArchive) return;
+                
+                const updatedCase = { ...caseToArchive, Fecha_Archivado: new Date().toISOString().split('T')[0] };
+                
+                setArchivedData(prev => [...prev, updatedCase]);
+                setTrackingData(prev => prev.filter(row => row.No_Orden !== noOrden));
+                showNotification(`Caso ${noOrden} archivado.`, 'info');
+            };
+
+            const handleSendToTracking = () => {
+                if (selectedRows.size === 0) {
+                    showNotification("No hay casos seleccionados para enviar a seguimiento.", "warning");
+                    return;
+                }
+                const casesToSend = finalData.filter(row => selectedRows.has(row.No_Orden));
+                const invalidCases = casesToSend.filter(c => c.Tipo_de_Carta === 'COMPLEMENTARIEDAD' && !c.Radicado);
+                if (invalidCases.length > 0) {
+                    const orderNumbers = invalidCases.map(c => c.No_Orden).join(', ');
+                    showNotification(`Error: Los casos ${orderNumbers} requieren 'Radicado' para carta de complementariedad.`, 'error');
+                    return;
+                }
+                const casesToKeep = finalData.filter(row => !selectedRows.has(row.No_Orden));
+                const newTrackingCases = casesToSend.map(c => ({...c, Estado: 'PENDIENTE', Fecha_a_Seguimiento: new Date().toISOString().split('T')[0], Nota: '' }));
+                setTrackingData(prev => [...prev, ...newTrackingCases]);
+                setFinalData(casesToKeep);
+                setSelectedRows(new Set());
+                showNotification(`${casesToSend.length} caso(s) enviados a seguimiento.`, 'success');
+            };
+
+            if (isLoading && !finalData.length && !trackingData.length) {
+                return React.createElement(Spinner, { message: "Cargando datos iniciales desde la nube..." });
+            }
+
+            return React.createElement('div', { id: 'app-container' },
+                React.createElement('h1', null, 'Sigweb Pro v3.5 (ES)'),
+                React.createElement(DataInputArea, { setFinalData, showNotification }),
+                React.createElement(ReviewArea, {
+                    filteredFinalData,
+                    selectedRows,
+                    setSelectedRows,
+                    reviewSearchTerm,
+                    setReviewSearchTerm,
+                    handleFinalDataChange,
+                    addCasesToCloud: handleAddCasesToCloud,
+                    handleSendToTracking,
+                    finalDataCount: finalData.length,
+                }),
+                React.createElement(TrackingArea, {
+                    isSaving,
+                    filteredTrackingData,
+                    trackingSearchTerm,
+                    setTrackingSearchTerm,
+                    handleTrackingDataChange,
+                    handleArchiveCase
+                }),
+                React.createElement(Notification, { message: notification.message, type: notification.type, onDismiss: dismissNotification }),
+                (isLoading && (finalData.length > 0 || trackingData.length > 0)) && React.createElement(Spinner, { message: "Sincronizando con la nube..." })
+            );
+        };
+
+        // --- RENDER APP ---
+        const rootElement = document.getElementById('root');
+        if (rootElement) {
+            const root = ReactDOM.createRoot(rootElement);
+            root.render(React.createElement(App));
+        } else {
+            console.error('Failed to find the root element');
+        }
     </script>
 </body>
 </html>
