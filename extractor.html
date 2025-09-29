@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Extractor de Información de PDF v2.0</title>
+    <title>Extractor de Información de PDF v2.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -107,7 +107,7 @@
             </div>
         </main>
     </div>
-    <div class="version-tag">v2.0</div>
+    <div class="version-tag">v2.1</div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -330,7 +330,7 @@
                     """
                 `;
 
-                const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+                const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
                 try {
                     const response = await fetch(API_URL, {
