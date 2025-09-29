@@ -3,79 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Extractor de Información de PDF</title>
+    <title>Extractor de Información de PDF v2.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
         .loader { border-top-color: #4f46e5; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .drag-over { border-color: #4f46e5; background-color: #374151; }
-        .highlight-warning { background: #fffbe6 !important; color: #b45309 !important; }
-        .highlight-error { background: #fee2e2 !important; color: #b91c1c !important; }
+        .highlight-warning { background-color: rgba(251, 191, 36, 0.1); color: #facc15; }
+        .highlight-error { background-color: rgba(248, 113, 113, 0.1); color: #f87171; }
         .version-tag { position: fixed; right: 16px; bottom: 8px; z-index: 50; font-size: 0.95rem; font-weight: bold; background: #6366f1; color: #fff; padding: 4px 12px; border-radius: 8px; box-shadow: 0 2px 6px #0002; }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-200 min-h-screen flex items-center justify-center p-4">
 
     <div class="w-full max-w-6xl mx-auto bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-10">
-        <header class="text-center mb-4">
+        <header class="text-center mb-6">
             <h1 class="text-3xl md:text-4xl font-bold text-white mb-2">Extractor de Datos de PDF</h1>
-            <p class="text-gray-400 mb-4">Sube tus archivos PDF y tu archivo de códigos para extraer la información automáticamente.</p>
-            <div class="bg-gray-700/70 rounded-lg px-4 py-3 text-left text-sm text-gray-200 mb-4">
+            <p class="text-gray-400 mb-6">Sube tus archivos PDF y tu archivo de códigos para extraer la información automáticamente.</p>
+            <div class="bg-gray-700/70 rounded-lg px-4 py-3 text-left text-sm text-gray-300">
                 <strong>Instrucciones de uso:</strong>
-                <ul class="list-disc ml-5 mt-2">
-                    <li>Ingresa tu clave de la API de Gemini. Se guardará automáticamente en tu navegador.</li>
+                <ul class="list-disc ml-5 mt-2 space-y-1">
+                    <li>Ingresa tu clave de la API de Gemini. Se guardará localmente en tu navegador.</li>
                     <li>Sube tu archivo <b>JSON</b> con los códigos y descripciones.</li>
-                    <li>Sube tus archivos PDF en el área de carga.</li>
+                    <li>Arrastra o selecciona tus archivos PDF.</li>
                     <li>Presiona <b>Iniciar Extracción</b> para procesar los archivos.</li>
-                    <li>La <b>Descripción</b> será la correspondiente al código del JSON. La <b>Justificación</b> será el texto que antes iba en la columna "Descripción". <b>Fundamento legal</b> se mantiene igual e incluirá toda la cláusula si existe.</li>
-                    <li>Si algún campo aparece como <span class="text-yellow-700 font-semibold">No encontrado</span>, estará resaltado.</li>
+                    <li>Si algún campo aparece como <span class="text-yellow-400 font-semibold">No encontrado</span>, estará resaltado.</li>
                 </ul>
             </div>
-            <a href="config.html" class="w-full sm:w-auto bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-8 rounded-lg transition duration-300 flex items-center justify-center gap-2" target="_blank">
-                <span>Configuración</span>
-            </a>
         </header>
         <main>
-            <div class="mb-6 flex flex-col md:flex-row md:items-center md:gap-8">
-                <div class="mb-4 md:mb-0">
+            <!-- Controles Principales -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div>
                     <label class="block mb-2 font-semibold text-indigo-300">Clave de la API de Gemini</label>
                     <input type="password" id="api-key" placeholder="Ingresa tu clave de API aquí" class="w-full bg-gray-700 text-gray-200 border border-gray-600 rounded-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+                    <p id="api-key-error" class="text-red-400 text-sm mt-1 hidden">La clave de API es requerida.</p>
                 </div>
-                <div class="mb-4 md:mb-0">
-                    <label class="block mb-2 font-semibold text-indigo-300">Subir archivo de códigos (JSON)</label>
-                    <input type="file" id="json-codes" accept="application/json" class="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-600 file:text-white"/>
-                    <span id="json-codes-status" class="text-xs text-green-400"></span>
-                </div>
-                <div class="flex-1">
-                    <div id="upload-area" class="bg-gray-900/50 border-2 border-dashed border-gray-700 rounded-xl p-6 text-center transition-colors duration-300">
-                        <label for="pdf-files" class="cursor-pointer flex flex-col items-center">
-                            <svg class="w-12 h-12 mx-auto text-gray-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m.75 12 3 3m0 0 3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-                            </svg>
-                            <span class="mt-2 text-sm font-semibold text-indigo-400">Haz clic para seleccionar archivos</span>
-                            <span class="text-xs text-gray-500">o arrástralos y suéltalos aquí</span>
-                            <input type="file" id="pdf-files" multiple accept=".pdf" class="opacity-0 w-0 h-0 absolute">
-                        </label>
-                        <p id="file-info" class="mt-4 text-gray-400 text-sm">0 archivos seleccionados</p>
-                    </div>
+                <div>
+                    <label class="block mb-2 font-semibold text-indigo-300">Archivo de códigos (JSON)</label>
+                    <input type="file" id="json-codes" accept="application/json" class="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer"/>
+                    <span id="json-codes-status" class="text-xs mt-1 block"></span>
                 </div>
             </div>
-            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
+            
+            <!-- Área de Carga de Archivos -->
+            <div class="mb-6">
+                <div id="upload-area" class="bg-gray-900/50 border-2 border-dashed border-gray-700 rounded-xl p-6 text-center transition-colors duration-300">
+                    <label for="pdf-files" class="cursor-pointer flex flex-col items-center">
+                        <svg class="w-12 h-12 mx-auto text-gray-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m.75 12 3 3m0 0 3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                        </svg>
+                        <span class="mt-2 text-sm font-semibold text-indigo-400">Haz clic para seleccionar archivos PDF</span>
+                        <span class="text-xs text-gray-500">o arrástralos y suéltalos aquí</span>
+                        <input type="file" id="pdf-files" multiple accept=".pdf" class="opacity-0 w-0 h-0 absolute">
+                    </label>
+                    <p id="file-info" class="mt-4 text-gray-400 text-sm">0 archivos seleccionados</p>
+                </div>
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
                 <button id="process-btn" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg transition duration-300 flex items-center justify-center gap-2 disabled:bg-gray-500 disabled:cursor-not-allowed">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd" /></svg>
                     <span>Iniciar Extracción</span>
                 </button>
                 <button id="clear-btn" class="w-full sm:w-auto bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-8 rounded-lg transition duration-300 flex items-center justify-center gap-2">
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
                     <span>Limpiar</span>
                 </button>
             </div>
+
+            <!-- Progreso y Errores -->
             <div id="progress-container" class="w-full bg-gray-700 rounded-full h-4 hidden mb-4">
                 <div id="progress-bar" class="transition-all duration-500 bg-indigo-500 h-4 rounded-full text-xs text-center text-white leading-4" style="width: 0%">0%</div>
             </div>
             <div id="loading-spinner" class="flex justify-center items-center h-10 w-full hidden">
-                <div class="loader ease-linear rounded-full border-4 border-t-4 border-indigo-600 h-10 w-10"></div>
+                <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-10 w-10"></div>
             </div>
+            <div id="error-message" class="hidden mt-4 bg-red-900/50 border border-red-500 text-red-300 px-4 py-3 rounded-lg"></div>
+
+            <!-- Resultados -->
             <div id="results-container" class="hidden mt-8">
                 <h2 class="text-2xl font-bold text-white mb-4">Resultados de la Extracción</h2>
                 <div class="overflow-x-auto bg-gray-900/50 rounded-lg border border-gray-700">
@@ -83,26 +95,26 @@
                         <thead class="text-xs text-gray-400 uppercase bg-gray-700/50">
                             <tr>
                                 <th scope="col" class="px-6 py-3">Archivo</th>
-                                <th scope="col" class="px-6 py-3">Descripción</th>
-                                <th scope="col" class="px-6 py-3">Justificación</th>
-                                <th scope="col" class="px-6 py-3">Fundamento Legal</th>
                                 <th scope="col" class="px-6 py-3">Código</th>
+                                <th scope="col" class="px-6 py-3">Descripción (del JSON)</th>
+                                <th scope="col" class="px-6 py-3">Justificación (del PDF)</th>
+                                <th scope="col" class="px-6 py-3">Fundamento Legal</th>
                             </tr>
                         </thead>
                         <tbody id="results-table-body"></tbody>
                     </table>
                 </div>
             </div>
-            <div id="error-message" class="hidden mt-4 bg-red-900/50 border border-red-500 text-red-300 px-4 py-3 rounded-lg">
-                <p><strong>Error:</strong> No se pudo procesar uno o más archivos. Asegúrese de que sean PDFs válidos, legibles y no estén protegidos.</p>
-            </div>
         </main>
     </div>
-    <div class="version-tag">v1.3.1</div>
+    <div class="version-tag">v2.0</div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Configuración global de PDF.js
             pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.js`;
 
+            // --- SELECCIÓN DE ELEMENTOS DEL DOM ---
             const fileInput = document.getElementById('pdf-files');
             const processBtn = document.getElementById('process-btn');
             const clearBtn = document.getElementById('clear-btn');
@@ -117,26 +129,62 @@
             const jsonCodesInput = document.getElementById('json-codes');
             const jsonCodesStatus = document.getElementById('json-codes-status');
             const apiKeyInput = document.getElementById('api-key');
+            const apiKeyError = document.getElementById('api-key-error');
 
+            // --- ESTADO DE LA APLICACIÓN ---
             let filesToProcess = [];
-            let codesDict = {};
+            let codesDict = null;
 
-            // Cargar la API key guardada al iniciar
-            const savedApiKey = localStorage.getItem('geminiApiKey');
-            if (savedApiKey) {
-                apiKeyInput.value = savedApiKey;
+            // --- LÓGICA DE INICIALIZACIÓN ---
+            function initializeApp() {
+                loadApiKey();
+                setupEventListeners();
             }
 
-            // Guardar la API key cuando el usuario la ingresa
-            apiKeyInput.addEventListener('input', (e) => {
-                localStorage.setItem('geminiApiKey', e.target.value);
-            });
+            function loadApiKey() {
+                const savedApiKey = localStorage.getItem('geminiApiKey');
+                if (savedApiKey) {
+                    apiKeyInput.value = savedApiKey;
+                }
+            }
+            
+            // --- CONFIGURACIÓN DE EVENT LISTENERS ---
+            function setupEventListeners() {
+                apiKeyInput.addEventListener('input', (e) => {
+                    localStorage.setItem('geminiApiKey', e.target.value);
+                    apiKeyError.classList.add('hidden');
+                    apiKeyInput.classList.remove('border-red-500');
+                });
 
-            // Subir archivo JSON de códigos
-            jsonCodesInput.addEventListener('change', function(e) {
+                jsonCodesInput.addEventListener('change', handleJsonFile);
+                fileInput.addEventListener('change', (e) => updateFiles(e.target.files));
+
+                setupDragAndDrop();
+
+                clearBtn.addEventListener('click', resetUI);
+                processBtn.addEventListener('click', handleProcessing);
+            }
+
+            function setupDragAndDrop() {
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    uploadArea.addEventListener(eventName, e => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    });
+                });
+                uploadArea.addEventListener('dragenter', () => uploadArea.classList.add('drag-over'));
+                uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag-over'));
+                uploadArea.addEventListener('drop', e => {
+                    updateFiles(e.dataTransfer.files);
+                    uploadArea.classList.remove('drag-over');
+                });
+            }
+            
+            // --- MANEJADORES DE EVENTOS Y LÓGICA DE UI ---
+            function handleJsonFile(e) {
                 const file = e.target.files[0];
                 if (!file) {
-                    codesDict = {};
+                    codesDict = null;
                     jsonCodesStatus.textContent = '';
                     return;
                 }
@@ -144,121 +192,107 @@
                 reader.onload = function(evt) {
                     try {
                         codesDict = JSON.parse(evt.target.result);
-                        jsonCodesStatus.textContent = 'Archivo cargado correctamente';
-                        jsonCodesStatus.classList.remove('text-red-400');
-                        jsonCodesStatus.classList.add('text-green-400');
+                        jsonCodesStatus.textContent = 'Archivo de códigos cargado.';
+                        jsonCodesStatus.className = 'text-xs mt-1 block text-green-400';
                     } catch (error) {
-                        codesDict = {};
-                        jsonCodesStatus.textContent = 'Error en el formato JSON';
-                        jsonCodesStatus.classList.remove('text-green-400');
-                        jsonCodesStatus.classList.add('text-red-400');
+                        codesDict = null;
+                        jsonCodesStatus.textContent = 'Error: El archivo no es un JSON válido.';
+                        jsonCodesStatus.className = 'text-xs mt-1 block text-red-400';
                     }
                 };
                 reader.readAsText(file);
-            });
-
+            }
+            
             function updateFiles(fileList) {
                 filesToProcess = Array.from(fileList).filter(file => file.type === 'application/pdf');
                 updateFileInfo();
             }
 
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                uploadArea.addEventListener(eventName, e => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                });
-            });
-
-            uploadArea.addEventListener('dragenter', () => uploadArea.classList.add('drag-over'), false);
-            uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag-over'), false);
-            uploadArea.addEventListener('drop', e => {
-                updateFiles(e.dataTransfer.files);
-                uploadArea.classList.remove('drag-over');
-            }, false);
-
-            fileInput.addEventListener('change', e => {
-                updateFiles(e.target.files);
-            });
-
             function updateFileInfo() {
                 fileInfo.textContent = `${filesToProcess.length} archivo(s) seleccionado(s)`;
+                fileInfo.classList.remove('text-red-400');
             }
-
-            clearBtn.addEventListener('click', () => {
+            
+            function resetUI() {
                 fileInput.value = '';
+                jsonCodesInput.value = '';
                 filesToProcess = [];
+                codesDict = null;
                 resultsTableBody.innerHTML = '';
                 resultsContainer.classList.add('hidden');
                 errorMessage.classList.add('hidden');
                 progressContainer.classList.add('hidden');
+                jsonCodesStatus.textContent = '';
                 progressBar.style.width = '0%';
                 progressBar.textContent = '0%';
                 updateFileInfo();
-            });
+            }
 
-            processBtn.addEventListener('click', async () => {
+            function setProcessingState(isProcessing) {
+                processBtn.disabled = isProcessing;
+                clearBtn.disabled = isProcessing;
+                loadingSpinner.classList.toggle('hidden', !isProcessing);
+                if(isProcessing) {
+                    resultsTableBody.innerHTML = '';
+                    resultsContainer.classList.add('hidden');
+                    errorMessage.classList.add('hidden');
+                    progressContainer.classList.remove('hidden');
+                    progressBar.style.width = '0%';
+                    progressBar.textContent = '0%';
+                }
+            }
+
+            function updateProgress(processedCount, totalFiles) {
+                const percentage = Math.round((processedCount / totalFiles) * 100);
+                progressBar.style.width = `${percentage}%`;
+                progressBar.textContent = `${percentage}%`;
+            }
+
+            function showError(message) {
+                errorMessage.textContent = `Error: ${message}`;
+                errorMessage.classList.remove('hidden');
+            }
+
+            // --- LÓGICA PRINCIPAL DE PROCESAMIENTO ---
+            async function handleProcessing() {
+                // Validaciones
                 const apiKey = apiKeyInput.value.trim();
                 if (!apiKey) {
-                    alert('Por favor, ingresa tu clave de API de Gemini.');
+                    apiKeyInput.classList.add('border-red-500');
+                    apiKeyError.classList.remove('hidden');
                     return;
                 }
-
-                if (Object.keys(codesDict).length === 0) {
-                    jsonCodesStatus.textContent = 'Sube primero el archivo de códigos JSON';
-                    jsonCodesStatus.classList.remove('text-green-400');
-                    jsonCodesStatus.classList.add('text-red-400');
+                if (!codesDict) {
+                    jsonCodesStatus.textContent = 'Sube primero el archivo de códigos JSON.';
+                    jsonCodesStatus.className = 'text-xs mt-1 block text-red-400';
                     return;
                 }
-
                 if (filesToProcess.length === 0) {
                     fileInfo.textContent = 'Por favor, selecciona al menos un archivo PDF.';
                     fileInfo.classList.add('text-red-400');
-                    setTimeout(() => {
-                        fileInfo.textContent = '0 archivos seleccionados';
-                        fileInfo.classList.remove('text-red-400');
-                    }, 3000);
                     return;
                 }
+                
+                setProcessingState(true);
 
-                resultsTableBody.innerHTML = '';
-                resultsContainer.classList.add('hidden');
-                progressContainer.classList.remove('hidden');
-                progressBar.style.width = '0%';
-                progressBar.textContent = '0%';
-                processBtn.disabled = true;
-                clearBtn.disabled = true;
-                loadingSpinner.classList.remove('hidden');
-                errorMessage.classList.add('hidden');
-
-                const totalFiles = filesToProcess.length;
-                let processedCount = 0;
-
-                for (const file of filesToProcess) {
+                for (const [index, file] of filesToProcess.entries()) {
                     try {
-                        const data = await extractDataWithGemini(file, apiKey);
+                        const text = await getTextFromPdf(file);
+                        const data = await extractDataWithGemini(text, apiKey);
                         appendDataToTable(file.name, data);
                     } catch (error) {
-                        errorMessage.classList.remove('hidden');
-                        appendDataToTable(file.name, {
-                            descripcion: '<span class="text-red-400">Error de lectura</span>',
-                            justificacion: '<span class="text-red-400">Error de lectura</span>',
-                            fundamento_legal: '<span class="text-red-400">Error de lectura</span>',
-                            codigo: ''
-                        }, true);
+                        console.error(`Error procesando ${file.name}:`, error);
+                        appendDataToTable(file.name, { error: `Error de procesamiento: ${error.message}` });
                     }
-                    processedCount++;
-                    const percentage = Math.round((processedCount / totalFiles) * 100);
-                    progressBar.style.width = `${percentage}%`;
-                    progressBar.textContent = `${percentage}%`;
+                    updateProgress(index + 1, filesToProcess.length);
                 }
 
                 resultsContainer.classList.remove('hidden');
-                processBtn.disabled = false;
-                clearBtn.disabled = false;
-                loadingSpinner.classList.add('hidden');
-            });
-
-            async function extractDataWithGemini(file, apiKey) {
+                setProcessingState(false);
+            }
+            
+            // --- EXTRACCIÓN DE TEXTO Y COMUNICACIÓN CON API ---
+            async function getTextFromPdf(file) {
                 const fileURL = URL.createObjectURL(file);
                 let fullText = '';
                 try {
@@ -267,129 +301,117 @@
                     for (let i = 1; i <= pdf.numPages; i++) {
                         const page = await pdf.getPage(i);
                         const textContent = await page.getTextContent();
-                        fullText += textContent.items.map(item => item.str).join('\n') + '\n';
+                        fullText += textContent.items.map(item => item.str).join(' ') + '\n';
                     }
+                    return fullText;
                 } finally {
                     URL.revokeObjectURL(fileURL);
                 }
+            }
 
+            async function extractDataWithGemini(text, apiKey) {
+                // Prompt mejorado para mayor precisión
                 const prompt = `
-                    Analiza el siguiente texto de un documento de negación de servicios de salud y extrae la siguiente información. 
-                    Devuelve el resultado en un objeto JSON con las claves "codigo", "descripcion", "justificacion", y "fundamento_legal".
-                    Si un campo no se encuentra, su valor debe ser "No encontrado".
+                    Eres un asistente experto en extracción de datos de documentos de salud.
+                    Analiza el siguiente texto extraído de un PDF de negación de servicio y extrae la información solicitada.
+                    Debes devolver únicamente un objeto JSON válido con las claves "codigo", "justificacion" y "fundamento_legal".
+
+                    Instrucciones detalladas:
+                    1.  "codigo": Busca un código numérico, generalmente de 6 dígitos, que identifica el procedimiento o servicio negado.
+                    2.  "justificacion": Extrae la explicación técnica o médica por la cual se niega el servicio. Es el motivo clínico.
+                    3.  "fundamento_legal": Busca el texto que se refiere a una cláusula, sección o exclusión del contrato o póliza. A menudo empieza con "CLAUSULA...", "SECCION..." o similar. Extrae el texto completo de esa cláusula si es posible.
+
+                    Si un campo no se puede encontrar de ninguna manera, el valor para esa clave debe ser "No encontrado".
+                    No incluyas explicaciones adicionales, solo el objeto JSON.
 
                     Texto del documento:
                     """
-                    ${fullText}
+                    ${text}
                     """
-
-                    Ejemplo de formato de salida JSON:
-                    {
-                      "codigo": "906466",
-                      "descripcion": "CITRULINA ANTICUERPOS...",
-                      "justificacion": "Estudios diagnósticos...",
-                      "fundamento_legal": "CLAUSULA SEPTIMA: EXCLUSIONES..."
-                    }
                 `;
 
+                const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+
                 try {
-                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
+                    const response = await fetch(API_URL, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            contents: [{
-                                parts: [{ text: prompt }]
-                            }],
-                            generationConfig: {
-                                responseMimeType: 'application/json',
-                            },
+                            contents: [{ parts: [{ text: prompt }] }],
+                            generationConfig: { responseMimeType: 'application/json' },
                         })
                     });
 
+                    // **CORRECCIÓN PRINCIPAL**: Validar la respuesta de la API antes de procesarla
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error?.message || `Error HTTP ${response.status}`);
+                    }
+
                     const data = await response.json();
-                    const extractedData = JSON.parse(data.candidates[0].content.parts[0].text);
+
+                    // Validación de la estructura de la respuesta de Gemini
+                    const candidate = data.candidates?.[0];
+                    if (!candidate?.content?.parts?.[0]?.text) {
+                        throw new Error("La respuesta de la API no tiene el formato esperado.");
+                    }
+                    
+                    // Se usa el JSON parseado directamente de la API
+                    const extractedData = JSON.parse(candidate.content.parts[0].text);
                     
                     const finalData = {
-                        ...extractedData,
-                        descripcion: codesDict[extractedData.codigo] || 'Código no reconocido'
+                        codigo: extractedData.codigo || "No encontrado",
+                        justificacion: extractedData.justificacion || "No encontrado",
+                        fundamento_legal: extractedData.fundamento_legal || "No encontrado",
+                        // Se busca la descripción del código en nuestro diccionario JSON
+                        descripcion: codesDict[extractedData.codigo] || "Código no reconocido"
                     };
 
                     return finalData;
 
                 } catch (error) {
                     console.error('Error al comunicarse con la API de Gemini:', error);
-                    throw new Error('Error al extraer datos con la IA. Verifica que tu clave de API sea correcta y que tu navegador no esté bloqueando las peticiones.');
+                    // Relanzar el error para que sea capturado en el bucle principal
+                    throw new Error(error.message || 'No se pudo comunicar con la API. Revisa la clave y la conexión.');
                 }
             }
             
-            function appendDataToTable(fileName, data, isHTML = false) {
+            function appendDataToTable(fileName, data) {
                 const row = document.createElement('tr');
                 row.className = 'bg-gray-800/50 border-b border-gray-700 hover:bg-gray-700/50';
-                const cellFileName = document.createElement('td');
-                cellFileName.className = 'px-6 py-4 font-medium text-white';
-                cellFileName.textContent = fileName.replace(/\.pdf$/i, '');
+                
+                // Si hubo un error en todo el procesamiento del archivo
+                if (data.error) {
+                    row.innerHTML = `
+                        <td class="px-6 py-4 font-medium text-white">${fileName.replace(/\.pdf$/i, '')}</td>
+                        <td colspan="4" class="px-6 py-4 highlight-error">${data.error}</td>
+                    `;
+                    resultsTableBody.appendChild(row);
+                    return;
+                }
 
-                function cell(content) {
+                function createCell(content, isSpecial = false) {
                     const td = document.createElement('td');
-                    td.className = 'px-6 py-4';
-                    if (typeof content === 'string' && (content.trim() === 'No encontrado' || content.trim() === 'Código no reconocido')) {
+                    td.className = 'px-6 py-4 align-top';
+                    td.textContent = content;
+                    if (isSpecial && (content === 'No encontrado' || content === 'Código no reconocido')) {
                         td.classList.add('highlight-warning');
                     }
-                    isHTML ? td.innerHTML = content : td.textContent = content;
                     return td;
                 }
 
-                row.appendChild(cell(cellFileName.textContent));
-                row.appendChild(cell(data.descripcion));
-                row.appendChild(cell(data.justificacion));
-                row.appendChild(cell(data.fundamento_legal));
-                row.appendChild(cell(data.codigo));
+                row.appendChild(createCell(fileName.replace(/\.pdf$/i, '')));
+                row.appendChild(createCell(data.codigo, true));
+                row.appendChild(createCell(data.descripcion, true));
+                row.appendChild(createCell(data.justificacion, data.justificacion === 'No encontrado'));
+                row.appendChild(createCell(data.fundamento_legal, data.fundamento_legal === 'No encontrado'));
+                
                 resultsTableBody.appendChild(row);
             }
+
+            // --- INICIAR LA APLICACIÓN ---
+            initializeApp();
         });
     </script>
-
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
-  import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyCLgYbPpqXwOY9ha9IdyZ8oLEqA9G_iTVg",
-    authDomain: "ayudacoomeva.firebaseapp.com",
-    databaseURL: "https://ayudacoomeva-default-rtdb.firebaseio.com",
-    projectId: "ayudacoomeva",
-    storageBucket: "ayudacoomeva.appspot.com",
-    messagingSenderId: "533229200872",
-    appId: "1:533229200872:web:c754a6a3670e92b4caf05d"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-
-  window.guardarJSON = (nombreArchivo, datos) => {
-    const referencia = ref(db, 'archivos/' + nombreArchivo);
-    set(referencia, datos)
-      .then(() => alert("Archivo guardado correctamente en Firebase"))
-      .catch((error) => console.error("Error al guardar:", error));
-  };
-
-  window.cargarJSON = (nombreArchivo, callback) => {
-    const referencia = ref(db, 'archivos/' + nombreArchivo);
-    get(referencia)
-      .then((snapshot) => {
-        if (snapshot.exists()) {
-          const datos = snapshot.val();
-          console.log("Datos cargados:", datos);
-          if (typeof callback === "function") callback(datos);
-        } else {
-          alert("No se encontró el archivo en Firebase");
-        }
-      })
-      .catch((error) => console.error("Error al cargar:", error));
-  };
-</script>
-
 </body>
 </html>
