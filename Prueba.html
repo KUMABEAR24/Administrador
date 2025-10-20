@@ -183,7 +183,6 @@
           try {
             const storedTemplates = localStorage.getItem(TEMPLATE_STORAGE_KEY);
             if (storedTemplates) {
-              // Basic validation to prevent loading corrupted data
               const parsed = JSON.parse(storedTemplates);
               if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].id && parsed[0].name) {
                 return parsed;
@@ -218,6 +217,8 @@
                 finalData: data.finalData || [],
                 trackingData: data.trackingData || [],
                 archivedData: data.archivedData || [],
+                // Also fetch existing order numbers from the master tracking sheet
+                masterTrackingOrders: data.masterTrackingOrders || [],
             };
         };
 
@@ -340,7 +341,7 @@
           onDataChange,
           onProcess,
           processButtonText = "Procesar Datos",
-          inputType = "paste", // New prop: "paste" or "file"
+          inputType = "paste", // "paste" or "file"
         }) {
           
           const handlePaste = useCallback((e) => {
@@ -385,7 +386,6 @@
                       const worksheet = workbook.Sheets[sheetName];
                       const json_data = XLSX.utils.sheet_to_json(worksheet);
 
-                      // Normalize headers from Excel (e.g., "No. Orden") to match internal keys (e.g., "No_Orden")
                       const normalizeHeaders = (d) => {
                           const keyMap = {
                               'Fecha Neg.': 'Fecha_Neg', 'No. Orden': 'No_Orden', 'No. Cédula': 'No_Cedula',
@@ -404,7 +404,6 @@
                                   const newKey = keyMap[key.trim()] || key.trim();
                                   if (row[key] instanceof Date) {
                                       const date = row[key];
-                                      // Add timezone offset to prevent date from shifting back one day
                                       const adjustedDate = new Date(date.getTime() + Math.abs(date.getTimezoneOffset()*60000))
                                       newRow[newKey] = adjustedDate.toISOString().slice(0, 10);
                                   } else {
@@ -417,7 +416,7 @@
 
                       const normalizedData = normalizeHeaders(json_data);
                       onDataChange(normalizedData);
-                      e.target.value = null; // Reset file input
+                      e.target.value = null; 
                   } catch (error) {
                       console.error("Error processing Excel file:", error);
                       alert("Hubo un error al procesar el archivo Excel. Asegúrate de que el formato y las columnas son correctos.");
@@ -1055,7 +1054,7 @@
             finalData: [],
             trackingData: [],
             archivedData: [],
-            portalData: [], // Start with an empty array for file uploads
+            portalData: [],
             pdfData: Array(5).fill({}),
             templates: [],
             scriptUrl: null,
@@ -1068,6 +1067,7 @@
             notification: null,
             editsCount: 0,
             onlineStatus: true,
+            masterTrackingOrders: new Set(),
           });
 
           const [sortConfig, setSortConfig] = useState({
@@ -1095,6 +1095,7 @@
                 isSetupNeeded: false,
                 isReconfiguring: false,
                 isLoading: false,
+                masterTrackingOrders: new Set(data.masterTrackingOrders),
               }));
               showNotification('¡Conexión exitosa y datos cargados!', 'success');
             } catch (error) {
@@ -1150,12 +1151,20 @@
             setState((prev) => ({ ...prev, isSaving: true }));
             try {
               await saveData(state.scriptUrl, {
-                finalData: state.finalData,
-                trackingData: state.trackingData,
-                archivedData: state.archivedData,
+                action: 'saveData', // Specify action for the backend
+                payload: {
+                    finalData: state.finalData,
+                    trackingData: state.trackingData,
+                    archivedData: state.archivedData,
+                }
               });
+              
+              // Update master tracking set with newly saved data
+              const newOrders = new Set(state.masterTrackingOrders);
+              state.finalData.forEach(row => newOrders.add(String(row.No_Orden).trim()));
+
               showNotification('¡Datos sincronizados con la nube con éxito!', 'success');
-              setState((prev) => ({ ...prev, editsCount: 0 })); // Reset edits on successful save
+              setState((prev) => ({ ...prev, editsCount: 0, masterTrackingOrders: newOrders }));
             } catch (error) {
               console.error(error);
               showNotification('Falló el guardado de datos. Por favor, inténtalo de nuevo.', 'error');
@@ -1165,14 +1174,19 @@
           };
           
           const processPortalData = useCallback(() => {
-              const processedData = state.portalData
+              // Filter out rows that already exist in the master tracking sheet
+              const newRows = state.portalData.filter(row => 
+                  !state.masterTrackingOrders.has(String(row.No_Orden).trim())
+              );
+
+              const duplicates = state.portalData.length - newRows.length;
+
+              const processedData = newRows
                   .filter((row) => row.No_Orden && String(row.No_Orden).trim())
                   .map((row) => ({
-                      ...row, // Keep all data from the uploaded Excel file
-                      // Apply specific formatting from the original logic
+                      ...row,
                       Nombre: capitalizeWords(row.Nombre || ''),
                       EPS: (row.EPS || '').toUpperCase(),
-                      // Ensure fields required by Area 3 have default values
                       Descripcion_PDF: row.Descripcion_PDF || '(pendiente)',
                       Justificacion_PDF: row.Justificacion_PDF || '(pendiente)',
                       Fundamento_Legal_PDF: row.Fundamento_Legal_PDF || '(pendiente)',
@@ -1180,12 +1194,15 @@
                       Radicado_Comp: row.Radicado_Comp || '',
                   }));
 
-              setState((prev) => ({ ...prev, finalData: processedData, portalData: [] })); // Clear portal data after processing
-              showNotification(
-                  `${processedData.length} filas procesadas y movidas al Área de Revisión.`,
-                  'success'
-              );
-          }, [state.portalData]);
+              setState((prev) => ({ ...prev, finalData: processedData, portalData: [] })); 
+              
+              let message = `${processedData.length} nuevas filas procesadas y movidas al Área de Revisión.`;
+              if (duplicates > 0) {
+                  message += ` ${duplicates} fila(s) duplicada(s) fueron omitidas.`;
+              }
+              showNotification(message, 'success');
+
+          }, [state.portalData, state.masterTrackingOrders]);
 
           const mergePdfData = useCallback(() => {
             const pdfMap = new Map();
@@ -1200,30 +1217,30 @@
               });
 
             const mergedData = state.finalData.map((finalRow) => {
-              const pdfMatch = pdfMap.get(finalRow.No_Orden.trim());
+              const pdfMatch = pdfMap.get(String(finalRow.No_Orden).trim());
               return pdfMatch ? { ...finalRow, ...pdfMatch } : finalRow;
             });
 
-            setState((prev) => ({ ...prev, finalData: mergedData, pdfData: Array(5).fill({}) })); // Clear pdf data after processing
+            setState((prev) => ({ ...prev, finalData: mergedData, pdfData: Array(5).fill({}) }));
             showNotification(`Datos del PDF combinados en el Área de Revisión.`, 'success');
           }, [state.pdfData, state.finalData]);
 
           const updateFinalDataRow = (noOrden, partialUpdate) => {
             const newData = state.finalData.map(row => 
-                row.No_Orden === noOrden ? { ...row, ...partialUpdate } : row
+                String(row.No_Orden) === String(noOrden) ? { ...row, ...partialUpdate } : row
             );
             setState((prev) => ({ ...prev, finalData: newData }));
           };
           
           const handleClearReviewData = () => {
-            if (window.confirm("¿Estás seguro de que quieres limpiar la tabla de revisión?\n\nEsta acción solo afectará tu vista actual y no borrará ningún dato guardado en la nube.")) {
+            if (window.confirm("¿Estás seguro de que quieres limpiar la tabla de revisión?\n\nEsta acción NO afectará los datos guardados en la nube.")) {
                 setState(prev => ({ ...prev, finalData: [] }));
                 showNotification("La tabla de revisión ha sido limpiada.", "info");
             }
           };
 
           const handleSendToTracking = (selectedOrderNumbers) => {
-            const itemsToSend = state.finalData.filter(row => selectedOrderNumbers.includes(row.No_Orden))
+            const itemsToSend = state.finalData.filter(row => selectedOrderNumbers.map(String).includes(String(row.No_Orden)))
               .filter((row) => {
                 const template = state.templates.find((t) => t.id === row.Tipo_Carta);
                 return (
@@ -1248,7 +1265,7 @@
             let updatedCount = 0;
 
             itemsToSend.forEach((item) => {
-              const existingIndex = newTrackingData.findIndex((t) => t.No_Orden === item.No_Orden);
+              const existingIndex = newTrackingData.findIndex((t) => String(t.No_Orden) === String(item.No_Orden));
               if (existingIndex !== -1) {
                   if(window.confirm(`El caso ${item.No_Orden} ya está en seguimiento. ¿Quieres actualizarlo?`)) {
                     newTrackingData[existingIndex].Radicado = item.Radicado_Comp;
@@ -1268,8 +1285,8 @@
               }
             });
             
-            const itemsSentOrderNumbers = itemsToSend.map(i => i.No_Orden);
-            newFinalData = newFinalData.filter(f => !itemsSentOrderNumbers.includes(f.No_Orden));
+            const itemsSentOrderNumbers = itemsToSend.map(i => String(i.No_Orden));
+            newFinalData = newFinalData.filter(f => !itemsSentOrderNumbers.includes(String(f.No_Orden)));
 
 
             setState((prev) => ({
@@ -1286,7 +1303,7 @@
                   return;
               }
               const dataToExport = data.map(row => ({
-                  "Fecha": row.Fecha_Neg, // Nombre de columna corregido para VBA
+                  "Fecha": row.Fecha_Neg,
                   "Orden": row.No_Orden,
                   "Cedula": row.No_Cedula,
                   "Nombre": row.Nombre,
@@ -1315,7 +1332,7 @@
           };
 
           const archiveItems = (indices, fromArchived) => {
-            if (fromArchived) { // Unarchive
+            if (fromArchived) {
               const itemsToMove = indices.map(i => state.archivedData[i]).filter(Boolean);
               const remainingArchived = state.archivedData.filter((_, i) => !indices.includes(i));
               setState(prev => ({
@@ -1323,7 +1340,7 @@
                 trackingData: [...prev.trackingData, ...itemsToMove],
                 archivedData: remainingArchived,
               }));
-            } else { // Archive
+            } else {
               const itemsToMove = indices.map(i => state.trackingData[i]).filter(Boolean);
               const remainingTracking = state.trackingData.filter((_, i) => !indices.includes(i));
               setState(prev => ({
