@@ -25,13 +25,23 @@
       text-align: center;
       border-bottom: 1px solid #333;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
     }
-    header h1 {
-      margin: 0;
-      font-size: 2.5rem;
-      color: #008c9e;
-      font-weight: 300;
+    .header-left { display:flex; align-items:center; gap:1rem; }
+    .header-right { display:flex; align-items:center; gap:.5rem; }
+    .btn-prueba {
+      background: linear-gradient(180deg,#2b6cb0,#2c5282);
+      color: white;
+      border: none;
+      padding: .6rem .9rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
     }
+    .btn-prueba:hover { opacity: .95; }
     .main-content {
       width: 90%;
       max-width: 1200px;
@@ -131,7 +141,13 @@
 </head>
 <body>
   <header>
-    <h1>Panel de Gestion Eje Cafetero</h1>
+    <div class="header-left">
+      <h1>Panel de Gestion Eje Cafetero</h1>
+    </div>
+
+    <div class="header-right">
+      <button id="prueba-btn" class="btn-prueba" onclick="window.location.href='Prueba.html'">Ir a Prueba</button>
+    </div>
   </header>
 
   <div class="main-content">
