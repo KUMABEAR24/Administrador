@@ -124,7 +124,8 @@
           const fullData = { ...data, Oficina_Virtual_EPS: getOficinaVirtual(data.EPS) };
 
           return templateBody.replace(/\{\{(\w+)\}\}/g, (match, key) => {
-            return fullData[key] || match;
+            // Ensure data[key] exists and is not null/undefined before returning
+            return fullData[key] !== null && fullData[key] !== undefined ? fullData[key] : match;
           });
         };
 
@@ -133,10 +134,12 @@
             const masterDataMap = new Map();
 
             [...finalData, ...trackingData, ...archivedData].forEach(row => {
-              if (row.No_Orden) {
-                const key = row.No_Orden.trim();
-                const existing = masterDataMap.get(key) || {};
-                masterDataMap.set(key, { ...existing, ...row });
+              if (row && row.No_Orden) { // Added check for row existence
+                const key = String(row.No_Orden).trim(); // Ensure key is a string
+                if (key) { // Ensure key is not empty
+                    const existing = masterDataMap.get(key) || {};
+                    masterDataMap.set(key, { ...existing, ...row });
+                }
               }
             });
             
@@ -149,6 +152,7 @@
 
             const wb = XLSX.utils.book_new();
             
+            // Add sheets only if data exists
             if (finalData.length > 0) {
               const ws1 = XLSX.utils.json_to_sheet(finalData);
               XLSX.utils.book_append_sheet(wb, ws1, "Casos en Revisión");
@@ -164,13 +168,14 @@
               XLSX.utils.book_append_sheet(wb, ws3, "Seguimiento Archivado");
             }
             
+            // Always add Maestro Consolidado if masterData exists
             const ws4 = XLSX.utils.json_to_sheet(masterData);
             XLSX.utils.book_append_sheet(wb, ws4, "Maestro Consolidado");
 
             XLSX.writeFile(wb, `Sigweb_Reporte_Detallado_${new Date().toISOString().slice(0, 10)}.xlsx`);
           } catch (error) {
             console.error("Falló la exportación del reporte Excel:", error);
-            alert("Ocurrió un error al generar el reporte.");
+            alert("Ocurrió un error al generar el reporte detallado.");
           }
         };
 
@@ -208,31 +213,44 @@
         // INLINED: services/googleSheetService.ts
         // =================================================================================
         const fetchData = async (url) => {
+            console.log("Fetching data from:", url); // Debug log
             const response = await fetch(`${url}?action=getData`);
+            console.log("Fetch response status:", response.status); // Debug log
             if (!response.ok) {
-                throw new Error('La respuesta de la red no fue correcta');
+                const errorText = await response.text();
+                console.error("Network response was not ok:", errorText); // Debug log
+                throw new Error(`La respuesta de la red no fue correcta: ${response.statusText} - ${errorText}`);
             }
             const data = await response.json();
+            console.log("Fetched data:", data); // Debug log
             return {
                 finalData: data.finalData || [],
                 trackingData: data.trackingData || [],
                 archivedData: data.archivedData || [],
-                // Also fetch existing order numbers from the master tracking sheet
                 masterTrackingOrders: data.masterTrackingOrders || [],
             };
         };
 
-        const saveData = async (url, data) => {
-            const response = await fetch(url, {
-                method: 'POST',
-                mode: 'no-cors', 
-                headers: {
-                    'Content-Type': 'text/plain',
-                },
-                body: JSON.stringify(data),
-            });
-            
-            return { status: 'success', message: 'Datos enviados al servidor.' };
+        const saveData = async (url, requestBody) => {
+            console.log("Saving data to:", url); // Debug log
+            console.log("Save request body:", JSON.stringify(requestBody)); // Debug log
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    mode: 'no-cors', 
+                    headers: {
+                        'Content-Type': 'text/plain', // Required for no-cors with Apps Script text payload
+                    },
+                    body: JSON.stringify(requestBody), // Send the whole object including action and payload
+                });
+                // In no-cors mode, we CANNOT read the response status or body. 
+                // We assume success if no network error is thrown.
+                console.log("Save request sent (no-cors). Assuming success."); // Debug log
+                return { status: 'success', message: 'Datos enviados al servidor (no-cors).' };
+            } catch (error) {
+                console.error("Error during save fetch:", error); // Debug log
+                throw error; // Re-throw the error to be caught by handleSave
+            }
         };
 
 
@@ -263,10 +281,20 @@
             warning: 'bg-yellow-500',
             info: 'bg-blue-600',
           };
+          // Automatically close after a delay if onClose is provided
+          useEffect(() => {
+            if (onClose) {
+              const timer = setTimeout(() => {
+                onClose();
+              }, 5000); // Default 5 seconds
+              return () => clearTimeout(timer);
+            }
+          }, [onClose]);
+
           return (
-            <div className={`fixed top-5 right-5 z-50 p-4 rounded-lg shadow-lg text-white ${typeClasses[type]} flex items-center gap-4`}>
+            <div className={`fixed top-5 right-5 z-[100] p-4 rounded-lg shadow-lg text-white ${typeClasses[type]} flex items-center gap-4`}>
               <span>{message}</span>
-              <button onClick={onClose} className="text-xl font-bold">&times;</button>
+              {onClose && <button onClick={onClose} className="text-xl font-bold">&times;</button>}
             </div>
           );
         };
@@ -349,25 +377,42 @@
             const pastedText = e.clipboardData.getData('text/plain');
             const newRows = processPastedData(pastedText, headers);
 
-            const updatedData = [...data.filter(row => Object.values(row).some(val => val)), ...newRows];
+            // Ensure data is always an array before filtering
+            const currentData = Array.isArray(data) ? data : [];
+            const updatedData = [...currentData.filter(row => Object.values(row).some(val => val)), ...newRows];
             
-            const emptyRowCount = updatedData.filter(row => !Object.values(row).some(val => val)).length;
-            if (emptyRowCount < 5) {
-                for (let i = 0; i < (5 - emptyRowCount); i++) {
-                    updatedData.push({});
+            // Add empty rows only if it's the paste input type
+            if (inputType === 'paste') {
+                const emptyRowCount = updatedData.filter(row => !Object.values(row).some(val => val)).length;
+                if (emptyRowCount < 5) {
+                    for (let i = 0; i < (5 - emptyRowCount); i++) {
+                        updatedData.push({});
+                    }
                 }
             }
 
             onDataChange(updatedData);
-          }, [data, headers, onDataChange]);
+          }, [data, headers, onDataChange, inputType]);
 
           const handleCellChange = (rowIndex, header, value) => {
-            const newData = [...data];
-            newData[rowIndex] = { ...newData[rowIndex], [header]: value };
+             // Ensure data is always an array
+            const currentData = Array.isArray(data) ? data : [];
+            const newData = [...currentData];
+            // Ensure the row exists before trying to update it
+            if(newData[rowIndex]){
+                newData[rowIndex] = { ...newData[rowIndex], [header]: value };
+            } else {
+                 // Optionally handle cases where rowIndex might be out of bounds, though less likely with current logic
+                 console.warn(`Attempted to edit non-existent row at index ${rowIndex}`);
+                 return; // Prevent further processing if row doesn't exist
+            }
             
-            const emptyRowCount = newData.filter(row => !Object.values(row).some(val => val)).length;
-            if (emptyRowCount < 5) {
-                newData.push({});
+            // Add empty rows only if it's the paste input type
+             if (inputType === 'paste') {
+                const emptyRowCount = newData.filter(row => !Object.values(row).some(val => val)).length;
+                if (emptyRowCount < 5) {
+                    newData.push({});
+                }
             }
 
             onDataChange(newData);
@@ -380,13 +425,23 @@
               const reader = new FileReader();
               reader.onload = (event) => {
                   try {
-                      const data = new Uint8Array(event.target.result);
-                      const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+                      const fileData = new Uint8Array(event.target.result);
+                      const workbook = XLSX.read(fileData, { type: 'array', cellDates: true });
                       const sheetName = workbook.SheetNames[0];
                       const worksheet = workbook.Sheets[sheetName];
-                      const json_data = XLSX.utils.sheet_to_json(worksheet);
+                      // Use header: 1 to get header row, raw: false for formatted values, defval: '' for empty cells
+                      const json_data = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false, defval: '' });
+
+                      if (json_data.length < 2) {
+                          alert("El archivo Excel parece estar vacío o no tiene encabezados.");
+                          return;
+                      }
+
+                      const excelHeaders = json_data[0].map(h => String(h).trim()); // Get headers from the first row
+                      const jsonDataObjects = XLSX.utils.sheet_to_json(worksheet, { raw: false, defval: '' }); // Convert rest to objects
 
                       const normalizeHeaders = (d) => {
+                           // Keep your existing keyMap for normalization
                           const keyMap = {
                               'Fecha Neg.': 'Fecha_Neg', 'No. Orden': 'No_Orden', 'No. Cédula': 'No_Cedula',
                               'Entidad Ejecutora': 'Entidad_Ejecutora', 'Motivo Negación': 'Motivo_Negacion',
@@ -397,30 +452,83 @@
                               'Observación Alternativa': 'Observacion_Alternativa', 'Nit Prestador': 'Nit_Prestador',
                               'Fecha Complementariedad': 'Fecha_Complementariedad', 'Tiempo de Gestion': 'Tiempo_de_Gestion'
                           };
+                           // Map Excel dates (assuming they are serial numbers or specific string formats)
+                          const excelDateToJSDate = (serialOrString) => {
+                              if (typeof serialOrString === 'number') {
+                                  // Handle Excel serial date number
+                                  const utc_days = Math.floor(serialOrString - 25569);
+                                  const utc_value = utc_days * 86400;                                     
+                                  const date_info = new Date(utc_value * 1000);
+                                  // Adjust for timezone offset
+                                  const fractional_day = serialOrString - Math.floor(serialOrString) + 0.0000001;
+                                  let total_seconds = Math.floor(86400 * fractional_day);
+                                  const seconds = total_seconds % 60;
+                                  total_seconds -= seconds;
+                                  const hours = Math.floor(total_seconds / (60 * 60));
+                                  const minutes = Math.floor(total_seconds / 60) % 60;
+                                  
+                                  // Create date object adjusted for local timezone
+                                  return new Date(date_info.getFullYear(), date_info.getMonth(), date_info.getDate(), hours, minutes, seconds);
+
+                              } else if (typeof serialOrString === 'string') {
+                                  // Attempt to parse common string date formats if necessary
+                                  // Example: Adjust if your Excel dates are like 'DD/MM/YYYY'
+                                  // const parts = serialOrString.match(/(\d{1,2})[/|-](\d{1,2})[/|-](\d{4})/);
+                                  // if (parts) return new Date(parts[3], parts[2] - 1, parts[1]);
+                                  
+                                  // For ISO-like strings or directly parsable formats
+                                  const parsedDate = new Date(serialOrString);
+                                  if (!isNaN(parsedDate)) return parsedDate;
+                              }
+                              return null; // Return null if conversion fails
+                          };
 
                           return d.map(row => {
                               const newRow = {};
                               for (const key in row) {
-                                  const newKey = keyMap[key.trim()] || key.trim();
-                                  if (row[key] instanceof Date) {
-                                      const date = row[key];
-                                      const adjustedDate = new Date(date.getTime() + Math.abs(date.getTimezoneOffset()*60000))
-                                      newRow[newKey] = adjustedDate.toISOString().slice(0, 10);
+                                  const trimmedKey = String(key).trim(); // Ensure key is trimmed string
+                                  const newKey = keyMap[trimmedKey] || trimmedKey.replace(/ /g, '_'); // Normalize or replace spaces
+                                  
+                                  // Check if the key indicates a date column
+                                  const isDateColumn = ['Fecha_Neg', 'Fecha_Complementariedad'].includes(newKey); // Add other date columns if needed
+
+                                  if (isDateColumn) {
+                                      const jsDate = excelDateToJSDate(row[key]);
+                                      if (jsDate && !isNaN(jsDate)) {
+                                          // Format as YYYY-MM-DD
+                                          newRow[newKey] = jsDate.toISOString().slice(0, 10);
+                                      } else {
+                                          newRow[newKey] = ''; // Assign empty string if date conversion failed
+                                          console.warn(`Could not parse date for column ${newKey}:`, row[key]);
+                                      }
                                   } else {
-                                      newRow[newKey] = row[key];
+                                      // Assign value directly for non-date columns, ensuring it's a string
+                                      newRow[newKey] = row[key] !== null && row[key] !== undefined ? String(row[key]) : '';
                                   }
                               }
+                              // Ensure all PORTAL_HEADERS are present, even if empty
+                              PORTAL_HEADERS.forEach(header => {
+                                  if (!(header in newRow)) {
+                                      newRow[header] = '';
+                                  }
+                              });
                               return newRow;
                           });
                       };
 
-                      const normalizedData = normalizeHeaders(json_data);
+                      const normalizedData = normalizeHeaders(jsonDataObjects);
                       onDataChange(normalizedData);
                       e.target.value = null; 
                   } catch (error) {
                       console.error("Error processing Excel file:", error);
                       alert("Hubo un error al procesar el archivo Excel. Asegúrate de que el formato y las columnas son correctos.");
+                      onDataChange([]); // Clear data on error
                   }
+              };
+              reader.onerror = (error) => {
+                   console.error("Error reading file:", error);
+                   alert("Hubo un error al leer el archivo.");
+                   onDataChange([]); // Clear data on error
               };
               reader.readAsArrayBuffer(file);
           };
@@ -428,6 +536,10 @@
           const clearTable = () => {
             onDataChange(inputType === 'paste' ? Array(5).fill({}) : []);
           }
+          
+          // Ensure 'data' is always an array for rendering
+          const renderData = Array.isArray(data) ? data : (inputType === 'paste' ? Array(5).fill({}) : []);
+
 
           return (
             <section id={id} className="space-y-4">
@@ -442,34 +554,36 @@
                         id={`${id}-file-upload`}
                         type="file"
                         className="hidden"
-                        accept=".xlsx, .xls"
+                        accept=".xlsx, .xls, .csv" // Added CSV support
                         onChange={handleFileChange}
                     />
-                    <span className="text-text-secondary">{data.length > 0 ? `${data.length} fila(s) cargada(s)` : 'Ningún archivo seleccionado'}</span>
+                    <span className="text-text-secondary">{renderData.length > 0 ? `${renderData.length} fila(s) cargada(s)` : 'Ningún archivo seleccionado'}</span>
                 </div>
               )}
 
               <div className="table-container max-h-72 overflow-auto border border-border-color rounded-lg">
                 <table className="w-full text-sm text-left text-text-secondary">
-                  <thead className="text-xs text-text-primary uppercase bg-header sticky top-0">
+                  <thead className="text-xs text-text-primary uppercase bg-header sticky top-0 z-10">
                     <tr>
                       {headers.map(header => (
                         <th key={header} scope="col" className="px-4 py-3 whitespace-nowrap">{header.replace(/_/g, ' ')}</th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody onPaste={inputType === 'paste' ? handlePaste : null}>
-                    {data.map((row, rowIndex) => (
+                   {/* Add check to ensure renderData is an array before mapping */}
+                  <tbody onPaste={inputType === 'paste' ? handlePaste : undefined}>
+                    {Array.isArray(renderData) && renderData.map((row, rowIndex) => (
                       <tr key={rowIndex} className="border-b border-border-color hover:bg-highlight">
                         {headers.map(header => (
                           <td
                             key={`${rowIndex}-${header}`}
                             className="px-4 py-2 border-r border-border-color focus:bg-primary focus:text-black outline-none"
                             contentEditable={inputType === 'paste'}
-                            onBlur={inputType === 'paste' ? (e) => handleCellChange(rowIndex, header, e.currentTarget.innerText) : null}
+                            onBlur={inputType === 'paste' ? (e) => handleCellChange(rowIndex, header, e.currentTarget.innerText) : undefined}
                             suppressContentEditableWarning={true}
                           >
-                            {row[header] || ''}
+                            {/* Ensure row is an object and header exists before accessing */}
+                            {(typeof row === 'object' && row !== null && row[header] !== undefined) ? String(row[header]) : ''}
                           </td>
                         ))}
                       </tr>
@@ -478,7 +592,11 @@
                 </table>
               </div>
               <div className="flex gap-4">
-                <button onClick={onProcess} className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                <button 
+                    onClick={onProcess} 
+                    disabled={renderData.length === 0 || (inputType === 'paste' && renderData.every(row => !Object.values(row).some(val => val)))} // Disable if no data
+                    className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
+                 >
                   {processButtonText}
                 </button>
                 <button onClick={clearTable} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
@@ -519,30 +637,37 @@
               { key: 'Justificacion_PDF', label: 'Justificación', compact: true },
               { key: 'Fundamento_Legal_PDF', label: 'Fund. Legal', compact: true },
           ];
+          
+          // Ensure 'data' is always an array before filtering/sorting
+          const currentData = Array.isArray(data) ? data : [];
 
           const filteredData = useMemo(() => {
-            if (!filter) return data;
+            if (!filter) return currentData;
             const lowercasedFilter = filter.toLowerCase();
-            return data.filter(row =>
+            return currentData.filter(row =>
+              row && typeof row === 'object' && // Ensure row is a valid object
               Object.values(row).some(value =>
                 String(value).toLowerCase().includes(lowercasedFilter)
               )
             );
-          }, [data, filter]);
+          }, [currentData, filter]); // Depend on currentData
 
           const handleSelectRow = (noOrden) => {
+            const key = String(noOrden); // Ensure key is string for Set consistency
             const newSelection = new Set(selectedRows);
-            if (newSelection.has(noOrden)) {
-              newSelection.delete(noOrden);
+            if (newSelection.has(key)) {
+              newSelection.delete(key);
             } else {
-              newSelection.add(noOrden);
+              newSelection.add(key);
             }
             setSelectedRows(newSelection);
           };
 
           const handleSelectAll = (e) => {
             if (e.target.checked) {
-              const allOrderNumbers = filteredData.map(row => row.No_Orden);
+              const allOrderNumbers = filteredData
+                .map(row => row ? String(row.No_Orden) : null) // Get No_Orden as string, handle potential null rows
+                .filter(Boolean); // Remove nulls/undefined
               setSelectedRows(new Set(allOrderNumbers));
             } else {
               setSelectedRows(new Set());
@@ -550,9 +675,10 @@
           };
 
           const handleCellBlur = (noOrden, key, value) => {
-            const originalRow = data.find(r => r.No_Orden === noOrden);
+             // Find row using string comparison for No_Orden
+            const originalRow = currentData.find(r => r && String(r.No_Orden) === String(noOrden));
             if (originalRow && originalRow[key] !== value) {
-              updateRow(noOrden, { [key]: value });
+              updateRow(noOrden, { [key]: value }); // Pass original noOrden (might be number or string)
               incrementEdits();
             }
           };
@@ -563,6 +689,7 @@
             if (!template || !template.name.toUpperCase().includes('COMPLEMENTARIEDAD')) {
                 changes.Radicado_Comp = '';
             }
+             // Pass original noOrden (might be number or string)
             updateRow(noOrden, changes);
           };
 
@@ -595,9 +722,9 @@
 
               <div className="table-container max-h-[700px] overflow-auto border border-border-color rounded-lg">
                 <table className="w-full text-sm text-left text-text-secondary table-auto">
-                  <thead className="text-xs text-text-primary uppercase bg-header sticky top-0">
+                  <thead className="text-xs text-text-primary uppercase bg-header sticky top-0 z-10">
                     <tr>
-                      <th className="px-4 py-3"><input type="checkbox" onChange={handleSelectAll} checked={selectedRows.size === filteredData.length && filteredData.length > 0} /></th>
+                      <th className="px-4 py-3"><input type="checkbox" onChange={handleSelectAll} checked={filteredData.length > 0 && selectedRows.size === filteredData.length} /></th>
                       <th className="px-4 py-3">👁️</th>
                        {REVIEW_HEADERS.map(({ key, label, compact }) => (
                         <th key={key} onClick={() => requestSort(key)} className={`px-4 py-3 cursor-pointer ${compact ? 'max-w-[150px]' : ''}`}>
@@ -608,30 +735,39 @@
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredData.map((row) => {
+                   {/* Check filteredData exists and is an array */}
+                    {Array.isArray(filteredData) && filteredData.map((row) => {
+                       // Add a check to ensure 'row' is a valid object before proceeding
+                      if (!row || typeof row !== 'object' || !row.No_Orden) {
+                        console.warn("Skipping invalid row in ReviewArea render:", row);
+                        return null; // Skip rendering this row
+                      }
+                      
+                      const noOrdenKey = String(row.No_Orden); // Use string key for Set lookup
                       const template = templates.find(t => t.id === row.Tipo_Carta);
                       const isComplementariedad = template && template.name.toUpperCase().includes('COMPLEMENTARIEDAD');
                       const requiresRadicado = isComplementariedad;
                       
                       return (
-                        <tr key={row.No_Orden} className={`border-b border-border-color hover:bg-highlight ${isComplementariedad ? 'bg-indigo-900/50' : ''}`}>
-                          <td className="px-4 py-2"><input type="checkbox" checked={selectedRows.has(row.No_Orden)} onChange={() => handleSelectRow(row.No_Orden)} /></td>
+                         // Use original No_Orden (might be number or string) for handlers, use string key for Set
+                        <tr key={noOrdenKey} className={`border-b border-border-color hover:bg-highlight ${isComplementariedad ? 'bg-indigo-900/50' : ''}`}>
+                          <td className="px-4 py-2"><input type="checkbox" checked={selectedRows.has(noOrdenKey)} onChange={() => handleSelectRow(noOrdenKey)} /></td>
                           <td className="px-4 py-2 text-lg cursor-pointer" onClick={() => onPreview(row)}>👁️</td>
                           {REVIEW_HEADERS.map(({ key, compact }) => (
                             <td key={key} 
                                 className={`px-4 py-2 border-r border-border-color focus:bg-primary focus:text-black outline-none ${compact ? 'max-w-[150px] overflow-hidden text-ellipsis whitespace-nowrap' : ''}`}
                                 contentEditable
-                                onBlur={(e) => handleCellBlur(row.No_Orden, key, e.currentTarget.innerText)}
+                                onBlur={(e) => handleCellBlur(row.No_Orden, key, e.currentTarget.innerText)} // Pass original No_Orden
                                 suppressContentEditableWarning={true}
                             >
-                                {row[key]}
+                                {row[key] !== null && row[key] !== undefined ? String(row[key]) : ''} 
                             </td>
                           ))}
                           <td className="px-4 py-2">
                             <div className="flex flex-col gap-1">
                               <select 
                                 value={row.Tipo_Carta || ''}
-                                onChange={(e) => handleSelectChange(row.No_Orden, e.target.value)}
+                                onChange={(e) => handleSelectChange(row.No_Orden, e.target.value)} // Pass original No_Orden
                                 className="bg-surface border border-border-color rounded-md px-2 py-1 text-text-primary w-full"
                               >
                                 <option value="">-- Seleccionar --</option>
@@ -642,7 +778,7 @@
                                   type="text"
                                   placeholder="Radicado..."
                                   value={row.Radicado_Comp || ''}
-                                  onChange={(e) => updateRow(row.No_Orden, { Radicado_Comp: e.target.value })}
+                                  onChange={(e) => updateRow(row.No_Orden, { Radicado_Comp: e.target.value })} // Pass original No_Orden
                                   className="bg-surface border border-border-color rounded-md px-2 py-1 text-text-primary w-full mt-1"
                                 />
                               )}
@@ -656,14 +792,16 @@
               </div>
               <div className="flex flex-wrap gap-4">
                 <button 
-                    onClick={() => onSendToTracking(Array.from(selectedRows))}
-                    className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                    onClick={() => onSendToTracking(Array.from(selectedRows))} // Pass the Set values (which are string keys)
+                    disabled={selectedRows.size === 0} // Disable if no rows selected
+                    className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
                 >
                     Enviar a Seguimiento
                 </button>
                  <button 
-                    onClick={() => onExportForMailMerge(data)}
-                    className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                    onClick={() => onExportForMailMerge(currentData)} // Export based on currentData
+                    disabled={currentData.length === 0} // Disable if no data
+                    className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
                 >
                     Exportar para Envío Masivo
                 </button>
@@ -691,16 +829,20 @@
             'En Gestión': 'bg-blue-600/20',
             'Finalizado': 'bg-green-600/20',
           };
+          
+          // Ensure data is always an array
+          const currentData = Array.isArray(data) ? data : [];
 
           const filteredData = useMemo(() => {
-            if (!filter) return data;
+            if (!filter) return currentData;
             const lowercasedFilter = filter.toLowerCase();
-            return data.filter(row =>
+            return currentData.filter(row =>
+              row && typeof row === 'object' && // Ensure row is valid
               Object.values(row).some(value =>
                 String(value).toLowerCase().includes(lowercasedFilter)
               )
             );
-          }, [data, filter]);
+          }, [currentData, filter]); // Depend on currentData
 
           const handleSelectRow = (index) => {
             const newSelection = new Set(selectedRows);
@@ -714,7 +856,8 @@
           
           const handleSelectAll = (e) => {
             if (e.target.checked) {
-              setSelectedRows(new Set(filteredData.map((_, index) => index)));
+               // Use indices of the currently filtered data
+              setSelectedRows(new Set(filteredData.map((row) => currentData.indexOf(row)).filter(index => index !== -1)));
             } else {
               setSelectedRows(new Set());
             }
@@ -722,7 +865,7 @@
           
           const handleBulkArchive = () => {
             if (selectedRows.size > 0) {
-              onArchive(Array.from(selectedRows));
+              onArchive(Array.from(selectedRows)); // Pass indices
               setSelectedRows(new Set());
             }
           };
@@ -741,9 +884,9 @@
               </div>
               <div className="table-container max-h-[400px] overflow-auto border border-border-color rounded-lg">
                 <table className="w-full text-sm text-left text-text-secondary">
-                  <thead className="text-xs text-text-primary uppercase bg-header sticky top-0">
+                  <thead className="text-xs text-text-primary uppercase bg-header sticky top-0 z-10">
                     <tr>
-                      <th className="px-4 py-3"><input type="checkbox" onChange={handleSelectAll} checked={selectedRows.size === filteredData.length && filteredData.length > 0}/></th>
+                      <th className="px-4 py-3"><input type="checkbox" onChange={handleSelectAll} checked={filteredData.length > 0 && selectedRows.size === filteredData.length}/></th>
                       <th className="px-4 py-3">Fecha Ing.</th>
                       <th className="px-4 py-3">No. Orden</th>
                       <th className="px-4 py-3">Nombre</th>
@@ -755,26 +898,43 @@
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredData.map((row, index) => {
-                      const originalIndex = data.indexOf(row);
+                    {Array.isArray(filteredData) && filteredData.map((row) => {
+                      // Find the original index in the full 'currentData' array
+                       const originalIndex = currentData.findIndex(item => item === row);
+                       // Skip if row is invalid or not found (shouldn't happen with findIndex but good practice)
+                       if (!row || typeof row !== 'object' || originalIndex === -1) return null; 
+
                       return (
                       <tr key={originalIndex} className={`border-b border-border-color hover:bg-highlight transition-colors ${isArchived ? 'bg-archive/50 text-text-secondary' : statusClasses[row.Estado] || ''}`}>
                         <td className="px-4 py-2"><input type="checkbox" checked={selectedRows.has(originalIndex)} onChange={() => handleSelectRow(originalIndex)} /></td>
-                        <td className="px-4 py-2">{row.Fecha_Ing}</td>
-                        <td className="px-4 py-2">{row.No_Orden}</td>
-                        <td className="px-4 py-2">{row.Nombre}</td>
-                        <td className="px-4 py-2">{row.EPS}</td>
-                        <td className="px-4 py-2">{row.Radicado}</td>
+                        <td className="px-4 py-2">{row.Fecha_Ing || ''}</td>
+                        <td className="px-4 py-2">{row.No_Orden || ''}</td>
+                        <td className="px-4 py-2">{row.Nombre || ''}</td>
+                        <td className="px-4 py-2">{row.EPS || ''}</td>
+                        <td className="px-4 py-2">{row.Radicado || ''}</td>
                         <td className="px-4 py-2">
                           <select
-                            value={row.Estado}
+                            value={row.Estado || TRACKING_STATUSES[0]} // Default to first status if undefined
                             onChange={e => onUpdate(originalIndex, { ...row, Estado: e.target.value })}
                             className="bg-surface border border-border-color rounded-md px-2 py-1 text-text-primary"
                           >
                             {TRACKING_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
                           </select>
                         </td>
-                        <td className="px-4 py-2 outline-none focus:bg-primary focus:text-black" contentEditable onBlur={e => onUpdate(originalIndex, { ...row, Notas: e.currentTarget.innerText })} suppressContentEditableWarning={true}>{row.Notas}</td>
+                         {/* Ensure innerText exists before updating state */}
+                        <td 
+                            className="px-4 py-2 outline-none focus:bg-primary focus:text-black" 
+                            contentEditable 
+                            onBlur={e => {
+                                const newNotes = e.currentTarget.innerText;
+                                if(row.Notas !== newNotes){ // Only update if changed
+                                    onUpdate(originalIndex, { ...row, Notas: newNotes });
+                                }
+                            }} 
+                            suppressContentEditableWarning={true}
+                         >
+                             {row.Notas || ''}
+                         </td>
                         <td className="px-4 py-2 text-lg cursor-pointer" onClick={() => onArchive([originalIndex])}>{isArchived ? '♻️' : '🗄️'}</td>
                       </tr>
                       );
@@ -789,6 +949,10 @@
         const TrackingArea = ({ trackingData, archivedData, updateTrackingData, archiveItems }) => {
           const [showArchived, setShowArchived] = useState(false);
           const [filter, setFilter] = useState('');
+           // Ensure data props are arrays
+          const currentTrackingData = Array.isArray(trackingData) ? trackingData : [];
+          const currentArchivedData = Array.isArray(archivedData) ? archivedData : [];
+
 
           return (
             <section id="area4" className="space-y-4">
@@ -802,13 +966,13 @@
                   onChange={e => setFilter(e.target.value)}
                 />
                 <button onClick={() => setShowArchived(!showArchived)} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg">
-                  {showArchived ? 'Ocultar' : 'Mostrar'} Archivados ({archivedData.length})
+                  {showArchived ? 'Ocultar' : 'Mostrar'} Archivados ({currentArchivedData.length})
                 </button>
               </div>
 
-              <h3 className="text-xl font-semibold text-white">Casos Activos ({trackingData.length})</h3>
+              <h3 className="text-xl font-semibold text-white">Casos Activos ({currentTrackingData.length})</h3>
               <TrackingTable
-                data={trackingData}
+                data={currentTrackingData} // Pass guaranteed array
                 isArchived={false}
                 onUpdate={(index, row) => updateTrackingData(index, row, false)}
                 onArchive={(indices) => archiveItems(indices, false)}
@@ -817,9 +981,9 @@
 
               {showArchived && (
                 <div className="mt-8">
-                  <h3 className="text-xl font-semibold text-white">Casos Archivados ({archivedData.length})</h3>
+                  <h3 className="text-xl font-semibold text-white">Casos Archivados ({currentArchivedData.length})</h3>
                   <TrackingTable
-                    data={archivedData}
+                    data={currentArchivedData} // Pass guaranteed array
                     isArchived={true}
                     onUpdate={(index, row) => updateTrackingData(index, row, true)}
                     onArchive={(indices) => archiveItems(indices, true)}
@@ -839,22 +1003,30 @@
           const [isVerifying, setIsVerifying] = useState(false);
 
           const handleSave = async () => {
-            if (!url.startsWith('https://script.google.com/macros/s/')) {
+            if (!url || !url.startsWith('https://script.google.com/macros/s/')) { // Added check for empty url
                 alert("Por favor, introduce una URL válida de Google Apps Script.");
                 return;
             }
             setIsVerifying(true);
-            await onSave(url);
-            setIsVerifying(false);
+            // Wrap onSave in try/catch to handle potential errors during verification
+             try {
+                await onSave(url);
+                // If onSave completes without error, verification is assumed successful
+            } catch (error) {
+                // Error handling is likely done within onSave/handleSetScriptUrl already
+                console.error("Verification failed:", error); 
+            } finally {
+                setIsVerifying(false); // Ensure verifying state is reset even if error occurs
+            }
           };
 
           return (
-            <div className="fixed inset-0 bg-background bg-opacity-90 flex justify-center items-center z-50 p-4">
+            <div className="fixed inset-0 bg-background bg-opacity-90 flex justify-center items-center z-[200] p-4"> {/* Increased z-index */}
               <div className="bg-surface rounded-lg shadow-xl w-full max-w-lg border border-border-color p-8 space-y-6">
                 <div className="text-center">
                     <h2 className="text-2xl font-bold text-primary">Configuración de Conexión</h2>
                     <p className="text-text-secondary mt-2">
-                        Proporciona la URL de Google Apps Script para conectar a tu base de datos.
+                        Proporciona la URL de Google Apps Script implementada como aplicación web.
                     </p>
                 </div>
                 <div>
@@ -873,16 +1045,17 @@
                 <div className="flex justify-end gap-4">
                     <button
                         onClick={onClose}
-                        className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                        disabled={isVerifying} // Disable cancel while verifying
+                        className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
                     >
                         Cancelar
                     </button>
                     <button
                         onClick={handleSave}
-                        disabled={isVerifying || !url}
+                        disabled={isVerifying || !url} // Disable if verifying or url is empty
                         className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
                     >
-                        {isVerifying ? 'Verificando...' : 'Guardar y Verificar'}
+                        {isVerifying ? <Spinner /> : 'Guardar y Verificar'} {/* Show spinner */}
                     </button>
                 </div>
               </div>
@@ -894,7 +1067,7 @@
         // INLINED: components/TemplateManagerModal.tsx
         // =================================================================================
         const TemplateManagerModal = ({ templates, onClose, onSave, onReset }) => {
-          const [currentTemplates, setCurrentTemplates] = useState(templates);
+          const [currentTemplates, setCurrentTemplates] = useState(() => Array.isArray(templates) ? templates : []); // Ensure initial state is array
           const [editingTemplate, setEditingTemplate] = useState(null);
 
           const handleSave = () => {
@@ -907,12 +1080,12 @@
           };
           
           const handleEdit = (template) => {
-            setEditingTemplate({ ...template });
+            setEditingTemplate({ ...template }); // Create a copy for editing
           };
 
-          const handleDelete = (id) => {
+          const handleDelete = (idToDelete) => {
             if (window.confirm('¿Estás seguro de que quieres eliminar esta plantilla?')) {
-              setCurrentTemplates(currentTemplates.filter(t => t.id !== id));
+              setCurrentTemplates(current => current.filter(t => t.id !== idToDelete)); // Use functional update
             }
           };
           
@@ -922,59 +1095,71 @@
               return;
             }
 
-            const existing = currentTemplates.find(t => t.id === editingTemplate.id);
-            if (existing) {
-              setCurrentTemplates(currentTemplates.map(t => t.id === editingTemplate.id ? editingTemplate : t));
-            } else {
-              setCurrentTemplates([...currentTemplates, editingTemplate]);
-            }
-            setEditingTemplate(null);
+            setCurrentTemplates(current => {
+                const existingIndex = current.findIndex(t => t.id === editingTemplate.id);
+                if (existingIndex > -1) {
+                    // Update existing
+                    const updated = [...current];
+                    updated[existingIndex] = editingTemplate;
+                    return updated;
+                } else {
+                    // Add new
+                    return [...current, editingTemplate];
+                }
+            });
+            setEditingTemplate(null); // Close editor
           };
+          
+          // Ensure currentTemplates is always an array for rendering
+          const renderTemplates = Array.isArray(currentTemplates) ? currentTemplates : [];
+
 
           return (
-            <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-40 p-4">
+            <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-[150] p-4"> {/* Increased z-index */}
               <div className="bg-surface rounded-lg shadow-xl w-full max-w-4xl border border-border-color flex flex-col max-h-[90vh]">
                 <div className="p-6 border-b border-border-color flex justify-between items-center">
                   <h3 className="text-xl font-bold text-primary">Gestionar Plantillas de Correo</h3>
-                  <button onClick={onClose} className="text-text-secondary text-2xl">&times;</button>
+                  <button onClick={onClose} className="text-text-secondary text-2xl hover:text-text-primary">&times;</button>
                 </div>
                 
-                <div className="p-6 overflow-y-auto space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
+                <div className="p-6 overflow-y-auto space-y-6 flex-grow"> {/* Added flex-grow */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full"> {/* Added h-full */}
+                    <div className="flex flex-col"> {/* Added flex container */}
                       <h4 className="text-lg font-semibold mb-2">Plantillas Actuales</h4>
-                      <ul className="space-y-2 border border-border-color rounded-lg p-2 max-h-96 overflow-y-auto">
-                        {currentTemplates.map(template => (
+                      <ul className="space-y-2 border border-border-color rounded-lg p-2 overflow-y-auto flex-grow"> {/* Added flex-grow */}
+                         {/* Check renderTemplates is array before mapping */}
+                        {Array.isArray(renderTemplates) && renderTemplates.map(template => (
                           <li key={template.id} className="flex justify-between items-center p-2 bg-highlight rounded">
-                            <span className="text-text-primary">{template.name}</span>
-                            <div className="space-x-2">
+                            <span className="text-text-primary truncate" title={template.name}>{template.name}</span> {/* Added truncate */}
+                            <div className="space-x-2 flex-shrink-0"> {/* Added flex-shrink-0 */}
                               <button onClick={() => handleEdit(template)} className="text-sm bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded">Editar</button>
                               <button onClick={() => handleDelete(template.id)} className="text-sm bg-danger hover:bg-danger-hover px-2 py-1 rounded">Borrar</button>
                             </div>
                           </li>
                         ))}
+                         {renderTemplates.length === 0 && <li className="text-text-secondary text-center p-4">No hay plantillas personalizadas.</li>}
                       </ul>
                     </div>
                     
-                    <div>
-                      <h4 className="text-lg font-semibold mb-2">{editingTemplate ? 'Editar Plantilla' : 'Crear Nueva Plantilla'}</h4>
+                    <div className="flex flex-col"> {/* Added flex container */}
+                      <h4 className="text-lg font-semibold mb-2">{editingTemplate ? (editingTemplate.id.startsWith('tpl_') ? 'Editar Plantilla' : 'Crear Nueva Plantilla') : 'Crear Nueva Plantilla'}</h4>
                       {editingTemplate ? (
-                        <div className="space-y-4 p-4 border border-border-color rounded-lg bg-highlight">
+                        <div className="space-y-4 p-4 border border-border-color rounded-lg bg-highlight flex flex-col flex-grow"> {/* Added flex */}
                            <input
                             type="text"
                             placeholder="Nombre de la Plantilla"
                             value={editingTemplate.name || ''}
-                            onChange={(e) => setEditingTemplate({ ...editingTemplate, name: e.target.value })}
+                            onChange={(e) => setEditingTemplate(prev => ({ ...prev, name: e.target.value }))}
                             className="w-full bg-background border border-border-color rounded-md px-3 py-2"
                           />
                           <textarea
-                            placeholder="Cuerpo de la Plantilla..."
+                            placeholder="Cuerpo de la Plantilla (HTML permitido)..."
                             value={editingTemplate.body || ''}
-                            onChange={(e) => setEditingTemplate({ ...editingTemplate, body: e.target.value })}
-                            className="w-full bg-background border border-border-color rounded-md px-3 py-2 h-40 resize-y"
+                            onChange={(e) => setEditingTemplate(prev => ({ ...prev, body: e.target.value }))}
+                            className="w-full bg-background border border-border-color rounded-md px-3 py-2 resize-y flex-grow" // Added flex-grow
                           />
-                           <p className="text-xs text-text-secondary">Marcadores: {`{{Nombre}}`}, {`{{No_Orden}}`}, etc.</p>
-                          <div className="flex gap-2">
+                           <p className="text-xs text-text-secondary flex-shrink-0">Marcadores: {`{{Columna}}`} (e.j: {`{{Nombre}}`}, {`{{No_Orden}}`})</p> {/* Added flex-shrink-0 */}
+                          <div className="flex gap-2 flex-shrink-0"> {/* Added flex-shrink-0 */}
                             <button onClick={handleSaveTemplateEdit} className="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm">Guardar Cambios</button>
                             <button onClick={() => setEditingTemplate(null)} className="bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm">Cancelar</button>
                           </div>
@@ -988,7 +1173,7 @@
                   </div>
                 </div>
 
-                <div className="p-4 bg-header flex justify-between items-center rounded-b-lg">
+                <div className="p-4 bg-header flex justify-between items-center rounded-b-lg flex-shrink-0"> {/* Added flex-shrink-0 */}
                    <button onClick={onReset} className="bg-danger hover:bg-danger-hover text-white font-bold py-2 px-4 rounded-lg">
                     Restaurar Predeterminadas
                   </button>
@@ -1010,31 +1195,67 @@
         // INLINED: components/PreviewModal.tsx
         // =================================================================================
         const PreviewModal = ({ data, template, onClose }) => {
-          const bodyContent = template ? replacePlaceholders(template.body, data) : '<b>Error:</b> Plantilla no seleccionada o no encontrada.';
+           // Ensure data is an object before proceeding
+          if (!data || typeof data !== 'object') {
+             console.error("Invalid data provided to PreviewModal:", data);
+             return null; // Don't render if data is invalid
+          }
+          const bodyContent = template && template.body ? replacePlaceholders(template.body, data) : '<p><i>Selecciona un tipo de carta en el Área 3 para ver la vista previa.</i></p>';
           const fullBody = bodyContent + COMMON_EMAIL_BODY + SIGNATURE;
 
           const copyToClipboard = () => {
-            const tempEl = document.createElement('div');
-            tempEl.innerHTML = fullBody;
-            const textContent = tempEl.innerText || "";
-            navigator.clipboard.writeText(textContent)
-              .then(() => alert('¡Contenido copiado al portapapeles!'))
-              .catch(err => alert('Falló al copiar el contenido.'));
+             // Create a temporary element to parse HTML and get text content
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = fullBody;
+            // Get text content, trying different properties for browser compatibility
+            const textContent = tempDiv.textContent || tempDiv.innerText || "";
+
+            navigator.clipboard.writeText(textContent.trim()) // Trim whitespace
+              .then(() => alert('¡Contenido de texto copiado al portapapeles!'))
+              .catch(err => {
+                   console.error('Failed to copy text content:', err);
+                   alert('Falló al copiar el contenido de texto.');
+               });
           };
+          
+          const copyHtmlToClipboard = () => {
+               try {
+                  // Use Clipboard API with HTML type
+                  const blob = new Blob([fullBody], { type: 'text/html' });
+                  const item = new ClipboardItem({ 'text/html': blob });
+                  navigator.clipboard.write([item])
+                     .then(() => alert('¡Contenido HTML copiado al portapapeles!'))
+                     .catch(err => {
+                          console.error('Failed to copy HTML content:', err);
+                          alert('Falló al copiar el contenido HTML (tu navegador podría no soportarlo).');
+                      });
+               } catch (error) {
+                  console.error('Error copying HTML:', error);
+                  alert('Error al intentar copiar HTML (ClipboardItem puede no ser soportado).');
+               }
+           };
 
           return (
-            <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-40 p-4">
-              <div className="bg-surface rounded-lg shadow-xl w-full max-w-3xl border border-border-color flex flex-col">
-                <div className="p-6 border-b border-border-color">
-                  <h3 className="text-xl font-bold text-primary">Vista Previa del Correo</h3>
+            <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-[150] p-4"> {/* Increased z-index */}
+              <div className="bg-surface rounded-lg shadow-xl w-full max-w-3xl border border-border-color flex flex-col max-h-[90vh]"> {/* Added max-h */}
+                <div className="p-6 border-b border-border-color flex justify-between items-center">
+                  <h3 className="text-xl font-bold text-primary">Vista Previa del Correo para Orden: {data.No_Orden || 'N/A'}</h3>
+                   <button onClick={onClose} className="text-text-secondary text-2xl hover:text-text-primary">&times;</button>
                 </div>
-                <div 
-                  className="p-6 overflow-y-auto max-h-[60vh] bg-white text-black font-serif"
-                  dangerouslySetInnerHTML={{ __html: fullBody }}
+                {/* Use iframe to render HTML correctly */}
+                <iframe 
+                  srcDoc={fullBody}
+                  className="p-1 flex-grow overflow-y-auto bg-white" // Use p-1 instead of p-6 for iframe, added flex-grow
+                  sandbox="allow-same-origin" // Basic sandboxing for security
+                  style={{border: 'none', minHeight: '300px'}} // Ensure minimum height
+                  title="Vista Previa Email"
                 />
-                <div className="p-4 bg-header flex justify-end gap-4 rounded-b-lg">
-                  <button onClick={copyToClipboard} className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors">
-                    Copiar Contenido
+                <div className="p-4 bg-header flex justify-end gap-4 rounded-b-lg flex-shrink-0"> {/* Added flex-shrink-0 */}
+                   <button onClick={copyHtmlToClipboard} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors" title="Copiar como HTML formateado para pegar en correos">
+                     Copiar HTML
+                   </button>
+                  <button onClick={copyToClipboard} className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors" title="Copiar solo el texto sin formato">
+                    Copiar Texto
                   </button>
                   <button onClick={onClose} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
                     Cerrar
@@ -1050,6 +1271,7 @@
         // INLINED: App.tsx (The main application component)
         // =================================================================================
         const App = () => {
+          // Initialize state with empty arrays or appropriate defaults
           const [state, setState] = useState({
             finalData: [],
             trackingData: [],
@@ -1075,71 +1297,102 @@
             direction: 'ascending',
           });
 
-          const hideNotification = () =>
-            setState((prev) => ({ ...prev, notification: null }));
+          const hideNotification = useCallback(() => {
+             setState((prev) => ({ ...prev, notification: null }));
+          }, []); // Empty dependency array as it doesn't depend on external vars
 
-          const showNotification = (message, type, duration = 5000) => {
-            setState((prev) => ({ ...prev, notification: { message, type } }));
-            setTimeout(hideNotification, duration);
-          };
+          const showNotification = useCallback((message, type = 'info', duration = 5000) => {
+             // Clear existing notification timeout if any
+             if (state.notification && state.notification.timeoutId) {
+                clearTimeout(state.notification.timeoutId);
+             }
+             const timeoutId = setTimeout(hideNotification, duration);
+             setState((prev) => ({ ...prev, notification: { message, type, timeoutId } }));
+          }, [hideNotification, state.notification]); // Depend on hideNotification and state.notification
 
-          const handleSetScriptUrl = async (url) => {
+          const handleSetScriptUrl = useCallback(async (url) => {
+             console.log("Attempting to set script URL and fetch initial data..."); // Debug log
             setState((prev) => ({ ...prev, isLoading: true }));
             try {
-              const data = await fetchData(url);
+              const data = await fetchData(url); // fetchData defined earlier
               localStorage.setItem('sigweb_scriptUrl', url);
               setState((prev) => ({
                 ...prev,
-                ...data,
+                 // Ensure fetched data are arrays, default to empty if not
+                finalData: Array.isArray(data.finalData) ? data.finalData : [],
+                trackingData: Array.isArray(data.trackingData) ? data.trackingData : [],
+                archivedData: Array.isArray(data.archivedData) ? data.archivedData : [],
+                masterTrackingOrders: new Set(Array.isArray(data.masterTrackingOrders) ? data.masterTrackingOrders.map(String) : []), // Ensure Set contains strings
                 scriptUrl: url,
                 isSetupNeeded: false,
                 isReconfiguring: false,
                 isLoading: false,
-                masterTrackingOrders: new Set(data.masterTrackingOrders),
               }));
               showNotification('¡Conexión exitosa y datos cargados!', 'success');
+              console.log("Initial data fetched successfully."); // Debug log
             } catch (error) {
-              console.error(error);
+              console.error("Error setting script URL or fetching data:", error); // Log the actual error
               showNotification(
-                `Falló la conexión. Por favor, revisa la URL y los permisos del script.`,
-                'error'
+                `Falló la conexión: ${error.message}. Revisa la URL y permisos del script.`, // Show more specific error
+                'error',
+                 10000 // Show error longer
               );
-              setState((prev) => ({ ...prev, isLoading: false }));
+              setState((prev) => ({ ...prev, isLoading: false, isSetupNeeded: true })); // Go back to setup on error
             }
-          };
+          }, [showNotification]); // Add showNotification dependency
+
 
           useEffect(() => {
+             console.log("App component mounted. Checking for script URL..."); // Debug log
             const url = localStorage.getItem('sigweb_scriptUrl');
-            const loadedTemplates = loadTemplates();
+            const loadedTemplates = loadTemplates(); // loadTemplates defined earlier
             setState((prev) => ({ ...prev, templates: loadedTemplates }));
 
             if (url) {
-              handleSetScriptUrl(url);
+                console.log("Found script URL in localStorage:", url); // Debug log
+                handleSetScriptUrl(url);
             } else {
-              setState((prev) => ({ ...prev, isSetupNeeded: true, isLoading: false }));
+                console.log("No script URL found. Setup needed."); // Debug log
+                setState((prev) => ({ ...prev, isSetupNeeded: true, isLoading: false }));
             }
 
+            // Online/Offline handling
             const updateOnlineStatus = () => {
-                setState(prev => ({ ...prev, onlineStatus: navigator.onLine }));
-                if (!navigator.onLine) {
-                    showNotification("Estás desconectado. El guardado de datos está deshabilitado.", "warning", 10000);
+                const isOnline = navigator.onLine;
+                console.log("Network status changed:", isOnline ? "Online" : "Offline"); // Debug log
+                setState(prev => ({ ...prev, onlineStatus: isOnline }));
+                if (!isOnline) {
+                    showNotification("Estás desconectado. El guardado está deshabilitado.", "warning", 10000);
+                } else {
+                     // Optionally show a "back online" message
+                     // showNotification("Estás conectado de nuevo.", "info");
                 }
             };
 
             window.addEventListener('online', updateOnlineStatus);
             window.addEventListener('offline', updateOnlineStatus);
+            // Initial check
             updateOnlineStatus();
 
-            return () => {
+            return () => { // Cleanup listeners on component unmount
+                console.log("App component unmounting. Removing listeners."); // Debug log
                 window.removeEventListener('online', updateOnlineStatus);
                 window.removeEventListener('offline', updateOnlineStatus);
+                 // Clear any pending notification timeouts
+                if (state.notification && state.notification.timeoutId) {
+                    clearTimeout(state.notification.timeoutId);
+                }
             };
-          }, []);
+            // Run only on mount and unmount
+          }, [handleSetScriptUrl, showNotification]); // Added dependencies
 
-          const incrementEdits = () =>
+
+          const incrementEdits = useCallback(() => {
             setState((prev) => ({ ...prev, editsCount: prev.editsCount + 1 }));
+          },[]); // No dependencies needed
 
-          const handleSave = async () => {
+          const handleSave = useCallback(async () => {
+             console.log("Save button clicked."); // Debug log
             if (!state.scriptUrl) {
               showNotification('No se puede guardar. La URL del script no está configurada.', 'error');
               return;
@@ -1148,10 +1401,15 @@
                 showNotification('No se puede guardar mientras estás desconectado.', 'error');
                 return;
             }
+             if (state.finalData.length === 0 && state.trackingData.length === 0 && state.archivedData.length === 0) {
+                 showNotification('No hay datos nuevos o modificados para guardar.', 'info');
+                 return;
+             }
             setState((prev) => ({ ...prev, isSaving: true }));
+            console.log("Attempting to save data..."); // Debug log
             try {
-              await saveData(state.scriptUrl, {
-                action: 'saveData', // Specify action for the backend
+              await saveData(state.scriptUrl, { // saveData defined earlier
+                action: 'saveData', 
                 payload: {
                     finalData: state.finalData,
                     trackingData: state.trackingData,
@@ -1159,34 +1417,61 @@
                 }
               });
               
-              // Update master tracking set with newly saved data
+              // IMPORTANT: Assume save was successful (due to no-cors limitations)
+              // Update master tracking set LOCALLY with orders from finalData that were just sent
               const newOrders = new Set(state.masterTrackingOrders);
-              state.finalData.forEach(row => newOrders.add(String(row.No_Orden).trim()));
+              state.finalData.forEach(row => {
+                  if (row && row.No_Orden) { // Check row and No_Orden exist
+                     newOrders.add(String(row.No_Orden).trim())
+                  }
+              });
 
-              showNotification('¡Datos sincronizados con la nube con éxito!', 'success');
-              setState((prev) => ({ ...prev, editsCount: 0, masterTrackingOrders: newOrders }));
+              showNotification('¡Datos enviados a la nube! (Verifica la hoja "TOTAL" para confirmar)', 'success');
+              console.log("Save request sent successfully."); // Debug log
+              // Clear local finalData and reset edits count after sending
+              setState((prev) => ({ 
+                  ...prev, 
+                  editsCount: 0, 
+                  masterTrackingOrders: newOrders, 
+                  finalData: [] // Clear the review area data after successful send
+               })); 
             } catch (error) {
-              console.error(error);
-              showNotification('Falló el guardado de datos. Por favor, inténtalo de nuevo.', 'error');
+              console.error("Error during save:", error); // Log the actual error
+              showNotification(`Falló el guardado de datos: ${error.message}`, 'error');
             } finally {
               setState((prev) => ({ ...prev, isSaving: false }));
+              console.log("Save process finished."); // Debug log
             }
-          };
-          
-          const processPortalData = useCallback(() => {
-              // Filter out rows that already exist in the master tracking sheet
-              const newRows = state.portalData.filter(row => 
-                  !state.masterTrackingOrders.has(String(row.No_Orden).trim())
-              );
+          }, [state.scriptUrl, state.onlineStatus, state.finalData, state.trackingData, state.archivedData, state.masterTrackingOrders, showNotification]); // Added dependencies
 
-              const duplicates = state.portalData.length - newRows.length;
+
+          const processPortalData = useCallback(() => {
+              console.log("Processing portal data..."); // Debug log
+               // Ensure portalData is an array
+              const currentPortalData = Array.isArray(state.portalData) ? state.portalData : [];
+              if(currentPortalData.length === 0){
+                   showNotification("No hay datos cargados desde el archivo para procesar.", "warning");
+                   return;
+              }
+              
+              // Filter out rows that already exist based on masterTrackingOrders Set
+              const newRows = currentPortalData.filter(row => {
+                  // Ensure row and No_Orden exist before checking the Set
+                   const orderKey = row && row.No_Orden ? String(row.No_Orden).trim() : null;
+                   return orderKey && !state.masterTrackingOrders.has(orderKey);
+              });
+
+              const duplicates = currentPortalData.length - newRows.length;
+              console.log(`Found ${newRows.length} new rows, skipped ${duplicates} duplicates.`); // Debug log
 
               const processedData = newRows
-                  .filter((row) => row.No_Orden && String(row.No_Orden).trim())
+                  // Ensure row is valid before mapping
+                  .filter(row => row && row.No_Orden && String(row.No_Orden).trim()) 
                   .map((row) => ({
-                      ...row,
-                      Nombre: capitalizeWords(row.Nombre || ''),
+                      ...row, // Keep all data
+                      Nombre: capitalizeWords(row.Nombre || ''), // Apply specific formatting
                       EPS: (row.EPS || '').toUpperCase(),
+                      // Ensure required fields for Area 3 have defaults if missing from Excel
                       Descripcion_PDF: row.Descripcion_PDF || '(pendiente)',
                       Justificacion_PDF: row.Justificacion_PDF || '(pendiente)',
                       Fundamento_Legal_PDF: row.Fundamento_Legal_PDF || '(pendiente)',
@@ -1194,226 +1479,338 @@
                       Radicado_Comp: row.Radicado_Comp || '',
                   }));
 
+              // Update finalData with only the NEW processed rows, clear portalData
               setState((prev) => ({ ...prev, finalData: processedData, portalData: [] })); 
               
-              let message = `${processedData.length} nuevas filas procesadas y movidas al Área de Revisión.`;
+              let message = `${processedData.length} nuevas filas procesadas y listas en Área 3.`;
               if (duplicates > 0) {
-                  message += ` ${duplicates} fila(s) duplicada(s) fueron omitidas.`;
+                  message += ` ${duplicates} fila(s) ya existentes fueron omitidas.`;
               }
-              showNotification(message, 'success');
+              showNotification(message, processedData.length > 0 ? 'success' : 'info'); // Use 'info' if only duplicates found
 
-          }, [state.portalData, state.masterTrackingOrders]);
+          }, [state.portalData, state.masterTrackingOrders, showNotification]); // Dependencies
+
 
           const mergePdfData = useCallback(() => {
-            const pdfMap = new Map();
-            state.pdfData
-              .filter((row) => row['Archivo (No. Orden)']?.trim())
-              .forEach((row) => {
-                pdfMap.set(row['Archivo (No. Orden)'].trim(), {
-                  Descripcion_PDF: row.Descripción || '',
-                  Justificacion_PDF: row.Justificación || '',
-                  Fundamento_Legal_PDF: row['Fundamento Legal'] || '',
-                });
-              });
+             console.log("Merging PDF data..."); // Debug log
+             // Ensure pdfData is an array
+             const currentPdfData = Array.isArray(state.pdfData) ? state.pdfData : [];
+             if(currentPdfData.every(row => !Object.values(row).some(val => val))){
+                 showNotification("No hay datos en el Área 2 para combinar.", "warning");
+                 return;
+             }
 
-            const mergedData = state.finalData.map((finalRow) => {
-              const pdfMatch = pdfMap.get(String(finalRow.No_Orden).trim());
-              return pdfMatch ? { ...finalRow, ...pdfMatch } : finalRow;
+            const pdfMap = new Map();
+            currentPdfData
+              .filter(row => row && row['Archivo (No. Orden)'] && String(row['Archivo (No. Orden)']).trim()) // Ensure row and key exist
+              .forEach(row => {
+                 const key = String(row['Archivo (No. Orden)']).trim();
+                 if(key){ // Ensure key is not empty
+                    pdfMap.set(key, {
+                      Descripcion_PDF: row['Descripción'] || '', // Use bracket notation for keys with spaces
+                      Justificacion_PDF: row['Justificación'] || '',
+                      Fundamento_Legal_PDF: row['Fundamento Legal'] || '',
+                    });
+                 }
+              });
+              
+            console.log(`Created PDF map with ${pdfMap.size} entries.`); // Debug log
+
+            // Ensure finalData is an array
+            const currentFinalData = Array.isArray(state.finalData) ? state.finalData : [];
+            let mergeCount = 0;
+            const mergedData = currentFinalData.map(finalRow => {
+              // Ensure finalRow and No_Orden exist
+              const orderKey = finalRow && finalRow.No_Orden ? String(finalRow.No_Orden).trim() : null;
+              if (orderKey) {
+                  const pdfMatch = pdfMap.get(orderKey);
+                  if (pdfMatch) {
+                      mergeCount++;
+                      return { ...finalRow, ...pdfMatch };
+                  }
+              }
+              return finalRow; // Return original row if no match or invalid
             });
 
             setState((prev) => ({ ...prev, finalData: mergedData, pdfData: Array(5).fill({}) }));
-            showNotification(`Datos del PDF combinados en el Área de Revisión.`, 'success');
-          }, [state.pdfData, state.finalData]);
+            showNotification(`${mergeCount} fila(s) actualizadas con datos del PDF en el Área 3.`, 'success');
+            console.log(`Merged PDF data into ${mergeCount} rows.`); // Debug log
+          }, [state.pdfData, state.finalData, showNotification]); // Dependencies
 
-          const updateFinalDataRow = (noOrden, partialUpdate) => {
-            const newData = state.finalData.map(row => 
-                String(row.No_Orden) === String(noOrden) ? { ...row, ...partialUpdate } : row
-            );
-            setState((prev) => ({ ...prev, finalData: newData }));
-          };
-          
-          const handleClearReviewData = () => {
-            if (window.confirm("¿Estás seguro de que quieres limpiar la tabla de revisión?\n\nEsta acción NO afectará los datos guardados en la nube.")) {
-                setState(prev => ({ ...prev, finalData: [] }));
-                showNotification("La tabla de revisión ha sido limpiada.", "info");
+
+          const updateFinalDataRow = useCallback((noOrden, partialUpdate) => {
+             // Ensure noOrden is a string for comparison
+             const keyToUpdate = String(noOrden);
+            setState((prev) => {
+                // Ensure finalData is an array
+               const currentFinalData = Array.isArray(prev.finalData) ? prev.finalData : [];
+               const newData = currentFinalData.map(row => 
+                  (row && String(row.No_Orden) === keyToUpdate) ? { ...row, ...partialUpdate } : row
+               );
+               return { ...prev, finalData: newData };
+            });
+            // Increment edits count immediately without waiting for state update
+            incrementEdits(); 
+          }, [incrementEdits]); // Dependency on incrementEdits
+
+
+          const handleClearReviewData = useCallback(() => {
+            if (window.confirm("¿Limpiar la tabla de Revisión (Área 3)?\n\nEsto NO borrará datos de la hoja 'TOTAL' en Google Sheets.")) {
+                setState(prev => ({ ...prev, finalData: [] })); // Only clear local state
+                showNotification("Tabla de Revisión limpiada.", "info");
             }
-          };
+          }, [showNotification]); // Dependency
 
-          const handleSendToTracking = (selectedOrderNumbers) => {
-            const itemsToSend = state.finalData.filter(row => selectedOrderNumbers.map(String).includes(String(row.No_Orden)))
-              .filter((row) => {
+
+          const handleSendToTracking = useCallback((selectedOrderKeys) => { // Receive Set keys (strings)
+            console.log("Sending selected items to tracking:", selectedOrderKeys); // Debug log
+             // Ensure finalData is an array
+            const currentFinalData = Array.isArray(state.finalData) ? state.finalData : [];
+
+            const itemsToSend = currentFinalData
+              .filter(row => row && selectedOrderKeys.includes(String(row.No_Orden))) // Filter using string keys
+              .filter(row => {
                 const template = state.templates.find((t) => t.id === row.Tipo_Carta);
                 return (
                   template &&
                   template.name.toUpperCase().includes('COMPLEMENTARIEDAD') &&
                   row.Radicado_Comp &&
-                  row.Radicado_Comp.trim() !== ''
+                  String(row.Radicado_Comp).trim() !== ''
                 );
               });
 
             if (itemsToSend.length === 0) {
-              showNotification(
-                "No hay ítems para enviar. Asegúrate de que sean del tipo 'COMPLEMENTARIEDAD' y tengan un 'Radicado'.",
-                'warning'
-              );
+              showNotification("No hay ítems seleccionados que cumplan los criterios (Tipo 'COMPLEMENTARIEDAD' con 'Radicado') para enviar a seguimiento.", 'warning');
               return;
             }
+             console.log(`${itemsToSend.length} items meet criteria for tracking.`); // Debug log
 
-            let newTrackingData = [...state.trackingData];
-            let newFinalData = [...state.finalData];
-            let addedCount = 0;
-            let updatedCount = 0;
+            setState(prev => {
+                // Ensure trackingData and finalData are arrays
+               const currentTrackingData = Array.isArray(prev.trackingData) ? prev.trackingData : [];
+               let newTrackingData = [...currentTrackingData];
+               let newFinalData = Array.isArray(prev.finalData) ? [...prev.finalData] : [];
+               let addedCount = 0;
+               let updatedCount = 0;
 
-            itemsToSend.forEach((item) => {
-              const existingIndex = newTrackingData.findIndex((t) => String(t.No_Orden) === String(item.No_Orden));
-              if (existingIndex !== -1) {
-                  if(window.confirm(`El caso ${item.No_Orden} ya está en seguimiento. ¿Quieres actualizarlo?`)) {
-                    newTrackingData[existingIndex].Radicado = item.Radicado_Comp;
-                    updatedCount++;
-                  }
-              } else {
-                  newTrackingData.push({
-                      Fecha_Ing: item.Fecha_Neg,
-                      No_Orden: item.No_Orden,
-                      Nombre: item.Nombre,
-                      EPS: item.EPS,
-                      Radicado: item.Radicado_Comp,
-                      Estado: 'Pendiente',
-                      Notas: '',
-                  });
-                  addedCount++;
-              }
+               itemsToSend.forEach(item => {
+                 const itemOrderKey = String(item.No_Orden);
+                 const existingIndex = newTrackingData.findIndex(t => t && String(t.No_Orden) === itemOrderKey);
+                 if (existingIndex !== -1) {
+                   if (window.confirm(`El caso ${itemOrderKey} ya está en seguimiento activo. ¿Actualizar Radicado?`)) {
+                     newTrackingData[existingIndex] = { ...newTrackingData[existingIndex], Radicado: item.Radicado_Comp }; // Update existing
+                     updatedCount++;
+                   }
+                 } else {
+                   newTrackingData.push({ // Add new
+                     Fecha_Ing: item.Fecha_Neg || new Date().toISOString().slice(0,10), // Use Neg date or today
+                     No_Orden: item.No_Orden,
+                     Nombre: item.Nombre || '',
+                     EPS: item.EPS || '',
+                     Radicado: item.Radicado_Comp, // Already validated not empty
+                     Estado: 'Pendiente',
+                     Notas: '',
+                   });
+                   addedCount++;
+                 }
+               });
+               
+               // Remove sent items from finalData
+               const itemsSentOrderKeys = itemsToSend.map(i => String(i.No_Orden));
+               newFinalData = newFinalData.filter(f => f && !itemsSentOrderKeys.includes(String(f.No_Orden)));
+
+               if(addedCount > 0 || updatedCount > 0){
+                   showNotification(`${addedCount} nuevo(s) enviado(s), ${updatedCount} actualizado(s) en Seguimiento Activo.`, 'success');
+               }
+
+               return { ...prev, trackingData: newTrackingData, finalData: newFinalData };
             });
-            
-            const itemsSentOrderNumbers = itemsToSend.map(i => String(i.No_Orden));
-            newFinalData = newFinalData.filter(f => !itemsSentOrderNumbers.includes(String(f.No_Orden)));
+
+          }, [state.templates, showNotification]); // Dependencies
 
 
-            setState((prev) => ({
-              ...prev,
-              trackingData: newTrackingData,
-              finalData: newFinalData,
-            }));
-            showNotification(`${addedCount} nuevos ítems enviados, ${updatedCount} ítems actualizados en seguimiento.`, 'success');
-          };
-          
-          const exportForMailMerge = (data) => {
-              if (!data || data.length === 0) {
-                  showNotification("No hay datos en revisión para exportar.", "warning");
+          const exportForMailMerge = useCallback((dataToExport) => {
+              // Ensure data is an array
+              const currentData = Array.isArray(dataToExport) ? dataToExport : [];
+              if (!currentData || currentData.length === 0) {
+                  showNotification("No hay datos en revisión (Área 3) para exportar.", "warning");
                   return;
               }
-              const dataToExport = data.map(row => ({
-                  "Fecha": row.Fecha_Neg,
-                  "Orden": row.No_Orden,
-                  "Cedula": row.No_Cedula,
-                  "Nombre": row.Nombre,
-                  "EPS": row.EPS,
-                  "Programa": row.Programa,
-                  "Email": row.Email,
-                  "Motivo": row.Motivo_Negacion,
-                  "Desc": row.Descripcion_PDF,
-                  "Just": row.Justificacion_PDF,
-                  "Fund": row.Fundamento_Legal_PDF,
-                  "Carta": state.templates.find(t => t.id === row.Tipo_Carta)?.name || "NO_SELECCIONADA",
-                  "Radicado": row.Radicado_Comp
-              }));
-              const ws = XLSX.utils.json_to_sheet(dataToExport);
-              const wb = XLSX.utils.book_new();
-              XLSX.utils.book_append_sheet(wb, ws, "DatosParaEnvio");
-              XLSX.writeFile(wb, "Sigweb_Procesado.xlsx");
-          };
+              console.log(`Exporting ${currentData.length} rows for mail merge.`); // Debug log
+              try {
+                  const exportable = currentData.map(row => ({
+                      // Ensure all keys exist, default to empty string
+                      "Fecha": row.Fecha_Neg || '', 
+                      "Orden": row.No_Orden || '',
+                      "Cedula": row.No_Cedula || '',
+                      "Nombre": row.Nombre || '',
+                      "EPS": row.EPS || '',
+                      "Programa": row.Programa || '',
+                      "Email": row.Email || '',
+                      "Motivo": row.Motivo_Negacion || '',
+                      "Desc": row.Descripcion_PDF || '',
+                      "Just": row.Justificacion_PDF || '',
+                      "Fund": row.Fundamento_Legal_PDF || '',
+                      "Carta": state.templates.find(t => t.id === row.Tipo_Carta)?.name || "NO_SELECCIONADA",
+                      "Radicado": row.Radicado_Comp || ''
+                  }));
+                  const ws = XLSX.utils.json_to_sheet(exportable);
+                  const wb = XLSX.utils.book_new();
+                  XLSX.utils.book_append_sheet(wb, ws, "DatosParaEnvio");
+                  XLSX.writeFile(wb, "Sigweb_Procesado_MailMerge.xlsx");
+                  showNotification("Archivo 'Sigweb_Procesado_MailMerge.xlsx' generado.", "success");
+              } catch (error) {
+                   console.error("Error exporting for mail merge:", error);
+                   showNotification("Error al generar el archivo para envío masivo.", "error");
+              }
+          }, [state.templates, showNotification]); // Dependencies
 
 
-          const updateTrackingData = (index, updatedRow, isArchived) => {
+          const updateTrackingData = useCallback((index, updatedRow, isArchived) => {
+             // Ensure index is a valid number
+             if (typeof index !== 'number' || index < 0) {
+                 console.error("Invalid index provided to updateTrackingData:", index);
+                 return;
+             }
             const dataKey = isArchived ? 'archivedData' : 'trackingData';
-            const currentData = [...state[dataKey]];
-            currentData[index] = updatedRow;
-            setState((prev) => ({ ...prev, [dataKey]: currentData }));
-          };
+            setState(prev => {
+                // Ensure the target array exists and is an array
+               const currentData = Array.isArray(prev[dataKey]) ? [...prev[dataKey]] : [];
+               if(index < currentData.length) { // Check if index is within bounds
+                  currentData[index] = updatedRow;
+                  console.log(`Updated item at index ${index} in ${dataKey}`); // Debug log
+                  return { ...prev, [dataKey]: currentData, editsCount: prev.editsCount + 1 }; // Increment edits count on change
+               } else {
+                   console.error(`Index ${index} out of bounds for ${dataKey}`);
+                   return prev; // Return previous state if index is invalid
+               }
+            });
+          }, []); // No external dependencies needed
 
-          const archiveItems = (indices, fromArchived) => {
-            if (fromArchived) {
-              const itemsToMove = indices.map(i => state.archivedData[i]).filter(Boolean);
-              const remainingArchived = state.archivedData.filter((_, i) => !indices.includes(i));
-              setState(prev => ({
-                ...prev,
-                trackingData: [...prev.trackingData, ...itemsToMove],
-                archivedData: remainingArchived,
-              }));
-            } else {
-              const itemsToMove = indices.map(i => state.trackingData[i]).filter(Boolean);
-              const remainingTracking = state.trackingData.filter((_, i) => !indices.includes(i));
-              setState(prev => ({
-                ...prev,
-                archivedData: [...prev.archivedData, ...itemsToMove],
-                trackingData: remainingTracking,
-              }));
+
+          const archiveItems = useCallback((indicesToMove, fromArchived) => {
+             // Ensure indicesToMove is an array of numbers
+             if (!Array.isArray(indicesToMove) || indicesToMove.some(isNaN)){
+                 console.error("Invalid indices provided to archiveItems:", indicesToMove);
+                 return;
+             }
+             console.log(`${fromArchived ? 'Unarchiving' : 'Archiving'} indices:`, indicesToMove); // Debug log
+            const sourceKey = fromArchived ? 'archivedData' : 'trackingData';
+            const targetKey = fromArchived ? 'trackingData' : 'archivedData';
+
+            setState(prev => {
+                // Ensure source and target data are arrays
+               const sourceData = Array.isArray(prev[sourceKey]) ? [...prev[sourceKey]] : [];
+               const targetData = Array.isArray(prev[targetKey]) ? [...prev[targetKey]] : [];
+               
+               const itemsToMove = [];
+               const remainingSource = [];
+
+               // Separate items to move and items to keep, handling potential sparse arrays or invalid indices
+               sourceData.forEach((item, index) => {
+                   if (indicesToMove.includes(index)) {
+                       if (item) itemsToMove.push(item); // Only move valid items
+                   } else {
+                        if(item) remainingSource.push(item); // Keep valid items
+                   }
+               });
+               
+               console.log(`Moving ${itemsToMove.length} items from ${sourceKey} to ${targetKey}.`); // Debug log
+
+               return {
+                 ...prev,
+                 [sourceKey]: remainingSource,
+                 [targetKey]: [...targetData, ...itemsToMove], // Append moved items
+                 editsCount: prev.editsCount + itemsToMove.length // Increment edits for each moved item
+               };
+            });
+          }, []); // No external dependencies
+
+          const handleSaveTemplates = useCallback((newTemplates) => {
+            // Ensure newTemplates is an array
+            const templatesToSave = Array.isArray(newTemplates) ? newTemplates : [];
+            setState((prev) => ({ ...prev, templates: templatesToSave }));
+            saveTemplates(templatesToSave); // saveTemplates defined earlier
+            showNotification('Plantillas de correo guardadas localmente.', 'success');
+          }, [showNotification]); // Dependency
+
+          const handleResetTemplates = useCallback(() => {
+            if (window.confirm('¿Restaurar plantillas predeterminadas? Se perderán las personalizadas.')) {
+              handleSaveTemplates(defaultTemplates); // Use defaultTemplates constant
             }
-          };
+          }, [handleSaveTemplates]); // Dependency
 
-          const handleSaveTemplates = (newTemplates) => {
-            setState((prev) => ({ ...prev, templates: newTemplates }));
-            saveTemplates(newTemplates);
-            showNotification('Plantillas de correo guardadas.', 'success');
-          };
-
-          const handleResetTemplates = () => {
-            if (window.confirm('¿Estás seguro de que quieres restaurar las plantillas predeterminadas? Se perderán las plantillas personalizadas.')) {
-              handleSaveTemplates(defaultTemplates);
-            }
-          };
-
-          const sortedFinalData = React.useMemo(() => {
-            let sortableItems = [...state.finalData];
+          // Memoized sorted data for Area 3
+          const sortedFinalData = useMemo(() => {
+             // Ensure finalData is an array
+            let sortableItems = Array.isArray(state.finalData) ? [...state.finalData] : []; 
             if (sortConfig.key) {
                 sortableItems.sort((a, b) => {
-                    const aVal = a[sortConfig.key] || '';
-                    const bVal = b[sortConfig.key] || '';
-                    if (aVal < bVal) {
-                        return sortConfig.direction === 'ascending' ? -1 : 1;
-                    }
-                    if (aVal > bVal) {
-                        return sortConfig.direction === 'ascending' ? 1 : -1;
-                    }
-                    return 0;
+                     // Handle potential null/undefined rows during sort
+                    if (!a || !b) return 0; 
+                    // Safely access sort key, default to empty string if missing
+                    const aVal = a[sortConfig.key] !== undefined && a[sortConfig.key] !== null ? String(a[sortConfig.key]) : '';
+                    const bVal = b[sortConfig.key] !== undefined && b[sortConfig.key] !== null ? String(b[sortConfig.key]) : '';
+                    
+                    // LocaleCompare for potentially better string sorting
+                    const comparison = aVal.localeCompare(bVal, undefined, { numeric: true, sensitivity: 'base' });
+
+                    return sortConfig.direction === 'ascending' ? comparison : -comparison;
                 });
             }
             return sortableItems;
-          }, [state.finalData, sortConfig]);
+          }, [state.finalData, sortConfig]); // Dependencies
 
-          if (state.isLoading) {
-            return <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50"><Spinner /> <span className="ml-4 text-xl">Cargando Datos...</span></div>;
+          // ================== Render Logic ==================
+
+          if (state.isLoading && !state.isSetupNeeded) { // Show loader only if not in initial setup
+            return <div className="fixed inset-0 bg-background/90 flex items-center justify-center z-[300]"><Spinner /> <span className="ml-4 text-xl">Cargando Datos Iniciales...</span></div>;
           }
 
+          // Show Setup Modal if needed or reconfiguring
           if (state.isSetupNeeded || state.isReconfiguring) {
-            return <SetupModal onSave={handleSetScriptUrl} onClose={() => setState(prev => ({ ...prev, isReconfiguring: false }))} initialUrl={state.scriptUrl || ''} />;
+            return <SetupModal 
+                onSave={handleSetScriptUrl} 
+                onClose={() => {
+                    // Only close if not in initial setup, otherwise keep showing it
+                    if(!state.isSetupNeeded) {
+                       setState(prev => ({ ...prev, isReconfiguring: false }));
+                    } else {
+                         alert("Debes configurar la URL del script para continuar.");
+                    }
+                }} 
+                initialUrl={state.scriptUrl || ''} 
+             />;
           }
 
+          // Main App Render
           return (
             <div className="p-4 sm:p-8 bg-background min-h-screen">
+              {/* Notification Area */}
               {state.notification && (
                 <Notification
                   message={state.notification.message}
                   type={state.notification.type}
-                  onClose={hideNotification}
+                  onClose={hideNotification} 
                 />
               )}
+              {/* Offline Indicator */}
               {!state.onlineStatus && (
-                   <div className="bg-yellow-600 text-white text-center p-2 fixed top-0 left-0 w-full z-50">
-                     Actualmente estás desconectado. La sincronización de datos está en pausa.
+                   <div className="bg-yellow-600 text-white text-center p-2 fixed top-0 left-0 w-full z-[100]">
+                     ⚠ Estás desconectado. El guardado en la nube está deshabilitado.
                    </div>
               )}
 
-              <main className="max-w-screen-2xl mx-auto bg-surface p-4 sm:p-6 rounded-xl border border-border-color space-y-8">
+              <main className={`max-w-screen-2xl mx-auto bg-surface p-4 sm:p-6 rounded-xl border border-border-color space-y-8 ${!state.onlineStatus ? 'pt-10' : ''}`}> {/* Add padding top if offline banner shows */}
                 <Header 
                     onSave={handleSave} 
                     onManageTemplates={() => setState(prev => ({ ...prev, isTemplateManagerOpen: true }))}
                     onReconfigure={() => setState(prev => ({ ...prev, isReconfiguring: true }))}
                 />
                 <Dashboard
-                  reviewCount={state.finalData.length}
-                  trackingCount={state.trackingData.length}
-                  archivedCount={state.archivedData.length}
+                  reviewCount={Array.isArray(state.finalData) ? state.finalData.length : 0}
+                  trackingCount={Array.isArray(state.trackingData) ? state.trackingData.length : 0}
+                  archivedCount={Array.isArray(state.archivedData) ? state.archivedData.length : 0}
                   editsCount={state.editsCount}
                 />
                 <div className="text-right">
@@ -1426,29 +1823,32 @@
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  {/* Area 1: File Upload */}
                   <DataInputArea
                     id="portal-area"
-                    title="Área 1: Datos del Portal"
+                    title="Área 1: Cargar Excel del Portal"
                     headers={PORTAL_HEADERS}
-                    data={state.portalData}
+                    data={state.portalData} // Bind to portalData
                     onDataChange={(newData) => setState(prev => ({ ...prev, portalData: newData }))}
-                    onProcess={processPortalData}
+                    onProcess={processPortalData} // Use specific processor
+                    processButtonText="Procesar Datos del Archivo"
                     inputType="file" 
                   />
+                  {/* Area 2: Paste PDF Data */}
                   <DataInputArea
                     id="pdf-area"
-                    title="Área 2: Datos del Extractor PDF"
+                    title="Área 2: Pegar Datos del Extractor PDF"
                     headers={PDF_HEADERS}
-                    data={state.pdfData}
+                    data={state.pdfData} // Bind to pdfData
                     onDataChange={(newData) => setState(prev => ({ ...prev, pdfData: newData }))}
-                    onProcess={mergePdfData}
+                    onProcess={mergePdfData} // Use specific processor
                     processButtonText="Combinar con Datos del PDF"
                     inputType="paste"
                   />
                 </div>
-
+                 {/* Area 3: Review */}
                 <ReviewArea
-                  data={sortedFinalData}
+                  data={sortedFinalData} // Use memoized sorted data
                   templates={state.templates}
                   updateRow={updateFinalDataRow}
                   incrementEdits={incrementEdits}
@@ -1459,7 +1859,7 @@
                   sortConfig={sortConfig}
                   setSortConfig={setSortConfig}
                 />
-
+                 {/* Area 4: Tracking */}
                 <TrackingArea
                   trackingData={state.trackingData}
                   archivedData={state.archivedData}
@@ -1467,9 +1867,11 @@
                   archiveItems={archiveItems}
                 />
                 
-                {state.isSaving && <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50"><Spinner /> <span className="ml-4 text-xl">Guardando Datos...</span></div>}
+                {/* Saving Indicator */}
+                {state.isSaving && <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-[300]"><Spinner /> <span className="ml-4 text-xl">Guardando Datos...</span></div>}
               </main>
 
+              {/* Template Manager Modal */}
               {state.isTemplateManagerOpen && (
                 <TemplateManagerModal
                   templates={state.templates}
@@ -1478,11 +1880,11 @@
                   onReset={handleResetTemplates}
                 />
               )}
-
+               {/* Preview Modal */}
               {state.previewData && (
                 <PreviewModal
                   data={state.previewData}
-                  template={state.templates.find(t => t.id === state.previewData?.Tipo_Carta)}
+                  template={state.templates.find(t => t.id === state.previewData?.Tipo_Carta)} // Safely find template
                   onClose={() => setState(prev => ({...prev, previewData: null}))}
                 />
               )}
@@ -1495,10 +1897,18 @@
         // =================================================================================
         const rootElement = document.getElementById('root');
         if (!rootElement) {
-          throw new Error("Could not find root element to mount to");
+          console.error("Fatal Error: Root element 'root' not found in HTML."); // Log error
+          // Optionally display a message to the user in the body
+          document.body.innerHTML = '<div style="color: red; padding: 20px;">Error Crítico: No se encontró el elemento raíz de la aplicación.</div>';
+        } else {
+            try {
+               const root = ReactDOM.createRoot(rootElement);
+               root.render(<React.StrictMode><App /></React.StrictMode>); // Added StrictMode for development checks
+            } catch(error) {
+                console.error("Error rendering React application:", error);
+                 rootElement.innerHTML = '<div style="color: red; padding: 20px;">Error Crítico: Falló al iniciar la aplicación React.</div>';
+            }
         }
-        const root = ReactDOM.createRoot(rootElement);
-        root.render(<App />);
 
     </script>
 </body>
