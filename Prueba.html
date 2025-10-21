@@ -5,15 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <meta http-equiv="Content-Security-Policy"
-          content="default-src 'self' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://unpkg.com https://esm.sh; script-src 'self' 'unsafe-eval' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://unpkg.com https://esm.sh;">
+          content="default-src 'self' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://unpkg.com https://esm.sh;
+                   script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://unpkg.com https://esm.sh;
+                   style-src 'self' 'unsafe-inline';">
 
     <title>GESTION NEGACIONES EJE CAFETERO</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <script>
-      // Tailwind CSS Configuration
       tailwind.config = {
         theme: {
           extend: {
@@ -112,27 +114,36 @@
               headers.forEach((header, index) => {
                 if (cells[index]) {
                   rowObject[header] = cells[index].trim();
+                } else {
+                  rowObject[header] = ''; // Ensure all headers exist even if cell is empty
                 }
               });
               return rowObject;
             });
         };
 
+
         const replacePlaceholders = (templateBody, data) => {
           const getOficinaVirtual = (eps) => {
             const e = (eps || "").toUpperCase();
             if (e.includes("NUEVA EPS")) return `<a href='https://portal.nuevaeps.com.co/Portal/home.jspx' target='_blank' rel='noopener noreferrer'>NUEVA EPS</a>`;
             if (e.includes("SALUD TOTAL")) return `<a href='https://saludtotal.com.co/' target='_blank' rel='noopener noreferrer'>SALUD TOTAL</a>`;
-            return eps;
+            return eps || ''; // Return empty string if eps is null/undefined
           };
 
-          const fullData = { ...data, Oficina_Virtual_EPS: getOficinaVirtual(data.EPS) };
+          // Ensure data is an object, default to empty object if not
+          const safeData = (typeof data === 'object' && data !== null) ? data : {};
+          const fullData = { ...safeData, Oficina_Virtual_EPS: getOficinaVirtual(safeData.EPS) };
 
-          return templateBody.replace(/\{\{(\w+)\}\}/g, (match, key) => {
-            // Ensure data[key] exists and is not null/undefined before returning
-            return fullData[key] !== null && fullData[key] !== undefined ? fullData[key] : match;
+          // Ensure templateBody is a string
+          const safeTemplateBody = typeof templateBody === 'string' ? templateBody : '';
+
+          return safeTemplateBody.replace(/\{\{(\w+)\}\}/g, (match, key) => {
+            // Ensure fullData[key] exists and is not null/undefined before returning, otherwise return empty string
+            return fullData[key] !== null && fullData[key] !== undefined ? String(fullData[key]) : ''; // Convert to string
           });
         };
+
 
         const exportDetailedReport = (finalData, trackingData, archivedData) => {
           try {
@@ -148,7 +159,9 @@
                 const key = String(row.No_Orden).trim(); // Ensure key is a string
                 if (key) { // Ensure key is not empty
                   const existing = masterDataMap.get(key) || {};
-                  masterDataMap.set(key, { ...existing, ...row });
+                  // Merge preserving existing values, then overriding with row values
+                  const mergedRow = { ...existing, ...row };
+                  masterDataMap.set(key, mergedRow);
                 }
               }
             });
@@ -189,6 +202,7 @@
           }
         };
 
+
         // =================================================================================
         // INLINED: services/templateService.ts
         // =================================================================================
@@ -199,23 +213,51 @@
             const storedTemplates = localStorage.getItem(TEMPLATE_STORAGE_KEY);
             if (storedTemplates) {
               const parsed = JSON.parse(storedTemplates);
-              if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].id && parsed[0].name) {
-                return parsed;
+              // Add more robust validation
+              if (Array.isArray(parsed) && parsed.every(t => t && typeof t.id === 'string' && typeof t.name === 'string' && typeof t.body === 'string')) {
+                 // Check if default templates are missing and add them if necessary
+                 const loadedIds = new Set(parsed.map(t => t.id));
+                 const missingDefaults = defaultTemplates.filter(dt => !loadedIds.has(dt.id));
+                 if (missingDefaults.length > 0) {
+                     console.log("Adding missing default templates to loaded templates.");
+                     const combined = [...parsed, ...missingDefaults];
+                     saveTemplates(combined); // Save the combined list back
+                     return combined;
+                 }
+                 return parsed;
+              } else {
+                 console.warn("Stored templates data is invalid. Using defaults.");
+                 localStorage.removeItem(TEMPLATE_STORAGE_KEY); // Remove invalid data
               }
             }
           } catch (error) {
             console.error("Falló la carga de plantillas desde localStorage, se usarán las predeterminadas.", error);
-            localStorage.removeItem(TEMPLATE_STORAGE_KEY);
+            localStorage.removeItem(TEMPLATE_STORAGE_KEY); // Remove potentially corrupted data
           }
-          return defaultTemplates;
+           // If loading failed or no stored templates, return defaults and save them
+           console.log("Using default templates.");
+           saveTemplates(defaultTemplates);
+           return [...defaultTemplates]; // Return a copy
         };
+
 
         const saveTemplates = (templates) => {
           try {
             // Ensure templates is an array before saving
-            localStorage.setItem(TEMPLATE_STORAGE_KEY, JSON.stringify(Array.isArray(templates) ? templates : []));
+            if (!Array.isArray(templates)) {
+              console.error("Attempted to save non-array templates data.");
+              return;
+            }
+            // Ensure basic structure integrity before saving
+            if (!templates.every(t => t && typeof t.id === 'string' && typeof t.name === 'string' && typeof t.body === 'string')) {
+               console.error("Attempted to save templates with invalid structure.");
+               return;
+            }
+            localStorage.setItem(TEMPLATE_STORAGE_KEY, JSON.stringify(templates));
           } catch (error) {
             console.error("Falló el guardado de plantillas en localStorage", error);
+             // Potentially notify user if storage is full or saving fails critically
+             alert("Error: No se pudieron guardar las plantillas localmente. El almacenamiento podría estar lleno o deshabilitado.");
           }
         };
 
@@ -225,26 +267,52 @@
         // =================================================================================
         const fetchData = async (url) => {
             console.log("Fetching data from:", url); // Debug log
-            const response = await fetch(`${url}?action=getData`);
-            console.log("Fetch response status:", response.status); // Debug log
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error("Network response was not ok:", errorText); // Debug log
-                throw new Error(`La respuesta de la red no fue correcta: ${response.statusText} - ${errorText}`);
+            if (!url || typeof url !== 'string') {
+               throw new Error("URL inválida proporcionada para fetchData.");
             }
-            const data = await response.json();
-            console.log("Fetched data:", data); // Debug log
-            return {
-                finalData: data.finalData || [],
-                trackingData: data.trackingData || [],
-                archivedData: data.archivedData || [],
-                masterTrackingOrders: data.masterTrackingOrders || [],
-            };
+            try {
+                const response = await fetch(`${url}?action=getData`);
+                console.log("Fetch response status:", response.status); // Debug log
+                if (!response.ok) {
+                    let errorText = `HTTP error ${response.status}`;
+                    try {
+                       errorText += ` - ${await response.text()}`;
+                    } catch (e) { /* Ignore if reading text fails */ }
+                    console.error("Network response was not ok:", errorText); // Debug log
+                    throw new Error(`La respuesta de la red no fue correcta: ${errorText}`);
+                }
+                const data = await response.json();
+                console.log("Fetched data:", data); // Debug log
+                 // Ensure returned data fields are arrays
+                 const finalData = Array.isArray(data.finalData) ? data.finalData : [];
+                 const trackingData = Array.isArray(data.trackingData) ? data.trackingData : [];
+                 const archivedData = Array.isArray(data.archivedData) ? data.archivedData : [];
+                 const masterTrackingOrders = Array.isArray(data.masterTrackingOrders) ? data.masterTrackingOrders : [];
+
+                return { finalData, trackingData, archivedData, masterTrackingOrders };
+            } catch (error) {
+                 console.error("Fetch data failed:", error);
+                 // Improve error message for network issues
+                 if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+                    throw new Error("Error de red: No se pudo conectar al servidor. Verifica la URL y tu conexión a internet.");
+                 }
+                 throw error; // Re-throw other errors
+            }
         };
+
 
         const saveData = async (url, requestBody) => {
             console.log("Saving data to:", url); // Debug log
+             if (!url || typeof url !== 'string') {
+               throw new Error("URL inválida proporcionada para saveData.");
+            }
+             // Basic validation for requestBody structure
+             if (!requestBody || typeof requestBody !== 'object' || requestBody.action !== 'saveData' || !requestBody.payload) {
+                console.error("Invalid request body for saveData:", requestBody);
+                throw new Error("Formato de datos inválido para guardar.");
+             }
             console.log("Save request body (stringified):", JSON.stringify(requestBody)); // Debug log
+
             try {
                 const response = await fetch(url, {
                     method: 'POST',
@@ -260,7 +328,11 @@
                 return { status: 'success', message: 'Datos enviados al servidor (no-cors).' };
             } catch (error) {
                 console.error("Error during save fetch:", error); // Debug log
-                throw error; // Re-throw the error to be caught by handleSave
+                 // Improve error message for network issues
+                 if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+                    throw new Error("Error de red: No se pudo conectar al servidor para guardar. Verifica la URL y tu conexión a internet.");
+                 }
+                throw error; // Re-throw other errors
             }
         };
 
@@ -285,35 +357,50 @@
         // =================================================================================
         // INLINED: components/Notification.tsx
         // =================================================================================
-        const Notification = ({ message, type, onClose }) => {
+        const Notification = ({ message, type = 'info', onClose }) => { // Default type to info
           const typeClasses = {
             success: 'bg-green-600',
             error: 'bg-red-600',
-            warning: 'bg-yellow-500',
+            warning: 'bg-yellow-600 text-black', // Use black text for better contrast on yellow
             info: 'bg-blue-600',
           };
+          const [isVisible, setIsVisible] = useState(true);
+
+          const handleClose = useCallback(() => {
+              setIsVisible(false);
+              if (onClose) {
+                  onClose(); // Call the original onClose handler if provided
+              }
+          }, [onClose]);
+
+
           // Automatically close after a delay if onClose is provided
           useEffect(() => {
-            if (onClose) {
+            if (onClose) { // Only set timeout if onClose is meant to auto-close
               const timer = setTimeout(() => {
-                onClose();
+                handleClose();
               }, 5000); // Default 5 seconds
               return () => clearTimeout(timer);
             }
-          }, [onClose]);
+          }, [handleClose, onClose]); // Depend on handleClose
+
+           if (!isVisible) return null; // Don't render if not visible
 
           return (
-            <div className={`fixed top-5 right-5 z-[100] p-4 rounded-lg shadow-lg text-white ${typeClasses[type] || 'bg-blue-600'} flex items-center gap-4`}>
+            <div className={`fixed top-5 right-5 z-[250] p-4 rounded-lg shadow-lg text-white ${typeClasses[type] || typeClasses.info} flex items-center gap-4 animate-fade-in-down`}> {/* Added higher z-index and animation */}
               <span>{message}</span>
-              {onClose && <button onClick={onClose} className="text-xl font-bold">&times;</button>}
+              {/* Always show close button */}
+              <button onClick={handleClose} className="text-xl font-bold leading-none ml-2">&times;</button>
             </div>
           );
         };
 
+
         // =================================================================================
         // INLINED: components/Header.tsx
         // =================================================================================
-        const Header = ({ onSave, onManageTemplates, onReconfigure }) => {
+        const Header = React.memo(({ onSave, onManageTemplates, onReconfigure }) => { // Memoize Header
+          console.log("Rendering Header"); // Debug log
           return (
             <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-border-color">
               <div>
@@ -343,13 +430,13 @@
               </div>
             </header>
           );
-        };
+        }); // End of Memoized Header
 
 
         // =================================================================================
         // INLINED: components/Dashboard.tsx
         // =================================================================================
-        const DashboardCard = ({ title, value, icon }) => (
+        const DashboardCard = React.memo(({ title, value, icon }) => ( // Memoize Card
           <div className="bg-surface p-4 rounded-lg border border-border-color flex items-center">
             <div className="text-3xl text-primary mr-4">{icon}</div>
             <div>
@@ -357,22 +444,22 @@
               <p className="text-2xl font-bold text-text-primary">{value}</p>
             </div>
           </div>
-        );
+        ));
 
-        const Dashboard = ({ reviewCount, trackingCount, archivedCount, editsCount }) => (
+        const Dashboard = React.memo(({ reviewCount, trackingCount, archivedCount, editsCount }) => ( // Memoize Dashboard
           <section id="dashboard" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <DashboardCard title="Casos en Revisión" value={reviewCount} icon={'📋'} />
             <DashboardCard title="Seguimiento Activo" value={trackingCount} icon={'⏳'} />
             <DashboardCard title="Casos Archivados" value={archivedCount} icon={'🗄️'} />
             <DashboardCard title="Ediciones en Sesión" value={editsCount} icon={'✏️'} />
           </section>
-        );
+        )); // End of Memoized Dashboard
 
 
         // =================================================================================
         // INLINED: components/DataInputArea.tsx
         // =================================================================================
-        function DataInputArea({
+        const DataInputArea = React.memo(({ // Memoize DataInputArea
           id,
           title,
           headers,
@@ -381,7 +468,8 @@
           onProcess,
           processButtonText = "Procesar Datos",
           inputType = "paste", // "paste" or "file"
-        }) {
+        }) => {
+          console.log(`Rendering DataInputArea: ${id}`); // Debug log
 
           const handlePaste = useCallback((e) => {
             e.preventDefault();
@@ -390,14 +478,17 @@
 
             // Ensure data is always an array before filtering
             const currentData = Array.isArray(data) ? data : [];
-            const updatedData = [...currentData.filter(row => Object.values(row).some(val => val)), ...newRows];
+            // Filter out fully empty objects before adding new rows
+            const filteredCurrent = currentData.filter(row => row && Object.values(row).some(val => String(val).trim() !== ''));
+            const updatedData = [...filteredCurrent, ...newRows];
 
             // Add empty rows only if it's the paste input type
             if (inputType === 'paste') {
-              const emptyRowCount = updatedData.filter(row => !Object.values(row).some(val => val)).length;
-              if (emptyRowCount < 5) {
-                for (let i = 0; i < (5 - emptyRowCount); i++) {
-                  updatedData.push({});
+              const emptyRowCount = updatedData.filter(row => !row || !Object.values(row).some(val => String(val).trim() !== '')).length;
+              const targetEmptyRows = 5; // Maintain 5 empty rows for pasting
+              if (emptyRowCount < targetEmptyRows) {
+                for (let i = 0; i < (targetEmptyRows - emptyRowCount); i++) {
+                  updatedData.push({}); // Add empty object placeholders
                 }
               }
             }
@@ -405,31 +496,50 @@
             onDataChange(updatedData);
           }, [data, headers, onDataChange, inputType]);
 
-          const handleCellChange = (rowIndex, header, value) => {
+          const handleCellChange = useCallback((rowIndex, header, value) => {
              // Ensure data is always an array
             const currentData = Array.isArray(data) ? data : [];
             const newData = [...currentData];
             // Ensure the row exists before trying to update it
             if(newData[rowIndex]){
+                // Create a new object for the updated row to ensure immutability
                 newData[rowIndex] = { ...newData[rowIndex], [header]: value };
             } else {
-                 // Optionally handle cases where rowIndex might be out of bounds
                  console.warn(`Attempted to edit non-existent row at index ${rowIndex}`);
                  return; // Prevent further processing if row doesn't exist
             }
 
-            // Add empty rows only if it's the paste input type
+            // Add/remove empty rows only if it's the paste input type
              if (inputType === 'paste') {
-               const emptyRowCount = newData.filter(row => !Object.values(row).some(val => val)).length;
-               if (emptyRowCount < 5) {
-                   newData.push({});
+               const targetEmptyRows = 5;
+               // Filter out rows that are completely empty or just whitespace
+               const nonEmptyRows = newData.filter(row => row && Object.values(row).some(val => String(val).trim() !== ''));
+               const currentEmptyRowCount = newData.length - nonEmptyRows.length;
+
+               // Add empty rows if needed
+               if (currentEmptyRowCount < targetEmptyRows) {
+                   for (let i = 0; i < (targetEmptyRows - currentEmptyRowCount); i++) {
+                       nonEmptyRows.push({});
+                   }
                }
+               // Trim excess empty rows (leave exactly targetEmptyRows)
+               const finalData = [...nonEmptyRows];
+               while (finalData.filter(row => !row || !Object.values(row).some(val => String(val).trim() !== '')).length > targetEmptyRows && finalData.length > targetEmptyRows) {
+                  const lastEmptyIndex = finalData.findLastIndex(row => !row || !Object.values(row).some(val => String(val).trim() !== ''));
+                  if (lastEmptyIndex !== -1) {
+                      finalData.splice(lastEmptyIndex, 1);
+                  } else {
+                      break; // Should not happen if logic is correct
+                  }
+               }
+               onDataChange(finalData);
+            } else {
+                 onDataChange(newData); // For file input, just update the data
             }
+          }, [data, onDataChange, inputType]);
 
-            onDataChange(newData);
-          };
 
-          const handleFileChange = (e) => {
+          const handleFileChange = useCallback((e) => {
               const file = e.target.files[0];
               if (!file) return;
 
@@ -437,98 +547,130 @@
               reader.onload = (event) => {
                   try {
                       const fileData = new Uint8Array(event.target.result);
-                      const workbook = XLSX.read(fileData, { type: 'array', cellDates: true });
+                      const workbook = XLSX.read(fileData, { type: 'array', cellDates: true, dateNF: 'yyyy-mm-dd' }); // Specify date format hint
                       const sheetName = workbook.SheetNames[0];
                       const worksheet = workbook.Sheets[sheetName];
-                      // Use header: 1 to get header row, raw: false for formatted values, defval: '' for empty cells
-                      const json_data = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false, defval: '' });
 
-                      if (json_data.length < 2) {
-                          alert("El archivo Excel parece estar vacío o no tiene encabezados.");
+                      // Get headers separately
+                      const headerRow = XLSX.utils.sheet_to_json(worksheet, { header: 1, range: 0, raw: false, defval: '' })[0] || [];
+                      const excelHeaders = headerRow.map(h => String(h).trim());
+
+                       // Convert data rows, ensuring dates are parsed correctly
+                       // Use raw: false initially to get formatted strings
+                      const jsonDataObjects = XLSX.utils.sheet_to_json(worksheet, { raw: false, defval: '' });
+
+
+                      if (jsonDataObjects.length === 0) {
+                          alert("El archivo Excel no contiene filas de datos.");
                           return;
                       }
 
-                      const excelHeaders = json_data[0].map(h => String(h).trim()); // Get headers from the first row
-                      const jsonDataObjects = XLSX.utils.sheet_to_json(worksheet, { raw: false, defval: '' }); // Convert rest to objects
-
-                      const normalizeHeaders = (d) => {
-                           // Keep your existing keyMap for normalization
+                      const normalizeHeadersAndData = (d, excelHeaderList) => {
+                           // Define mappings based on expected Excel headers (case-insensitive)
+                           // Use lowercase keys for robust matching
                           const keyMap = {
-                              'Fecha Neg.': 'Fecha_Neg', 'No. Orden': 'No_Orden', 'No. Cédula': 'No_Cedula',
-                              'Entidad Ejecutora': 'Entidad_Ejecutora', 'Motivo Negación': 'Motivo_Negacion',
-                              'Usuario Emitió': 'Usuario_Emitio', 'Observación Auditor': 'Observacion_Auditor',
-                              'Observación Ejecutivo': 'Observacion_Ejecutivo', 'Antigüedad': 'Antiguedad',
-                              'Teléfono': 'Telefono', 'Dirección': 'Direccion', 'Tipo Usuario': 'Tipo_Usuario',
-                              'Notificación': 'Notificacion', 'Gestión': 'Gestion_Negacion',
-                              'Observación Alternativa': 'Observacion_Alternativa', 'Nit Prestador': 'Nit_Prestador',
-                              'Fecha Complementariedad': 'Fecha_Complementariedad', 'Tiempo de Gestion': 'Tiempo_de_Gestion'
+                              'fecha neg.': 'Fecha_Neg', 'no. orden': 'No_Orden', 'no. cédula': 'No_Cedula',
+                              'entidad ejecutora': 'Entidad_Ejecutora', 'motivo negación': 'Motivo_Negacion',
+                              'usuario emitió': 'Usuario_Emitio', 'observación auditor': 'Observacion_Auditor',
+                              'observación ejecutivo': 'Observacion_Ejecutivo', 'antigüedad': 'Antiguedad',
+                              'teléfono': 'Telefono', 'dirección': 'Direccion', 'tipo usuario': 'Tipo_Usuario',
+                              'notificación': 'Notificacion', 'gestión': 'Gestion_Negacion',
+                              'observación alternativa': 'Observacion_Alternativa', 'nit prestador': 'Nit_Prestador',
+                              'fecha complementariedad': 'Fecha_Complementariedad', 'tiempo de gestion': 'Tiempo_de_Gestion',
+                              // Add other expected headers from PORTAL_HEADERS in lowercase
+                              'sucursal': 'Sucursal', 'nombre': 'Nombre', 'programa': 'Programa', 'plan': 'Plan',
+                              'eps': 'EPS', 'celular': 'Celular', 'email': 'Email', 'edad': 'Edad', 'llamada': 'Llamada',
+                              'complementariedad': 'Complementariedad', 'alternativa': 'Alternativa', 'monto': 'Monto',
+                              'regional': 'Regional'
                           };
-                           // Map Excel dates (assuming they are serial numbers or specific string formats)
-                          const excelDateToJSDate = (serialOrString) => {
-                              if (typeof serialOrString === 'number') {
-                                  // Handle Excel serial date number
-                                  const utc_days = Math.floor(serialOrString - 25569);
-                                  const utc_value = utc_days * 86400;
-                                  const date_info = new Date(utc_value * 1000);
-                                  // Adjust for timezone offset
-                                  const fractional_day = serialOrString - Math.floor(serialOrString) + 0.0000001;
-                                  let total_seconds = Math.floor(86400 * fractional_day);
-                                  const seconds = total_seconds % 60;
-                                  total_seconds -= seconds;
-                                  const hours = Math.floor(total_seconds / (60 * 60));
-                                  const minutes = Math.floor(total_seconds / 60) % 60;
+                          const dateKeysInternal = new Set(['Fecha_Neg', 'Fecha_Complementariedad']); // Internal keys expected to be dates
 
-                                  // Create date object adjusted for local timezone
-                                  return new Date(date_info.getFullYear(), date_info.getMonth(), date_info.getDate(), hours, minutes, seconds);
+                           // Helper to attempt date parsing from various string formats or Excel numbers
+                          const parseDateValue = (value) => {
+                              if (value === null || value === undefined || String(value).trim() === '') return ''; // Return empty string for empty input
+                              if (typeof value === 'number') { // Excel serial date
+                                 try {
+                                    const jsDate = XLSX.SSF.parse_date_code(value);
+                                    if(jsDate) {
+                                       // Format consistently as YYYY-MM-DD
+                                       const year = jsDate.y;
+                                       const month = String(jsDate.m).padStart(2, '0');
+                                       const day = String(jsDate.d).padStart(2, '0');
+                                       return `${year}-${month}-${day}`;
+                                    }
+                                 } catch (dateError) {
+                                     console.warn("Error parsing Excel date number:", value, dateError);
+                                 }
+                              } else if (typeof value === 'string') {
+                                  // Try common formats like DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD etc.
+                                  // Simple check for YYYY-MM-DD first
+                                  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
 
-                              } else if (typeof serialOrString === 'string') {
-                                  // Attempt to parse common string date formats if necessary
-                                  // For ISO-like strings or directly parsable formats
-                                  const parsedDate = new Date(serialOrString);
-                                  if (!isNaN(parsedDate)) return parsedDate;
+                                  // Attempt parsing other formats (this can be complex, keep it simple for now)
+                                  try {
+                                      // Handle DD/MM/YYYY specifically if common
+                                      const parts = value.match(/(\d{1,2})[/|-](\d{1,2})[/|-](\d{4})/);
+                                      if (parts) {
+                                          // Assuming DD/MM/YYYY - adjust if MM/DD/YYYY is possible
+                                          const year = parseInt(parts[3], 10);
+                                          const month = String(parseInt(parts[2], 10)).padStart(2, '0');
+                                          const day = String(parseInt(parts[1], 10)).padStart(2, '0');
+                                          // Basic validation
+                                          if (year > 1900 && parseInt(month, 10) >= 1 && parseInt(month, 10) <= 12 && parseInt(day, 10) >= 1 && parseInt(day, 10) <= 31) {
+                                             return `${year}-${month}-${day}`;
+                                          }
+                                      }
+                                      // Generic Date parsing (less reliable for ambiguous formats)
+                                      const parsed = new Date(value);
+                                      if (!isNaN(parsed)) {
+                                          const year = parsed.getFullYear();
+                                          const month = String(parsed.getMonth() + 1).padStart(2, '0');
+                                          const day = String(parsed.getDate()).padStart(2, '0');
+                                          return `${year}-${month}-${day}`;
+                                      }
+                                  } catch (parseError) {
+                                      console.warn("Could not parse date string:", value, parseError);
+                                  }
                               }
-                              return null; // Return null if conversion fails
+                              // If parsing fails, return the original value as string
+                              console.warn(`Returning original value for date column as string:`, value);
+                              return String(value);
                           };
+
 
                           return d.map(row => {
                               const newRow = {};
+                              // Initialize all PORTAL_HEADERS with empty strings
+                              PORTAL_HEADERS.forEach(header => { newRow[header] = ''; });
+
                               for (const key in row) {
-                                  const trimmedKey = String(key).trim(); // Ensure key is trimmed string
-                                  const newKey = keyMap[trimmedKey] || trimmedKey.replace(/ /g, '_'); // Normalize or replace spaces
+                                  const trimmedKeyLower = String(key).trim().toLowerCase();
+                                  const internalKey = keyMap[trimmedKeyLower]; // Find the corresponding internal key
 
-                                  // Check if the key indicates a date column
-                                  const isDateColumn = ['Fecha_Neg', 'Fecha_Complementariedad'].includes(newKey); // Add other date columns if needed
-
-                                  if (isDateColumn) {
-                                      const jsDate = excelDateToJSDate(row[key]);
-                                      if (jsDate && !isNaN(jsDate)) {
-                                          // Format as YYYY-MM-DD
-                                          newRow[newKey] = jsDate.toISOString().slice(0, 10);
-                                      } else {
-                                          newRow[newKey] = ''; // Assign empty string if date conversion failed
-                                          console.warn(`Could not parse date for column ${newKey}:`, row[key]);
-                                      }
+                                  if (internalKey) { // If the Excel header is recognized
+                                     if (dateKeysInternal.has(internalKey)) {
+                                         newRow[internalKey] = parseDateValue(row[key]);
+                                     } else {
+                                         // Assign value directly for non-date columns, ensuring it's a string
+                                         newRow[internalKey] = row[key] !== null && row[key] !== undefined ? String(row[key]) : '';
+                                     }
                                   } else {
-                                      // Assign value directly for non-date columns, ensuring it's a string
-                                      newRow[newKey] = row[key] !== null && row[key] !== undefined ? String(row[key]) : '';
+                                     // Optionally handle unrecognized columns (e.g., log them)
+                                     // console.warn(`Unrecognized column header in Excel: "${key}"`);
+                                     // You could store them with a prefix, e.g., newRow[`excel_${key.replace(/ /g, '_')}`] = String(row[key]);
                                   }
                               }
-                              // Ensure all PORTAL_HEADERS are present, even if empty
-                              PORTAL_HEADERS.forEach(header => {
-                                  if (!(header in newRow)) {
-                                      newRow[header] = '';
-                                  }
-                              });
                               return newRow;
                           });
                       };
 
-                      const normalizedData = normalizeHeaders(jsonDataObjects);
+
+                      const normalizedData = normalizeHeadersAndData(jsonDataObjects, excelHeaders);
                       onDataChange(normalizedData);
-                      e.target.value = null;
+                      e.target.value = null; // Reset file input
                   } catch (error) {
                       console.error("Error processing Excel file:", error);
-                      alert("Hubo un error al procesar el archivo Excel. Asegúrate de que el formato y las columnas son correctos.");
+                      alert("Hubo un error al procesar el archivo Excel. Asegúrate de que el formato y las columnas son correctos.\n" + error.message);
                       onDataChange([]); // Clear data on error
                   }
               };
@@ -538,14 +680,14 @@
                    onDataChange([]); // Clear data on error
               };
               reader.readAsArrayBuffer(file);
-          };
+          }, [onDataChange, headers]); // Include headers in dependencies for processPastedData
 
-          const clearTable = () => {
+          const clearTable = useCallback(() => {
             onDataChange(inputType === 'paste' ? Array(5).fill({}) : []);
-          }
+          }, [inputType, onDataChange]);
 
           // Ensure 'data' is always an array for rendering
-          const renderData = Array.isArray(data) ? data : (inputType === 'paste' ? Array(5).fill({}) : []);
+          const renderData = useMemo(() => Array.isArray(data) ? data : (inputType === 'paste' ? Array(5).fill({}) : []), [data, inputType]);
 
 
           return (
@@ -564,32 +706,30 @@
                        accept=".xlsx, .xls, .csv" // Added CSV support
                        onChange={handleFileChange}
                    />
-                   <span className="text-text-secondary">{renderData.length > 0 ? `${renderData.length} fila(s) cargada(s)` : 'Ningún archivo seleccionado'}</span>
+                   <span className="text-text-secondary">{renderData.length > 0 && renderData.some(row => Object.values(row).some(v=>v)) ? `${renderData.filter(row => Object.values(row).some(v=>v)).length} fila(s) cargada(s)` : 'Ningún archivo seleccionado'}</span>
                  </div>
               )}
 
               <div className="table-container max-h-72 overflow-auto border border-border-color rounded-lg">
-                <table className="w-full text-sm text-left text-text-secondary">
+                <table className="w-full text-sm text-left text-text-secondary table-fixed"> {/* Use table-fixed */}
                   <thead className="text-xs text-text-primary uppercase bg-header sticky top-0 z-10">
                     <tr>
                       {headers.map(header => (
-                        <th key={header} scope="col" className="px-4 py-3 whitespace-nowrap">{header.replace(/_/g, ' ')}</th>
+                        <th key={header} scope="col" className="px-4 py-3 whitespace-nowrap overflow-hidden text-ellipsis w-40">{header.replace(/_/g, ' ')}</th> // Add fixed width
                       ))}
                     </tr>
                   </thead>
-                  {/* Add check to ensure renderData is an array before mapping */}
                   <tbody onPaste={inputType === 'paste' ? handlePaste : undefined}>
-                    {Array.isArray(renderData) && renderData.map((row, rowIndex) => (
-                      <tr key={rowIndex} className="border-b border-border-color hover:bg-highlight">
+                    {renderData.map((row, rowIndex) => (
+                      <tr key={rowIndex} className="border-b border-border-color hover:bg-highlight group">
                         {headers.map(header => (
                           <td
                             key={`${rowIndex}-${header}`}
-                            className="px-4 py-2 border-r border-border-color focus:bg-primary focus:text-black outline-none"
+                            className="px-4 py-2 border-r border-border-color focus:bg-primary focus:text-black outline-none whitespace-nowrap overflow-hidden text-ellipsis w-40 group-focus-within:whitespace-normal group-hover:whitespace-normal" // Adjust width, handle wrap on focus/hover
                             contentEditable={inputType === 'paste'}
                             onBlur={inputType === 'paste' ? (e) => handleCellChange(rowIndex, header, e.currentTarget.innerText) : undefined}
                             suppressContentEditableWarning={true}
                           >
-                            {/* Ensure row is an object and header exists before accessing */}
                             {(typeof row === 'object' && row !== null && row[header] !== undefined) ? String(row[header]) : ''}
                           </td>
                         ))}
@@ -601,7 +741,8 @@
               <div className="flex gap-4">
                 <button
                     onClick={onProcess}
-                    disabled={renderData.length === 0 || (inputType === 'paste' && renderData.every(row => !Object.values(row).some(val => val)))} // Disable if no data
+                    // Disable if renderData is empty or (if paste type) all rows are effectively empty
+                    disabled={renderData.length === 0 || (inputType === 'paste' && renderData.every(row => !row || !Object.values(row).some(val => String(val).trim() !== '')))}
                     className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
                  >
                   {processButtonText}
@@ -612,12 +753,13 @@
               </div>
             </section>
           );
-        }
+        }); // End of Memoized DataInputArea
+
 
         // =================================================================================
         // INLINED: components/ReviewArea.tsx
         // =================================================================================
-        const ReviewArea = ({
+        const ReviewArea = React.memo(({ // Memoize ReviewArea
           data,
           templates,
           updateRow,
@@ -629,10 +771,11 @@
           sortConfig,
           setSortConfig,
         }) => {
+          console.log("Rendering ReviewArea"); // Debug log
           const [selectedRows, setSelectedRows] = useState(new Set());
           const [filter, setFilter] = useState('');
 
-          const REVIEW_HEADERS = [
+          const REVIEW_HEADERS = useMemo(() => [ // Memoize headers array
               { key: 'Fecha_Neg', label: 'Fecha Neg.' },
               { key: 'No_Orden', label: 'No. Orden' },
               { key: 'No_Cedula', label: 'No. Cédula' },
@@ -643,7 +786,7 @@
               { key: 'Descripcion_PDF', label: 'Descripción', compact: true },
               { key: 'Justificacion_PDF', label: 'Justificación', compact: true },
               { key: 'Fundamento_Legal_PDF', label: 'Fund. Legal', compact: true },
-          ];
+          ], []);
 
           // Ensure 'data' is always an array before filtering/sorting
           const currentData = Array.isArray(data) ? data : [];
@@ -659,18 +802,36 @@
             );
           }, [currentData, filter]); // Depend on currentData
 
-          const handleSelectRow = (noOrden) => {
-            const key = String(noOrden); // Ensure key is string for Set consistency
-            const newSelection = new Set(selectedRows);
-            if (newSelection.has(key)) {
-              newSelection.delete(key);
-            } else {
-              newSelection.add(key);
-            }
-            setSelectedRows(newSelection);
-          };
 
-          const handleSelectAll = (e) => {
+          // Clear selection when filtered data changes drastically
+          useEffect(() => {
+             setSelectedRows(prevSelected => {
+                 const currentKeys = new Set(filteredData.map(r => String(r.No_Orden)));
+                 const newSelection = new Set();
+                 for (const key of prevSelected) {
+                     if (currentKeys.has(key)) {
+                         newSelection.add(key);
+                     }
+                 }
+                 return newSelection;
+             });
+          }, [filteredData]);
+
+
+          const handleSelectRow = useCallback((noOrden) => {
+            const key = String(noOrden); // Ensure key is string for Set consistency
+            setSelectedRows(prevSelection => {
+               const newSelection = new Set(prevSelection);
+               if (newSelection.has(key)) {
+                 newSelection.delete(key);
+               } else {
+                 newSelection.add(key);
+               }
+               return newSelection;
+            });
+          }, []); // No external dependencies
+
+          const handleSelectAll = useCallback((e) => {
             if (e.target.checked) {
               const allOrderNumbers = filteredData
                 .map(row => row ? String(row.No_Orden) : null) // Get No_Orden as string, handle potential null rows
@@ -679,41 +840,51 @@
             } else {
               setSelectedRows(new Set());
             }
-          };
+          }, [filteredData]); // Depends on filteredData
 
-          const handleCellBlur = (noOrden, key, value) => {
-             // Find row using string comparison for No_Orden
-            const originalRow = currentData.find(r => r && String(r.No_Orden) === String(noOrden));
-            if (originalRow && originalRow[key] !== value) {
-              updateRow(noOrden, { [key]: value }); // Pass original noOrden (might be number or string)
-              incrementEdits();
-            }
-          };
+          const handleCellBlur = useCallback((noOrden, key, value) => {
+            // Find row using string comparison for No_Orden IN THE ORIGINAL (unfiltered) data
+             const originalRow = currentData.find(r => r && String(r.No_Orden) === String(noOrden));
+             if (originalRow && String(originalRow[key] || '') !== value) { // Compare as strings, handle undefined/null
+               updateRow(noOrden, { [key]: value }); // Pass original noOrden (might be number or string)
+               // incrementEdits() is called within updateFinalDataRow now
+             }
+          }, [currentData, updateRow]); // Depends on currentData
 
-          const handleSelectChange = (noOrden, value) => {
+
+          const handleSelectChange = useCallback((noOrden, value) => {
             const changes = { Tipo_Carta: value };
             const safeTemplates = Array.isArray(templates) ? templates : []; // Ensure templates is array
             const template = safeTemplates.find(t => t.id === value);
+            // Reset Radicado_Comp only if changing *away* from a Complementariedad template or to no template
             if (!template || !template.name.toUpperCase().includes('COMPLEMENTARIEDAD')) {
                changes.Radicado_Comp = '';
             }
              // Pass original noOrden (might be number or string)
             updateRow(noOrden, changes);
-            incrementEdits(); // Count template change as an edit
-          };
+            // incrementEdits() is called within updateFinalDataRow now
+          }, [templates, updateRow]); // Depends on templates
 
-          const requestSort = (key) => {
-            let direction = 'ascending';
-            if (sortConfig.key === key && sortConfig.direction === 'ascending') {
-              direction = 'descending';
-            }
-            setSortConfig({ key, direction });
-          };
 
-          const getSortIndicator = (key) => {
+          const requestSort = useCallback((key) => {
+            setSortConfig(currentSortConfig => {
+                let direction = 'ascending';
+                if (currentSortConfig.key === key && currentSortConfig.direction === 'ascending') {
+                  direction = 'descending';
+                }
+               return { key, direction };
+            });
+          }, [setSortConfig]); // Depends on setSortConfig
+
+          const getSortIndicator = useCallback((key) => {
             if (sortConfig.key !== key) return null;
             return sortConfig.direction === 'ascending' ? ' ▲' : ' ▼';
-          };
+          }, [sortConfig]); // Depends on sortConfig
+
+          const handleExport = useCallback(() => {
+              onExportForMailMerge(currentData); // Export original unfiltered/unsorted data
+          }, [onExportForMailMerge, currentData]);
+
 
           return (
             <section id="area3" className="space-y-4">
@@ -729,67 +900,67 @@
                 <span className="text-text-primary">{selectedRows.size} fila(s) seleccionada(s)</span>
               </div>
 
-              <div className="table-container max-h-[700px] overflow-auto border border-border-color rounded-lg">
-                <table className="w-full text-sm text-left text-text-secondary table-auto">
+              <div className="table-container max-h-[70vh] overflow-auto border border-border-color rounded-lg"> {/* Increased max height */}
+                <table className="w-full text-sm text-left text-text-secondary table-fixed"> {/* table-fixed */}
                   <thead className="text-xs text-text-primary uppercase bg-header sticky top-0 z-10">
                     <tr>
-                      <th className="px-4 py-3"><input type="checkbox" onChange={handleSelectAll} checked={filteredData.length > 0 && selectedRows.size === filteredData.length} /></th>
-                      <th className="px-4 py-3">👁️</th>
+                      <th className="px-4 py-3 w-10"><input type="checkbox" onChange={handleSelectAll} checked={filteredData.length > 0 && selectedRows.size === filteredData.length && selectedRows.size > 0} /></th> {/* Fixed width */}
+                      <th className="px-4 py-3 w-10">👁️</th> {/* Fixed width */}
                        {REVIEW_HEADERS.map(({ key, label, compact }) => (
-                         <th key={key} onClick={() => requestSort(key)} className={`px-4 py-3 cursor-pointer ${compact ? 'max-w-[150px]' : ''}`}>
+                         <th key={key} onClick={() => requestSort(key)} className={`px-4 py-3 cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis ${compact ? 'w-32' : 'w-48'}`}> {/* Widths */}
                              {label}{getSortIndicator(key)}
                          </th>
                        ))}
-                      <th className="px-4 py-3">Tipo de Carta</th>
+                      <th className="px-4 py-3 w-56">Tipo de Carta</th> {/* Width */}
                     </tr>
                   </thead>
                   <tbody>
-                  {/* Check filteredData exists and is an array */}
-                   {Array.isArray(filteredData) && filteredData.map((row) => {
-                       // Add a check to ensure 'row' is a valid object before proceeding
+                   {filteredData.map((row) => { // Map over filteredData for rendering
                       if (!row || typeof row !== 'object' || !row.No_Orden) {
-                        console.warn("Skipping invalid row in ReviewArea render:", row);
-                        return null; // Skip rendering this row
+                        // This check might be redundant if data source is clean, but safe
+                        console.warn("Skipping potentially invalid row in ReviewArea render:", row);
+                        return null;
                       }
 
-                      const noOrdenKey = String(row.No_Orden); // Use string key for Set lookup
-                      const safeTemplates = Array.isArray(templates) ? templates : []; // Ensure templates is array
+                      const noOrdenKey = String(row.No_Orden);
+                      const safeTemplates = Array.isArray(templates) ? templates : [];
                       const template = safeTemplates.find(t => t.id === row.Tipo_Carta);
                       const isComplementariedad = template && template.name.toUpperCase().includes('COMPLEMENTARIEDAD');
                       const requiresRadicado = isComplementariedad;
 
                       return (
-                         // Use original No_Orden (might be number or string) for handlers, use string key for Set
-                        <tr key={noOrdenKey} className={`border-b border-border-color hover:bg-highlight ${isComplementariedad ? 'bg-indigo-900/50' : ''}`}>
-                          <td className="px-4 py-2"><input type="checkbox" checked={selectedRows.has(noOrdenKey)} onChange={() => handleSelectRow(noOrdenKey)} /></td>
-                          <td className="px-4 py-2 text-lg cursor-pointer" onClick={() => onPreview(row)}>👁️</td>
+                        <tr key={noOrdenKey} className={`border-b border-border-color hover:bg-highlight group ${isComplementariedad ? 'bg-indigo-900/50' : ''} ${selectedRows.has(noOrdenKey) ? 'bg-primary/20' : ''}`}>
+                          <td className="px-4 py-2 w-10"><input type="checkbox" checked={selectedRows.has(noOrdenKey)} onChange={() => handleSelectRow(noOrdenKey)} /></td>
+                          <td className="px-4 py-2 text-lg cursor-pointer w-10 text-center" onClick={() => onPreview(row)}>👁️</td>
                           {REVIEW_HEADERS.map(({ key, compact }) => (
                             <td key={key}
-                                className={`px-4 py-2 border-r border-border-color focus:bg-primary focus:text-black outline-none ${compact ? 'max-w-[150px] overflow-hidden text-ellipsis whitespace-nowrap' : ''}`}
+                                className={`px-4 py-2 border-r border-border-color outline-none whitespace-nowrap overflow-hidden text-ellipsis focus:bg-primary focus:text-black group-focus-within:whitespace-normal group-hover:whitespace-normal ${compact ? 'w-32' : 'w-48'}`}
                                 contentEditable
-                                onBlur={(e) => handleCellBlur(row.No_Orden, key, e.currentTarget.innerText)} // Pass original No_Orden
+                                onBlur={(e) => handleCellBlur(row.No_Orden, key, e.currentTarget.innerText)}
                                 suppressContentEditableWarning={true}
+                                // Use dangerouslySetInnerHTML ONLY if you trust the source or sanitize it.
+                                // Prefer rendering text directly. If HTML is needed, consider a safe renderer.
                             >
-                                {row[key] !== null && row[key] !== undefined ? String(row[key]) : ''}
+                                {String(row[key] ?? '')} {/* Ensure value is string, default empty */}
                             </td>
                           ))}
-                          <td className="px-4 py-2">
+                          <td className="px-4 py-2 w-56">
                             <div className="flex flex-col gap-1">
                               <select
                                 value={row.Tipo_Carta || ''}
-                                onChange={(e) => handleSelectChange(row.No_Orden, e.target.value)} // Pass original No_Orden
-                                className="bg-surface border border-border-color rounded-md px-2 py-1 text-text-primary w-full"
+                                onChange={(e) => handleSelectChange(row.No_Orden, e.target.value)}
+                                className="bg-surface border border-border-color rounded-md px-2 py-1 text-text-primary w-full text-xs" // smaller text
                               >
                                 <option value="">-- Seleccionar --</option>
-                                {safeTemplates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                                {safeTemplates.map(t => <option key={t.id} value={t.id} title={t.name}>{t.name}</option>)}
                               </select>
                               {requiresRadicado && (
                                 <input
                                   type="text"
                                   placeholder="Radicado..."
                                   value={row.Radicado_Comp || ''}
-                                  onChange={(e) => updateRow(row.No_Orden, { Radicado_Comp: e.target.value })} // Pass original No_Orden
-                                  className="bg-surface border border-border-color rounded-md px-2 py-1 text-text-primary w-full mt-1"
+                                  onChange={(e) => updateRow(row.No_Orden, { Radicado_Comp: e.target.value })}
+                                  className="bg-surface border border-border-color rounded-md px-2 py-1 text-text-primary w-full mt-1 text-xs" // smaller text
                                 />
                               )}
                             </div>
@@ -797,23 +968,26 @@
                         </tr>
                       );
                     })}
+                     {filteredData.length === 0 && (
+                        <tr><td colSpan={REVIEW_HEADERS.length + 3} className="text-center py-4 text-text-secondary italic">No hay casos en revisión o no coinciden con la búsqueda.</td></tr>
+                     )}
                   </tbody>
                 </table>
               </div>
               <div className="flex flex-wrap gap-4">
                 <button
-                    onClick={() => onSendToTracking(Array.from(selectedRows))} // Pass the Set values (which are string keys)
-                    disabled={selectedRows.size === 0} // Disable if no rows selected
-                    className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
+                    onClick={() => onSendToTracking(Array.from(selectedRows))}
+                    disabled={selectedRows.size === 0}
+                    className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Enviar a Seguimiento
+                  Enviar a Seguimiento ({selectedRows.size})
                 </button>
                  <button
-                    onClick={() => onExportForMailMerge(currentData)} // Export based on currentData (unfiltered)
-                    disabled={currentData.length === 0} // Disable if no data
-                    className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
+                    onClick={handleExport}
+                    disabled={currentData.length === 0}
+                    className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                  >
-                   Exportar para Envío Masivo
+                   Exportar para Envío Masivo ({currentData.length})
                  </button>
                 <button
                     onClick={onClearReviewData}
@@ -824,21 +998,22 @@
               </div>
             </section>
           );
-        };
+        }); // End of Memoized ReviewArea
 
 
         // =================================================================================
         // INLINED: components/TrackingArea.tsx
         // =================================================================================
-        const TrackingTable = ({ data, isArchived, onUpdate, onArchive, filter }) => {
+        const TrackingTable = React.memo(({ data, isArchived, onUpdate, onArchive, filter }) => { // Memoize TrackingTable
+            console.log(`Rendering TrackingTable (Archived: ${isArchived})`); // Debug log
 
           const [selectedRows, setSelectedRows] = useState(new Set());
 
-          const statusClasses = {
+          const statusClasses = useMemo(() => ({ // Memoize status classes object
             'Pendiente': 'bg-yellow-600/20',
             'En Gestión': 'bg-blue-600/20',
             'Finalizado': 'bg-green-600/20',
-          };
+          }), []);
 
           // Ensure data is always an array
           const currentData = Array.isArray(data) ? data : [];
@@ -854,109 +1029,141 @@
             );
           }, [currentData, filter]); // Depend on currentData
 
-          const handleSelectRow = (index) => {
-            const newSelection = new Set(selectedRows);
-            if (newSelection.has(index)) {
-              newSelection.delete(index);
-            } else {
-              newSelection.add(index);
-            }
-            setSelectedRows(newSelection);
-          };
+          // Clear selection when filtered data changes
+           useEffect(() => {
+               setSelectedRows(prevSelected => {
+                   const currentIndices = new Set(filteredData.map(r => currentData.indexOf(r)).filter(i => i !== -1));
+                   const newSelection = new Set();
+                   for (const index of prevSelected) {
+                       if (currentIndices.has(index)) {
+                           newSelection.add(index);
+                       }
+                   }
+                   return newSelection;
+               });
+           }, [filteredData, currentData]);
 
-          const handleSelectAll = (e) => {
+
+          const handleSelectRow = useCallback((index) => {
+            setSelectedRows(prevSelection => {
+               const newSelection = new Set(prevSelection);
+               if (newSelection.has(index)) {
+                 newSelection.delete(index);
+               } else {
+                 newSelection.add(index);
+               }
+               return newSelection;
+            });
+          }, []); // No external deps
+
+          const handleSelectAll = useCallback((e) => {
             if (e.target.checked) {
                // Use indices of the currently filtered data mapped back to original indices
               setSelectedRows(new Set(filteredData.map((row) => currentData.indexOf(row)).filter(index => index !== -1)));
             } else {
               setSelectedRows(new Set());
             }
-          };
+          }, [filteredData, currentData]); // Depends on filteredData and currentData
 
-          const handleBulkArchive = () => {
+          const handleBulkArchive = useCallback(() => {
             if (selectedRows.size > 0) {
               onArchive(Array.from(selectedRows)); // Pass indices
-              setSelectedRows(new Set());
+              setSelectedRows(new Set()); // Clear selection after action
             }
-          };
+          }, [selectedRows, onArchive]); // Depends on selectedRows
+
+          const handleCellUpdate = useCallback((originalIndex, field, value) => {
+               const row = currentData[originalIndex];
+               // Only call update if value actually changed
+               if (row && String(row[field] || '') !== value) {
+                  onUpdate(originalIndex, { ...row, [field]: value });
+               }
+           }, [currentData, onUpdate]);
+
 
           return (
             <div className="space-y-4">
-              <div className="flex justify-end">
+              <div className="flex justify-between items-center">
+                   <span className="text-text-secondary text-sm">
+                       {selectedRows.size > 0 ? `${selectedRows.size} seleccionado(s)` : ''}
+                   </span>
                    {selectedRows.size > 0 && (
                        <button
                            onClick={handleBulkArchive}
-                           className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                           className={`font-bold py-2 px-4 rounded-lg transition-colors text-white ${isArchived ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600 hover:bg-gray-700'}`}
                        >
-                           {isArchived ? `Restaurar ${selectedRows.size} Seleccionados` : `Archivar ${selectedRows.size} Seleccionados`}
+                           {isArchived ? `♻️ Restaurar (${selectedRows.size})` : `🗄️ Archivar (${selectedRows.size})`}
                        </button>
                    )}
               </div>
-              <div className="table-container max-h-[400px] overflow-auto border border-border-color rounded-lg">
-                <table className="w-full text-sm text-left text-text-secondary">
+              <div className="table-container max-h-[40vh] overflow-auto border border-border-color rounded-lg"> {/* Adjusted height */}
+                <table className="w-full text-sm text-left text-text-secondary table-fixed"> {/* table-fixed */}
                   <thead className="text-xs text-text-primary uppercase bg-header sticky top-0 z-10">
                     <tr>
-                      <th className="px-4 py-3"><input type="checkbox" onChange={handleSelectAll} checked={filteredData.length > 0 && selectedRows.size === filteredData.length}/></th>
-                      <th className="px-4 py-3">Fecha Ing.</th>
-                      <th className="px-4 py-3">No. Orden</th>
-                      <th className="px-4 py-3">Nombre</th>
-                      <th className="px-4 py-3">EPS</th>
-                      <th className="px-4 py-3">Radicado</th>
-                      <th className="px-4 py-3">Estado</th>
-                      <th className="px-4 py-3">Notas</th>
-                      <th className="px-4 py-3">Acción</th>
+                      <th className="px-4 py-3 w-10"><input type="checkbox" onChange={handleSelectAll} checked={filteredData.length > 0 && selectedRows.size === filteredData.length && selectedRows.size > 0}/></th> {/* Width */}
+                      <th className="px-4 py-3 w-32">Fecha Ing.</th> {/* Width */}
+                      <th className="px-4 py-3 w-32">No. Orden</th> {/* Width */}
+                      <th className="px-4 py-3 w-48">Nombre</th> {/* Width */}
+                      <th className="px-4 py-3 w-32">EPS</th> {/* Width */}
+                      <th className="px-4 py-3 w-32">Radicado</th> {/* Width */}
+                      <th className="px-4 py-3 w-36">Estado</th> {/* Width */}
+                      <th className="px-4 py-3 flex-1 min-w-[200px]">Notas</th> {/* Flexible width */}
+                      <th className="px-4 py-3 w-16">Acción</th> {/* Width */}
                     </tr>
                   </thead>
                   <tbody>
-                   {Array.isArray(filteredData) && filteredData.map((row) => {
-                       // Find the original index in the full 'currentData' array
-                        const originalIndex = currentData.findIndex(item => item === row);
-                        // Skip if row is invalid or not found (shouldn't happen with findIndex but good practice)
-                        if (!row || typeof row !== 'object' || originalIndex === -1) return null;
+                   {filteredData.map((row) => {
+                       const originalIndex = currentData.indexOf(row);
+                       if (!row || typeof row !== 'object' || originalIndex === -1) return null;
+
+                       const rowClasses = `border-b border-border-color hover:bg-highlight transition-colors group ${isArchived ? 'bg-archive/30 text-text-secondary' : statusClasses[row.Estado] || ''} ${selectedRows.has(originalIndex) ? '!bg-primary/30' : ''}`; // Use !important for selection highlight
+
 
                       return (
-                        <tr key={originalIndex} className={`border-b border-border-color hover:bg-highlight transition-colors ${isArchived ? 'bg-archive/50 text-text-secondary' : statusClasses[row.Estado] || ''}`}>
-                          <td className="px-4 py-2"><input type="checkbox" checked={selectedRows.has(originalIndex)} onChange={() => handleSelectRow(originalIndex)} /></td>
-                          <td className="px-4 py-2">{row.Fecha_Ing || ''}</td>
-                          <td className="px-4 py-2">{row.No_Orden || ''}</td>
-                          <td className="px-4 py-2">{row.Nombre || ''}</td>
-                          <td className="px-4 py-2">{row.EPS || ''}</td>
-                          <td className="px-4 py-2">{row.Radicado || ''}</td>
-                          <td className="px-4 py-2">
+                        <tr key={originalIndex} className={rowClasses}>
+                          <td className="px-4 py-2 w-10"><input type="checkbox" checked={selectedRows.has(originalIndex)} onChange={() => handleSelectRow(originalIndex)} /></td>
+                          <td className="px-4 py-2 w-32 whitespace-nowrap">{row.Fecha_Ing || ''}</td>
+                          <td className="px-4 py-2 w-32 whitespace-nowrap">{row.No_Orden || ''}</td>
+                          <td className="px-4 py-2 w-48 whitespace-nowrap overflow-hidden text-ellipsis" title={row.Nombre}>{row.Nombre || ''}</td>
+                          <td className="px-4 py-2 w-32 whitespace-nowrap overflow-hidden text-ellipsis" title={row.EPS}>{row.EPS || ''}</td>
+                          <td className="px-4 py-2 w-32 whitespace-nowrap overflow-hidden text-ellipsis" title={row.Radicado}>{row.Radicado || ''}</td>
+                          <td className="px-4 py-2 w-36">
                             <select
-                              value={row.Estado || TRACKING_STATUSES[0]} // Default to first status if undefined
-                              onChange={e => onUpdate(originalIndex, { ...row, Estado: e.target.value })}
-                              className="bg-surface border border-border-color rounded-md px-2 py-1 text-text-primary"
+                              value={row.Estado || TRACKING_STATUSES[0]}
+                              onChange={e => handleCellUpdate(originalIndex, 'Estado', e.target.value)}
+                              className="bg-surface border border-border-color rounded-md px-2 py-1 text-text-primary w-full text-xs" // smaller text
+                              disabled={isArchived} // Disable editing in archive
                             >
                               {TRACKING_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
                             </select>
                           </td>
-                           {/* Ensure innerText exists before updating state */}
                           <td
-                              className="px-4 py-2 outline-none focus:bg-primary focus:text-black"
-                              contentEditable
-                              onBlur={e => {
-                                  const newNotes = e.currentTarget.innerText;
-                                  if(row.Notas !== newNotes){ // Only update if changed
-                                       onUpdate(originalIndex, { ...row, Notas: newNotes });
-                                  }
-                              }}
+                              className="px-4 py-2 outline-none focus:bg-primary focus:text-black min-w-[200px] group-focus-within:whitespace-normal group-hover:whitespace-normal" // Allow wrap on focus/hover
+                              contentEditable={!isArchived} // Disable editing in archive
+                              onBlur={e => handleCellUpdate(originalIndex, 'Notas', e.currentTarget.innerText)}
                               suppressContentEditableWarning={true}
+                              // Render plain text, avoid dangerouslySetInnerHTML unless absolutely necessary and sanitized
                            >
                                 {row.Notas || ''}
                            </td>
-                          <td className="px-4 py-2 text-lg cursor-pointer" onClick={() => onArchive([originalIndex])}>{isArchived ? '♻️' : '🗄️'}</td>
+                          <td className="px-4 py-2 text-lg cursor-pointer w-16 text-center" onClick={() => onArchive([originalIndex])}>{isArchived ? '♻️' : '🗄️'}</td>
                         </tr>
                       );
                     })}
+                     {filteredData.length === 0 && (
+                        <tr><td colSpan={9} className="text-center py-4 text-text-secondary italic">
+                            {isArchived ? 'No hay casos archivados' : 'No hay casos activos'} {filter ? ' que coincidan con la búsqueda.' : '.'}
+                        </td></tr>
+                     )}
                   </tbody>
                 </table>
               </div>
             </div>
           );
-        };
+        }); // End of Memoized TrackingTable
 
-        const TrackingArea = ({ trackingData, archivedData, updateTrackingData, archiveItems }) => {
+        const TrackingArea = React.memo(({ trackingData, archivedData, updateTrackingData, archiveItems }) => { // Memoize TrackingArea
+          console.log("Rendering TrackingArea"); // Debug log
           const [showArchived, setShowArchived] = useState(false);
           const [filter, setFilter] = useState('');
            // Ensure data props are arrays
@@ -967,11 +1174,11 @@
           return (
             <section id="area4" className="space-y-4">
               <h2 className="text-2xl font-bold text-primary border-b border-border-color pb-2">Área 4: Seguimiento</h2>
-              <div className="action-bar bg-highlight p-4 rounded-lg flex flex-wrap items-center gap-4">
+              <div className="action-bar bg-highlight p-4 rounded-lg flex flex-wrap items-center gap-4 justify-between">
                 <input
                   type="text"
-                  placeholder="Buscar en seguimiento..."
-                  className="bg-surface border border-border-color rounded-md px-3 py-2 text-text-primary placeholder-text-secondary w-full sm:w-auto"
+                  placeholder="Buscar en seguimiento (Activos y Archivados)..."
+                  className="bg-surface border border-border-color rounded-md px-3 py-2 text-text-primary placeholder-text-secondary w-full sm:w-1/2 lg:w-1/3"
                   value={filter}
                   onChange={e => setFilter(e.target.value)}
                 />
@@ -984,8 +1191,8 @@
               <TrackingTable
                 data={currentTrackingData} // Pass guaranteed array
                 isArchived={false}
-                onUpdate={(index, row) => updateTrackingData(index, row, false)}
-                onArchive={(indices) => archiveItems(indices, false)}
+                onUpdate={updateTrackingData} // Pass the callback directly
+                onArchive={archiveItems} // Pass the callback directly
                 filter={filter}
               />
 
@@ -995,36 +1202,39 @@
                   <TrackingTable
                     data={currentArchivedData} // Pass guaranteed array
                     isArchived={true}
-                    onUpdate={(index, row) => updateTrackingData(index, row, true)}
-                    onArchive={(indices) => archiveItems(indices, true)}
+                    onUpdate={updateTrackingData} // Pass the callback directly
+                    onArchive={archiveItems} // Pass the callback directly
                     filter={filter}
                   />
                 </div>
               )}
             </section>
           );
-        };
+        }); // End of Memoized TrackingArea
 
         // =================================================================================
         // INLINED: components/SetupModal.tsx
         // =================================================================================
-        const SetupModal = ({ onSave, onClose, initialUrl = '' }) => {
+        const SetupModal = ({ onSave, onClose, initialUrl = '' }) => { // Cannot easily memoize modals with internal state like this
           const [url, setUrl] = useState(initialUrl);
           const [isVerifying, setIsVerifying] = useState(false);
+          const [errorMsg, setErrorMsg] = useState(''); // State for error message
 
           const handleSave = async () => {
-            if (!url || !url.startsWith('https://script.google.com/macros/s/')) { // Added check for empty url
-              alert("Por favor, introduce una URL válida de Google Apps Script.");
+            setErrorMsg(''); // Clear previous errors
+            if (!url || !url.startsWith('https://script.google.com/macros/s/')) {
+              setErrorMsg("Por favor, introduce una URL válida de Google Apps Script (debe empezar con https://script.google.com/macros/s/).");
               return;
             }
             setIsVerifying(true);
-            // Wrap onSave in try/catch to handle potential errors during verification
-             try {
+            try {
+                // onSave should throw an error if verification fails
                 await onSave(url);
-                // If onSave completes without error, verification is assumed successful
+                // No need to explicitly close here, parent component handles it on success via state update
             } catch (error) {
-                // Error handling is likely done within onSave/handleSetScriptUrl already
-                console.error("Verification failed:", error);
+                 console.error("Verification failed:", error);
+                 // Display a user-friendly error message from the caught error
+                 setErrorMsg(`Falló la verificación: ${error.message}. Revisa la URL y los permisos.`);
             } finally {
                 setIsVerifying(false); // Ensure verifying state is reset even if error occurs
             }
@@ -1047,25 +1257,28 @@
                       id="script-url"
                       type="url"
                       value={url}
-                      onChange={(e) => setUrl(e.target.value)}
+                      onChange={(e) => { setUrl(e.target.value); setErrorMsg(''); }} // Clear error on change
                       placeholder="https://script.google.com/macros/s/..."
-                      className="w-full bg-background border border-border-color rounded-md px-3 py-2 text-text-primary placeholder-text-secondary focus:ring-primary focus:border-primary"
+                      className={`w-full bg-background border rounded-md px-3 py-2 text-text-primary placeholder-text-secondary focus:ring-primary focus:border-primary ${errorMsg ? 'border-danger' : 'border-border-color'}`} // Highlight on error
+                      aria-invalid={!!errorMsg}
+                      aria-describedby="url-error"
                   />
+                  {errorMsg && <p id="url-error" className="text-danger text-sm mt-1">{errorMsg}</p>}
                 </div>
                 <div className="flex justify-end gap-4">
                   <button
-                      onClick={onClose}
-                      disabled={isVerifying} // Disable cancel while verifying
-                      className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
+                      onClick={onClose} // Let parent handle close logic
+                      disabled={isVerifying}
+                      className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                       Cancelar
                   </button>
                   <button
                       onClick={handleSave}
-                      disabled={isVerifying || !url} // Disable if verifying or url is empty
-                      className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
+                      disabled={isVerifying || !url}
+                      className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-w-[150px] flex justify-center items-center" // Ensure button size stays consistent
                   >
-                      {isVerifying ? <Spinner /> : 'Guardar y Verificar'} {/* Show spinner */}
+                      {isVerifying ? <Spinner /> : 'Guardar y Verificar'}
                   </button>
                 </div>
               </div>
@@ -1076,122 +1289,137 @@
         // =================================================================================
         // INLINED: components/TemplateManagerModal.tsx
         // =================================================================================
-        const TemplateManagerModal = ({ templates, onClose, onSave, onReset }) => {
-          const [currentTemplates, setCurrentTemplates] = useState(() => Array.isArray(templates) ? templates : []); // Ensure initial state is array
-          const [editingTemplate, setEditingTemplate] = useState(null);
+        const TemplateManagerModal = ({ templates, onClose, onSave, onReset }) => { // Cannot easily memoize modals
+          const [currentTemplates, setCurrentTemplates] = useState(() => structuredClone(Array.isArray(templates) ? templates : [])); // Deep clone initial templates
+          const [editingTemplate, setEditingTemplate] = useState(null); // Holds the template being edited/created
 
-          const handleSave = () => {
-            onSave(currentTemplates);
-            onClose();
-          };
+          const handleSaveLocal = useCallback(() => {
+            // Add validation before saving if needed
+            onSave(currentTemplates); // Pass the current state up
+          }, [currentTemplates, onSave]);
 
-          const handleAddNew = () => {
-            setEditingTemplate({ id: `tpl_${Date.now()}`, name: '', body: '' });
-          };
+          const handleAddNew = useCallback(() => {
+            // Create a truly new ID for the new template
+            setEditingTemplate({ id: `custom_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`, name: '', body: '' });
+          }, []);
 
-          const handleEdit = (template) => {
-            setEditingTemplate({ ...template }); // Create a copy for editing
-          };
+          const handleEdit = useCallback((template) => {
+             // Create a copy for editing to avoid modifying the list directly
+             setEditingTemplate({ ...template });
+          }, []);
 
-          const handleDelete = (idToDelete) => {
-            if (window.confirm('¿Estás seguro de que quieres eliminar esta plantilla?')) {
+          const handleDelete = useCallback((idToDelete) => {
+            if (window.confirm('¿Estás seguro de que quieres eliminar esta plantilla? Esta acción no se puede deshacer.')) {
               setCurrentTemplates(current => current.filter(t => t.id !== idToDelete)); // Use functional update
             }
-          };
+          }, []);
 
-          const handleSaveTemplateEdit = () => {
-            if (!editingTemplate || !editingTemplate.name || !editingTemplate.body) {
+          const handleSaveTemplateEdit = useCallback(() => {
+            if (!editingTemplate || !editingTemplate.name.trim() || !editingTemplate.body.trim()) {
               alert('El nombre y el cuerpo de la plantilla no pueden estar vacíos.');
               return;
             }
 
             setCurrentTemplates(current => {
-               const existingIndex = current.findIndex(t => t.id === editingTemplate.id);
-               if (existingIndex > -1) {
-                   // Update existing
-                   const updated = [...current];
-                   updated[existingIndex] = editingTemplate;
-                   return updated;
-               } else {
-                   // Add new
-                   return [...current, editingTemplate];
-               }
+                const updatedTemplates = Array.isArray(current) ? [...current] : []; // Ensure it's an array
+                const existingIndex = updatedTemplates.findIndex(t => t.id === editingTemplate.id);
+                if (existingIndex > -1) {
+                    // Update existing
+                    updatedTemplates[existingIndex] = { ...editingTemplate }; // Ensure it's a new object
+                } else {
+                    // Add new
+                    updatedTemplates.push({ ...editingTemplate }); // Ensure it's a new object
+                }
+                return updatedTemplates;
             });
             setEditingTemplate(null); // Close editor
-          };
+          }, [editingTemplate]); // Depends on the template being edited
 
-          // Ensure currentTemplates is always an array for rendering
-          const renderTemplates = Array.isArray(currentTemplates) ? currentTemplates : [];
+
+           // Handler for input changes within the editor
+           const handleEditorChange = useCallback((field, value) => {
+                setEditingTemplate(prev => prev ? ({ ...prev, [field]: value }) : null);
+           }, []);
 
 
           return (
             <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-[150] p-4"> {/* Increased z-index */}
               <div className="bg-surface rounded-lg shadow-xl w-full max-w-4xl border border-border-color flex flex-col max-h-[90vh]">
-                <div className="p-6 border-b border-border-color flex justify-between items-center">
+                <div className="p-6 border-b border-border-color flex justify-between items-center flex-shrink-0"> {/* Header */}
                   <h3 className="text-xl font-bold text-primary">Gestionar Plantillas de Correo</h3>
                   <button onClick={onClose} className="text-text-secondary text-2xl hover:text-text-primary">&times;</button>
                 </div>
 
-                <div className="p-6 overflow-y-auto space-y-6 flex-grow"> {/* Added flex-grow */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full"> {/* Added h-full */}
-                    <div className="flex flex-col"> {/* Added flex container */}
-                      <h4 className="text-lg font-semibold mb-2">Plantillas Actuales</h4>
-                      <ul className="space-y-2 border border-border-color rounded-lg p-2 overflow-y-auto flex-grow"> {/* Added flex-grow */}
-                       {/* Check renderTemplates is array before mapping */}
-                        {Array.isArray(renderTemplates) && renderTemplates.map(template => (
-                          <li key={template.id} className="flex justify-between items-center p-2 bg-highlight rounded">
-                            <span className="text-text-primary truncate" title={template.name}>{template.name}</span> {/* Added truncate */}
-                            <div className="space-x-2 flex-shrink-0"> {/* Added flex-shrink-0 */}
-                              <button onClick={() => handleEdit(template)} className="text-sm bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded">Editar</button>
-                              <button onClick={() => handleDelete(template.id)} className="text-sm bg-danger hover:bg-danger-hover px-2 py-1 rounded">Borrar</button>
+                <div className="p-6 overflow-y-auto space-y-6 flex-grow"> {/* Content Area */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full"> {/* Layout */}
+
+                    {/* Left Side: List of Templates */}
+                    <div className="flex flex-col h-full">
+                      <div className="flex justify-between items-center mb-2">
+                         <h4 className="text-lg font-semibold">Plantillas Actuales</h4>
+                         <button onClick={handleAddNew} className="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1 px-2 rounded disabled:opacity-50" disabled={!!editingTemplate}>
+                           + Nueva
+                         </button>
+                      </div>
+                      <ul className="space-y-2 border border-border-color rounded-lg p-2 overflow-y-auto flex-grow bg-background/30">
+                        {currentTemplates.map(template => (
+                          <li key={template.id} className={`flex justify-between items-center p-2 rounded transition-colors ${editingTemplate?.id === template.id ? 'bg-primary/30 ring-1 ring-primary' : 'bg-highlight hover:bg-highlight/70'}`}>
+                            <span className="text-text-primary truncate flex-grow mr-2" title={template.name}>{template.name}</span>
+                            <div className="space-x-2 flex-shrink-0">
+                              <button onClick={() => handleEdit(template)} className="text-xs bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded disabled:opacity-50" disabled={!!editingTemplate}>Editar</button>
+                              <button onClick={() => handleDelete(template.id)} className="text-xs bg-danger hover:bg-danger-hover px-2 py-1 rounded disabled:opacity-50" disabled={!!editingTemplate}>Borrar</button>
                             </div>
                           </li>
                         ))}
-                         {renderTemplates.length === 0 && <li className="text-text-secondary text-center p-4">No hay plantillas personalizadas.</li>}
+                         {currentTemplates.length === 0 && <li className="text-text-secondary text-center p-4 italic">No hay plantillas guardadas.</li>}
                       </ul>
                     </div>
 
-                    <div className="flex flex-col"> {/* Added flex container */}
-                      <h4 className="text-lg font-semibold mb-2">{editingTemplate ? (editingTemplate.id.startsWith('tpl_') ? 'Editar Plantilla' : 'Crear Nueva Plantilla') : 'Crear Nueva Plantilla'}</h4>
-                      {editingTemplate ? (
-                        <div className="space-y-4 p-4 border border-border-color rounded-lg bg-highlight flex flex-col flex-grow"> {/* Added flex */}
-                           <input
-                            type="text"
-                            placeholder="Nombre de la Plantilla"
-                            value={editingTemplate.name || ''}
-                            onChange={(e) => setEditingTemplate(prev => ({ ...prev, name: e.target.value }))}
-                            className="w-full bg-background border border-border-color rounded-md px-3 py-2"
-                           />
-                          <textarea
-                            placeholder="Cuerpo de la Plantilla (HTML permitido)..."
-                            value={editingTemplate.body || ''}
-                            onChange={(e) => setEditingTemplate(prev => ({ ...prev, body: e.target.value }))}
-                            className="w-full bg-background border border-border-color rounded-md px-3 py-2 resize-y flex-grow" // Added flex-grow
-                           />
-                            <p className="text-xs text-text-secondary flex-shrink-0">Marcadores: {`{{Columna}}`} (e.j: {`{{Nombre}}`}, {`{{No_Orden}}`})</p> {/* Added flex-shrink-0 */}
-                          <div className="flex gap-2 flex-shrink-0"> {/* Added flex-shrink-0 */}
-                            <button onClick={handleSaveTemplateEdit} className="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm">Guardar Cambios</button>
-                            <button onClick={() => setEditingTemplate(null)} className="bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm">Cancelar</button>
-                          </div>
-                        </div>
-                      ) : (
-                        <button onClick={handleAddNew} className="w-full bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg">
-                          Añadir Nueva Plantilla
-                        </button>
-                      )}
+                    {/* Right Side: Editor/Placeholder */}
+                    <div className="flex flex-col h-full">
+                       <h4 className="text-lg font-semibold mb-2">
+                          {editingTemplate ? (currentTemplates.some(t => t.id === editingTemplate.id) ? 'Editar Plantilla' : 'Nueva Plantilla') : 'Editor de Plantilla'}
+                       </h4>
+                       {editingTemplate ? (
+                           <div className="space-y-3 p-4 border border-border-color rounded-lg bg-highlight flex flex-col flex-grow">
+                             <input
+                               type="text"
+                               placeholder="Nombre de la Plantilla"
+                               value={editingTemplate.name}
+                               onChange={(e) => handleEditorChange('name', e.target.value)}
+                               className="w-full bg-background border border-border-color rounded-md px-3 py-2 text-sm flex-shrink-0"
+                             />
+                             <textarea
+                               placeholder="Cuerpo de la Plantilla (HTML permitido)..."
+                               value={editingTemplate.body}
+                               onChange={(e) => handleEditorChange('body', e.target.value)}
+                               className="w-full bg-background border border-border-color rounded-md px-3 py-2 resize-y flex-grow text-sm min-h-[200px]" // Ensure minimum height
+                             />
+                              <p className="text-xs text-text-secondary flex-shrink-0">Marcadores disponibles: {`{{Columna}}`} (ej: {`{{Nombre}}`}, {`{{No_Orden}}`}, {`{{EPS}}`}, {`{{Oficina_Virtual_EPS}}`}, etc.)</p>
+                             <div className="flex gap-2 flex-shrink-0 justify-end">
+                               <button onClick={() => setEditingTemplate(null)} className="bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm">Cancelar</button>
+                               <button onClick={handleSaveTemplateEdit} className="bg-success hover:bg-green-700 px-3 py-1 rounded text-sm">Guardar Cambios</button>
+                             </div>
+                           </div>
+                         ) : (
+                           <div className="flex items-center justify-center h-full border border-dashed border-border-color rounded-lg bg-background/30 text-text-secondary italic">
+                              Selecciona una plantilla para editar o haz clic en "+ Nueva".
+                           </div>
+                         )}
                     </div>
+
                   </div>
                 </div>
 
-                <div className="p-4 bg-header flex justify-between items-center rounded-b-lg flex-shrink-0"> {/* Added flex-shrink-0 */}
-                   <button onClick={onReset} className="bg-danger hover:bg-danger-hover text-white font-bold py-2 px-4 rounded-lg">
+                <div className="p-4 bg-header flex justify-between items-center rounded-b-lg flex-shrink-0"> {/* Footer */}
+                   <button onClick={onReset} className="bg-danger hover:bg-danger-hover text-white font-bold py-2 px-4 rounded-lg text-sm" disabled={!!editingTemplate}>
                     Restaurar Predeterminadas
                   </button>
                   <div className="flex gap-4">
-                    <button onClick={onClose} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg">
+                    <button onClick={onClose} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg text-sm" disabled={!!editingTemplate}>
                         Cancelar
                     </button>
-                    <button onClick={handleSave} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">
+                    <button onClick={handleSaveLocal} className="bg-success hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg text-sm" disabled={!!editingTemplate}>
                         Guardar y Cerrar
                     </button>
                   </div>
@@ -1201,22 +1429,35 @@
           );
         };
 
+
         // =================================================================================
         // INLINED: components/PreviewModal.tsx
         // =================================================================================
-        const PreviewModal = ({ data, template, onClose }) => {
+        const PreviewModal = ({ data, template, onClose }) => { // Cannot easily memoize modals
            // Ensure data is an object before proceeding
           if (!data || typeof data !== 'object') {
              console.error("Invalid data provided to PreviewModal:", data);
-             return null; // Don't render if data is invalid
+             // Optionally show an error to the user or close automatically
+             // onClose(); // Uncomment to close if data is bad
+             return ( // Render a fallback message
+                  <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-[150] p-4">
+                     <div className="bg-surface rounded-lg shadow-xl w-full max-w-lg border border-border-color p-8 text-center">
+                         <h3 className="text-xl font-bold text-danger mb-4">Error</h3>
+                         <p className="text-text-secondary mb-6">No se pudieron cargar los datos para la vista previa.</p>
+                         <button onClick={onClose} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">Cerrar</button>
+                     </div>
+                  </div>
+             );
           }
-          const bodyContent = template && template.body ? replacePlaceholders(template.body, data) : '<p><i>Selecciona un tipo de carta en el Área 3 para ver la vista previa.</i></p>';
-          const fullBody = bodyContent + COMMON_EMAIL_BODY + SIGNATURE;
 
-          const copyToClipboard = () => {
+          const bodyContent = template && template.body ? replacePlaceholders(template.body, data) : '<p class="italic text-gray-500">[Selecciona un tipo de carta en el Área 3 para ver la vista previa aquí]</p>';
+          const fullBody = `<div style="font-family: sans-serif; font-size: 14px; color: #333;">${bodyContent}${COMMON_EMAIL_BODY}${SIGNATURE}</div>`; // Wrap in basic styles for iframe
+
+
+          const copyToClipboard = useCallback(() => {
              // Create a temporary element to parse HTML and get text content
             const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = fullBody;
+            tempDiv.innerHTML = fullBody; // Use fullBody which includes signature etc.
             // Get text content, trying different properties for browser compatibility
             const textContent = tempDiv.textContent || tempDiv.innerText || "";
 
@@ -1226,48 +1467,57 @@
                    console.error('Failed to copy text content:', err);
                    alert('Falló al copiar el contenido de texto.');
                });
-          };
+          }, [fullBody]); // Depends on fullBody
 
-          const copyHtmlToClipboard = () => {
+
+          const copyHtmlToClipboard = useCallback(() => {
                try {
-                   // Use Clipboard API with HTML type
-                   const blob = new Blob([fullBody], { type: 'text/html' });
-                   const item = new ClipboardItem({ 'text/html': blob });
-                   navigator.clipboard.write([item])
-                       .then(() => alert('¡Contenido HTML copiado al portapapeles!'))
-                       .catch(err => {
-                             console.error('Failed to copy HTML content:', err);
-                             alert('Falló al copiar el contenido HTML (tu navegador podría no soportarlo).');
-                       });
+                  // Use Clipboard API with HTML type
+                  if (navigator.clipboard && window.ClipboardItem) {
+                      const blob = new Blob([fullBody], { type: 'text/html' });
+                      const item = new ClipboardItem({ 'text/html': blob });
+                      navigator.clipboard.write([item])
+                         .then(() => alert('¡Contenido HTML copiado al portapapeles!'))
+                         .catch(err => {
+                              console.error('Failed to copy HTML content using ClipboardItem:', err);
+                              // Fallback or specific error message
+                              alert('Falló al copiar el contenido HTML (tu navegador podría no soportarlo completamente). Intenta copiar el texto.');
+                         });
+                  } else {
+                       // Fallback for older browsers (might not copy HTML format correctly)
+                       console.warn("ClipboardItem API not supported, attempting fallback text copy.");
+                       copyToClipboard(); // Fallback to text copy
+                       alert("Se copió el texto, pero el formato HTML puede no ser compatible con tu navegador.");
+                  }
                } catch (error) {
                    console.error('Error copying HTML:', error);
-                   alert('Error al intentar copiar HTML (ClipboardItem puede no ser soportado).');
+                   alert('Error inesperado al intentar copiar HTML.');
                }
-            };
+            }, [fullBody, copyToClipboard]); // Depends on fullBody and copyToClipboard fallback
+
 
           return (
             <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-[150] p-4"> {/* Increased z-index */}
               <div className="bg-surface rounded-lg shadow-xl w-full max-w-3xl border border-border-color flex flex-col max-h-[90vh]"> {/* Added max-h */}
-                <div className="p-6 border-b border-border-color flex justify-between items-center">
-                  <h3 className="text-xl font-bold text-primary">Vista Previa del Correo para Orden: {data.No_Orden || 'N/A'}</h3>
-                   <button onClick={onClose} className="text-text-secondary text-2xl hover:text-text-primary">&times;</button>
+                <div className="p-4 border-b border-border-color flex justify-between items-center flex-shrink-0"> {/* Header */}
+                  <h3 className="text-lg font-bold text-primary truncate">Vista Previa: Orden {data.No_Orden || 'N/A'}</h3>
+                   <button onClick={onClose} className="text-text-secondary text-2xl hover:text-text-primary ml-4">&times;</button>
                 </div>
                 {/* Use iframe to render HTML correctly */}
                 <iframe
-                  srcDoc={fullBody}
-                  className="p-1 flex-grow overflow-y-auto bg-white" // Use p-1 instead of p-6 for iframe, added flex-grow
+                  srcDoc={`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{margin: 1rem;}</style></head><body>${fullBody}</body></html>`} // Add basic HTML structure and margin
+                  className="flex-grow overflow-y-auto bg-white border-none" // Use border-none
                   sandbox="allow-same-origin" // Basic sandboxing for security
-                  style={{border: 'none', minHeight: '300px'}} // Ensure minimum height
-                  title="Vista Previa Email"
+                  title={`Vista Previa Email Orden ${data.No_Orden || 'N/A'}`}
                 />
-                <div className="p-4 bg-header flex justify-end gap-4 rounded-b-lg flex-shrink-0"> {/* Added flex-shrink-0 */}
-                   <button onClick={copyHtmlToClipboard} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors" title="Copiar como HTML formateado para pegar en correos">
+                <div className="p-4 bg-header flex justify-end gap-4 rounded-b-lg flex-shrink-0"> {/* Footer */}
+                   <button onClick={copyHtmlToClipboard} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm" title="Copiar como HTML formateado para pegar en correos">
                      Copiar HTML
                    </button>
-                  <button onClick={copyToClipboard} className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors" title="Copiar solo el texto sin formato">
+                  <button onClick={copyToClipboard} className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm" title="Copiar solo el texto sin formato">
                     Copiar Texto
                   </button>
-                  <button onClick={onClose} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                  <button onClick={onClose} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm">
                     Cerrar
                   </button>
                 </div>
@@ -1286,124 +1536,146 @@
             finalData: [],
             trackingData: [],
             archivedData: [],
-            portalData: [],
-            pdfData: Array(5).fill({}),
+            portalData: [], // State specifically for Area 1 file input
+            pdfData: Array(5).fill({}), // State specifically for Area 2 paste input
             templates: [],
             scriptUrl: null,
-            isSetupNeeded: false,
-            isReconfiguring: false,
-            isLoading: true,
-            isSaving: false,
+            isSetupNeeded: false, // True initially if no URL in localStorage
+            isReconfiguring: false, // True if user clicks reconfigure button
+            isLoading: true, // True during initial data fetch
+            isSaving: false, // True while save operation is in progress
             isTemplateManagerOpen: false,
-            previewData: null,
-            notification: null,
-            editsCount: 0,
-            onlineStatus: true,
-            masterTrackingOrders: new Set(),
+            previewData: null, // Holds the row data for the preview modal
+            notification: null, // { message: string, type: 'success'|'error'|'warning'|'info', timeoutId?: number }
+            editsCount: 0, // Counter for unsaved changes in Review and Tracking areas
+            onlineStatus: true, // Tracks browser online status
+            masterTrackingOrders: new Set(), // Holds all known No_Orden strings (from initial load + saves)
           });
 
           const [sortConfig, setSortConfig] = useState({
-            key: 'No_Orden',
-            direction: 'ascending',
+            key: 'No_Orden', // Default sort column
+            direction: 'ascending', // Default sort direction
           });
 
+          // --- Notification Management ---
           const hideNotification = useCallback(() => {
-              setState((prev) => ({ ...prev, notification: null }));
+              // Use functional update to avoid stale state issues if called rapidly
+              setState(prev => ({ ...prev, notification: null }));
           }, []); // Empty dependency array as it doesn't depend on external vars
 
           const showNotification = useCallback((message, type = 'info', duration = 5000) => {
-             // Clear existing notification timeout if any
-             if (state.notification && state.notification.timeoutId) {
-                clearTimeout(state.notification.timeoutId);
-             }
-             const timeoutId = setTimeout(hideNotification, duration);
-             setState((prev) => ({ ...prev, notification: { message, type, timeoutId } }));
-          }, [hideNotification, state.notification]); // Depend on hideNotification and state.notification
+             // Clear existing notification timeout if any to prevent overlaps
+             setState(prev => {
+                if (prev.notification?.timeoutId) {
+                   clearTimeout(prev.notification.timeoutId);
+                }
+                const timeoutId = setTimeout(hideNotification, duration);
+                return { ...prev, notification: { message, type, timeoutId } };
+             });
+          }, [hideNotification]); // Depend on hideNotification
 
+
+          // --- Script URL and Initial Data Loading ---
           const handleSetScriptUrl = useCallback(async (url) => {
-              console.log("Attempting to set script URL and fetch initial data..."); // Debug log
-             setState((prev) => ({ ...prev, isLoading: true }));
+              console.log("Attempting to set script URL and fetch initial data...");
+             setState(prev => ({ ...prev, isLoading: true, isReconfiguring: false })); // Start loading, close reconfigure modal
              try {
-               const data = await fetchData(url); // fetchData defined earlier
-               localStorage.setItem('sigweb_scriptUrl', url);
-               setState((prev) => ({
+               const data = await fetchData(url); // Fetch initial data from Sheets
+               localStorage.setItem('sigweb_scriptUrl', url); // Store URL on success
+               setState(prev => ({
                  ...prev,
-                 // Ensure fetched data are arrays, default to empty if not
-                 finalData: Array.isArray(data.finalData) ? data.finalData : [],
-                 trackingData: Array.isArray(data.trackingData) ? data.trackingData : [],
-                 archivedData: Array.isArray(data.archivedData) ? data.archivedData : [],
-                 masterTrackingOrders: new Set(Array.isArray(data.masterTrackingOrders) ? data.masterTrackingOrders.map(String) : []), // Ensure Set contains strings
+                 finalData: data.finalData, // Already ensured array by fetchData
+                 trackingData: data.trackingData, // Already ensured array by fetchData
+                 archivedData: data.archivedData, // Already ensured array by fetchData
+                 // Initialize master set with all known orders from backend
+                 masterTrackingOrders: new Set(data.masterTrackingOrders.map(String)),
                  scriptUrl: url,
-                 isSetupNeeded: false,
-                 isReconfiguring: false,
-                 isLoading: false,
+                 isSetupNeeded: false, // Setup is complete
+                 isLoading: false, // Loading finished
+                 editsCount: 0, // Reset edits on successful load
                }));
                showNotification('¡Conexión exitosa y datos cargados!', 'success');
-               console.log("Initial data fetched successfully."); // Debug log
+               console.log("Initial data fetched successfully.");
              } catch (error) {
-               console.error("Error setting script URL or fetching data:", error); // Log the actual error
+               console.error("Error setting script URL or fetching data:", error);
                showNotification(
-                 `Falló la conexión: ${error.message}. Revisa la URL y permisos del script.`, // Show more specific error
+                 `Falló la conexión: ${error.message}. Revisa la URL y permisos del script.`,
                  'error',
                   10000 // Show error longer
                );
-               setState((prev) => ({ ...prev, isLoading: false, isSetupNeeded: true })); // Go back to setup on error
+               // Keep setup needed true, stop loading, clear URL if it failed
+               setState(prev => ({ ...prev, isLoading: false, isSetupNeeded: true, scriptUrl: null }));
+               localStorage.removeItem('sigweb_scriptUrl'); // Remove bad URL from storage
+               throw error; // Re-throw to prevent modal from closing automatically via handleSave in SetupModal
              }
-          }, [showNotification]); // Add showNotification dependency
+          }, [showNotification]);
 
 
+          // --- Effect for Initial Load and Online Status ---
           useEffect(() => {
-              console.log("App component mounted. Checking for script URL..."); // Debug log
+              console.log("App component mounted. Checking config...");
             const url = localStorage.getItem('sigweb_scriptUrl');
-            const loadedTemplates = loadTemplates(); // loadTemplates defined earlier
-            setState((prev) => ({ ...prev, templates: loadedTemplates }));
+            const loadedTemplates = loadTemplates(); // Load templates from localStorage or defaults
+            setState(prev => ({ ...prev, templates: loadedTemplates }));
 
             if (url) {
-                console.log("Found script URL in localStorage:", url); // Debug log
-                handleSetScriptUrl(url);
+                console.log("Found script URL in localStorage:", url);
+                handleSetScriptUrl(url).catch(err => {
+                    // Catch error here if initial load fails, user is already notified by handleSetScriptUrl
+                    console.error("Initial data load failed on mount:", err);
+                    // State should already be set to isSetupNeeded: true by handleSetScriptUrl's catch block
+                });
             } else {
-                console.log("No script URL found. Setup needed."); // Debug log
-                setState((prev) => ({ ...prev, isSetupNeeded: true, isLoading: false }));
+                console.log("No script URL found. Setup needed.");
+                setState(prev => ({ ...prev, isSetupNeeded: true, isLoading: false })); // Need setup, stop loading indicator
             }
 
             // Online/Offline handling
             const updateOnlineStatus = () => {
                 const isOnline = navigator.onLine;
-                console.log("Network status changed:", isOnline ? "Online" : "Offline"); // Debug log
-                setState(prev => ({ ...prev, onlineStatus: isOnline }));
-                if (!isOnline) {
-                    showNotification("Estás desconectado. El guardado está deshabilitado.", "warning", 10000);
-                } else {
-                     // Optionally show a "back online" message
-                     // showNotification("Estás conectado de nuevo.", "info");
-                }
+                console.log("Network status changed:", isOnline ? "Online" : "Offline");
+                setState(prev => {
+                     if (prev.onlineStatus === isOnline) return prev; // Avoid unnecessary state updates
+                     if (!isOnline) {
+                        showNotification("Estás desconectado. El guardado en la nube está deshabilitado.", "warning", 10000);
+                     } else if (prev.onlineStatus === false && isOnline){ // Only show "back online" if previously offline
+                         showNotification("Estás conectado de nuevo.", "info");
+                     }
+                     return { ...prev, onlineStatus: isOnline };
+                });
             };
+
 
             window.addEventListener('online', updateOnlineStatus);
             window.addEventListener('offline', updateOnlineStatus);
-            // Initial check
-            updateOnlineStatus();
+            updateOnlineStatus(); // Initial check
 
             return () => { // Cleanup listeners on component unmount
-                console.log("App component unmounting. Removing listeners."); // Debug log
+                console.log("App component unmounting. Removing listeners.");
                 window.removeEventListener('online', updateOnlineStatus);
                 window.removeEventListener('offline', updateOnlineStatus);
                  // Clear any pending notification timeouts
-                if (state.notification && state.notification.timeoutId) {
-                    clearTimeout(state.notification.timeoutId);
-                }
+                 setState(prev => {
+                    if (prev.notification?.timeoutId) {
+                       clearTimeout(prev.notification.timeoutId);
+                    }
+                    return prev; // Return prev state to avoid unnecessary re-render on unmount
+                 });
             };
-            // Run only on mount and unmount
-          }, [handleSetScriptUrl, showNotification]); // Added dependencies
+            // Run only on mount and unmount - CAREFUL: handleSetScriptUrl IS a dependency
+          }, [handleSetScriptUrl]); // Include handleSetScriptUrl but ensure it's stable via useCallback
 
 
+          // --- Edit Counter ---
           const incrementEdits = useCallback(() => {
-            setState((prev) => ({ ...prev, editsCount: prev.editsCount + 1 }));
+            console.log("Incrementing edits count"); // Debug log
+            setState(prev => ({ ...prev, editsCount: prev.editsCount + 1 }));
           },[]); // No dependencies needed
 
-          // --- THIS IS THE UPDATED FUNCTION ---
+
+          // --- Save Data ---
           const handleSave = useCallback(async () => {
-              console.log("Save button clicked."); // Debug log
+              console.log("Save button clicked.");
               if (!state.scriptUrl) {
                   showNotification('No se puede guardar. La URL del script no está configurada.', 'error');
                   return;
@@ -1413,20 +1685,19 @@
                   return;
               }
 
-              // Ensure data arrays exist before checking length
+              // Use safe arrays for checks and payload
               const safeFinalData = Array.isArray(state.finalData) ? state.finalData : [];
               const safeTrackingData = Array.isArray(state.trackingData) ? state.trackingData : [];
               const safeArchivedData = Array.isArray(state.archivedData) ? state.archivedData : [];
 
-              // Check if there's anything new or edited to save
+              // Check if there's anything new (finalData) or edited (editsCount > 0)
               if (safeFinalData.length === 0 && state.editsCount === 0) {
-                   // Only show info if nothing new AND no edits have occurred in tracking/archive since last save/load
                    showNotification('No hay datos nuevos o modificados para guardar.', 'info');
                    return;
               }
 
-              setState((prev) => ({ ...prev, isSaving: true }));
-              console.log("Attempting to save data..."); // Debug log
+              setState(prev => ({ ...prev, isSaving: true }));
+              console.log("Attempting to save data...");
 
               try {
                   const payload = {
@@ -1437,267 +1708,333 @@
                           archivedData: safeArchivedData,
                       }
                   };
-                  await saveData(state.scriptUrl, payload);
+                  await saveData(state.scriptUrl, payload); // Assume success due to no-cors
 
-                  // IMPORTANT: Assume save was successful (due to no-cors limitations)
                   // Update master tracking set LOCALLY with orders from ALL sections just sent
                   const newOrders = new Set(state.masterTrackingOrders); // Start with existing
 
-                  // Add from finalData (Review Area)
-                  safeFinalData.forEach(row => {
-                      if (row && row.No_Orden) {
-                          newOrders.add(String(row.No_Orden).trim());
-                      }
-                  });
-                  // Add from trackingData (Active Tracking)
-                  safeTrackingData.forEach(row => {
-                      if (row && row.No_Orden) {
-                          newOrders.add(String(row.No_Orden).trim());
-                      }
-                  });
-                  // Add from archivedData (Archived Tracking)
-                  safeArchivedData.forEach(row => {
+                  [...safeFinalData, ...safeTrackingData, ...safeArchivedData].forEach(row => {
                       if (row && row.No_Orden) {
                           newOrders.add(String(row.No_Orden).trim());
                       }
                   });
 
                   showNotification('¡Datos enviados a la nube! (Verifica la hoja "TOTAL" para confirmar)', 'success');
-                  console.log("Save request sent successfully. Updated masterTrackingOrders locally."); // Debug log
+                  console.log("Save request sent successfully. Updated masterTrackingOrders locally.");
 
                   // Clear local finalData and reset edits count after sending
-                  setState((prev) => ({
+                  setState(prev => ({
                       ...prev,
                       editsCount: 0, // Reset edits since changes were saved
                       masterTrackingOrders: newOrders, // Use the fully updated Set
                       finalData: [] // Clear the review area data after successful send
                   }));
               } catch (error) {
-                  console.error("Error during save:", error); // Log the actual error
+                  console.error("Error during save:", error);
                   showNotification(`Falló el guardado de datos: ${error.message}`, 'error');
               } finally {
-                  setState((prev) => ({ ...prev, isSaving: false }));
-                  console.log("Save process finished."); // Debug log
+                  setState(prev => ({ ...prev, isSaving: false }));
+                  console.log("Save process finished.");
               }
-          }, [state.scriptUrl, state.onlineStatus, state.finalData, state.trackingData, state.archivedData, state.masterTrackingOrders, state.editsCount, showNotification]); // Added state.editsCount dependency
+          }, [state.scriptUrl, state.onlineStatus, state.finalData, state.trackingData, state.archivedData, state.masterTrackingOrders, state.editsCount, showNotification]); // Dependencies
 
 
+          // --- Process Area 1 Data (Excel Upload) ---
           const processPortalData = useCallback(() => {
-              console.log("Processing portal data..."); // Debug log
-               // Ensure portalData is an array
-              const currentPortalData = Array.isArray(state.portalData) ? state.portalData : [];
-              if(currentPortalData.length === 0 || currentPortalData.every(row => !Object.values(row).some(val => val))){
-                   showNotification("No hay datos cargados desde el archivo para procesar.", "warning");
+              console.log("Processing portal data...");
+              const currentPortalData = Array.isArray(state.portalData) ? state.portalData.filter(row => row && Object.values(row).some(val => String(val).trim() !== '')) : []; // Filter empty rows from input
+
+              if(currentPortalData.length === 0){
+                   showNotification("No hay datos válidos cargados desde el archivo para procesar.", "warning");
+                   setState(prev => ({ ...prev, portalData: [] })); // Clear the input area state
                    return;
               }
 
               // Filter out rows that already exist based on masterTrackingOrders Set
               const newRows = currentPortalData.filter(row => {
-                  // Ensure row and No_Orden exist before checking the Set
                    const orderKey = row && row.No_Orden ? String(row.No_Orden).trim() : null;
                    return orderKey && !state.masterTrackingOrders.has(orderKey);
               });
 
               const duplicates = currentPortalData.length - newRows.length;
-              console.log(`Found ${newRows.length} new rows, skipped ${duplicates} duplicates.`); // Debug log
+              console.log(`Found ${newRows.length} new rows, skipped ${duplicates} duplicates.`);
 
               const processedData = newRows
-                  // Ensure row is valid before mapping
-                  .filter(row => row && row.No_Orden && String(row.No_Orden).trim())
+                  .filter(row => row && row.No_Orden && String(row.No_Orden).trim()) // Redundant check, but safe
                   .map((row) => ({
-                      ...row, // Keep all data
+                      ...row, // Keep all data, ensure all PORTAL_HEADERS were added during file parse
                       Nombre: capitalizeWords(row.Nombre || ''), // Apply specific formatting
                       EPS: (row.EPS || '').toUpperCase(),
-                      // Ensure required fields for Area 3 have defaults if missing from Excel
+                      // Default potentially missing PDF fields needed for Area 3
                       Descripcion_PDF: row.Descripcion_PDF || '(pendiente)',
                       Justificacion_PDF: row.Justificacion_PDF || '(pendiente)',
                       Fundamento_Legal_PDF: row.Fundamento_Legal_PDF || '(pendiente)',
+                      // Ensure Tipo_Carta and Radicado_Comp exist, even if empty
                       Tipo_Carta: row.Tipo_Carta || '',
                       Radicado_Comp: row.Radicado_Comp || '',
                   }));
 
-              // Update finalData with only the NEW processed rows, clear portalData
-              setState((prev) => ({ ...prev, finalData: processedData, portalData: [] }));
+              // Append NEW processed rows to existing finalData, clear portalData input
+              setState(prev => ({
+                    ...prev,
+                    // Append new processed rows to whatever is currently in finalData (Area 3)
+                    finalData: [...(Array.isArray(prev.finalData) ? prev.finalData : []), ...processedData],
+                    portalData: [] // Clear Area 1 input
+              }));
 
-              let message = `${processedData.length} nuevas filas procesadas y listas en Área 3.`;
+
+              let message = `${processedData.length} nuevas filas procesadas y añadidas al Área 3.`;
               if (duplicates > 0) {
                   message += ` ${duplicates} fila(s) ya existentes fueron omitidas.`;
               }
               showNotification(message, processedData.length > 0 ? 'success' : 'info'); // Use 'info' if only duplicates found
 
-          }, [state.portalData, state.masterTrackingOrders, showNotification]); // Dependencies
+          }, [state.portalData, state.masterTrackingOrders, state.finalData, showNotification]); // Added state.finalData dependency
 
 
-          const mergePdfData = useCallback(() => {
-              console.log("Merging PDF data..."); // Debug log
-              // Ensure pdfData is an array and has actual data
-              const currentPdfData = Array.isArray(state.pdfData) ? state.pdfData : [];
-              if(currentPdfData.every(row => !Object.values(row).some(val => val))){
-                   showNotification("No hay datos en el Área 2 para combinar.", "warning");
-                   return;
-              }
+           // --- Process Area 2 Data (PDF Paste) ---
+           const mergePdfData = useCallback(() => {
+               console.log("Merging PDF data...");
+               const currentPdfData = Array.isArray(state.pdfData) ? state.pdfData.filter(row => row && Object.values(row).some(val => String(val).trim() !== '')) : []; // Filter empty rows
 
-            const pdfMap = new Map();
-            currentPdfData
-              .filter(row => row && row['Archivo (No. Orden)'] && String(row['Archivo (No. Orden)']).trim()) // Ensure row and key exist
-              .forEach(row => {
-                 const key = String(row['Archivo (No. Orden)']).trim();
-                 if(key){ // Ensure key is not empty
-                   pdfMap.set(key, {
-                     Descripcion_PDF: row['Descripción'] || '', // Use bracket notation for keys with spaces
-                     Justificacion_PDF: row['Justificación'] || '',
-                     Fundamento_Legal_PDF: row['Fundamento Legal'] || '',
-                   });
-                 }
-              });
+               if(currentPdfData.length === 0){
+                    showNotification("No hay datos válidos en el Área 2 para combinar.", "warning");
+                     setState(prev => ({ ...prev, pdfData: Array(5).fill({}) })); // Reset paste area
+                    return;
+               }
 
-            console.log(`Created PDF map with ${pdfMap.size} entries.`); // Debug log
+             const pdfMap = new Map();
+             currentPdfData
+               .filter(row => row && row['Archivo (No. Orden)'] && String(row['Archivo (No. Orden)']).trim())
+               .forEach(row => {
+                  const key = String(row['Archivo (No. Orden)']).trim();
+                  if(key){
+                    pdfMap.set(key, {
+                      Descripcion_PDF: String(row['Descripción'] || '').trim(),
+                      Justificacion_PDF: String(row['Justificación'] || '').trim(),
+                      Fundamento_Legal_PDF: String(row['Fundamento Legal'] || '').trim(),
+                    });
+                  }
+               });
 
-            // Ensure finalData is an array
-            const currentFinalData = Array.isArray(state.finalData) ? state.finalData : [];
-            let mergeCount = 0;
-            const mergedData = currentFinalData.map(finalRow => {
-              // Ensure finalRow and No_Orden exist
-              const orderKey = finalRow && finalRow.No_Orden ? String(finalRow.No_Orden).trim() : null;
-              if (orderKey) {
-                 const pdfMatch = pdfMap.get(orderKey);
-                 if (pdfMatch) {
-                     mergeCount++;
-                     return { ...finalRow, ...pdfMatch };
-                 }
-              }
-              return finalRow; // Return original row if no match or invalid
-            });
+             console.log(`Created PDF map with ${pdfMap.size} entries.`);
 
-            setState((prev) => ({ ...prev, finalData: mergedData, pdfData: Array(5).fill({}) }));
-            showNotification(`${mergeCount} fila(s) actualizadas con datos del PDF en el Área 3.`, 'success');
-            console.log(`Merged PDF data into ${mergeCount} rows.`); // Debug log
-          }, [state.pdfData, state.finalData, showNotification]); // Dependencies
+             // Ensure finalData is an array
+             const currentFinalData = Array.isArray(state.finalData) ? state.finalData : [];
+             let mergeCount = 0;
+             const mergedData = currentFinalData.map(finalRow => {
+               const orderKey = finalRow && finalRow.No_Orden ? String(finalRow.No_Orden).trim() : null;
+               if (orderKey) {
+                  const pdfMatch = pdfMap.get(orderKey);
+                  // Merge ONLY if PDF data is not empty/placeholder and different from current
+                  if (pdfMatch && (
+                      (pdfMatch.Descripcion_PDF && pdfMatch.Descripcion_PDF !== '(pendiente)' && pdfMatch.Descripcion_PDF !== finalRow.Descripcion_PDF) ||
+                      (pdfMatch.Justificacion_PDF && pdfMatch.Justificacion_PDF !== '(pendiente)' && pdfMatch.Justificacion_PDF !== finalRow.Justificacion_PDF) ||
+                      (pdfMatch.Fundamento_Legal_PDF && pdfMatch.Fundamento_Legal_PDF !== '(pendiente)' && pdfMatch.Fundamento_Legal_PDF !== finalRow.Fundamento_Legal_PDF)
+                     ))
+                  {
+                      mergeCount++;
+                      // Create a new object with merged data, prioritizing non-empty PDF data
+                      return {
+                          ...finalRow,
+                          Descripcion_PDF: (pdfMatch.Descripcion_PDF && pdfMatch.Descripcion_PDF !== '(pendiente)') ? pdfMatch.Descripcion_PDF : finalRow.Descripcion_PDF,
+                          Justificacion_PDF: (pdfMatch.Justificacion_PDF && pdfMatch.Justificacion_PDF !== '(pendiente)') ? pdfMatch.Justificacion_PDF : finalRow.Justificacion_PDF,
+                          Fundamento_Legal_PDF: (pdfMatch.Fundamento_Legal_PDF && pdfMatch.Fundamento_Legal_PDF !== '(pendiente)') ? pdfMatch.Fundamento_Legal_PDF : finalRow.Fundamento_Legal_PDF,
+                      };
+                  }
+               }
+               return finalRow; // Return original row if no match or no update needed
+             });
+
+             // Only update state and increment edits if merges actually happened
+             if (mergeCount > 0) {
+                 setState(prev => ({
+                     ...prev,
+                     finalData: mergedData,
+                     pdfData: Array(5).fill({}), // Reset paste area
+                     editsCount: prev.editsCount + mergeCount // Increment edits for merged rows
+                 }));
+                 showNotification(`${mergeCount} fila(s) actualizadas con datos del PDF en el Área 3.`, 'success');
+                 console.log(`Merged PDF data into ${mergeCount} rows.`);
+             } else {
+                 setState(prev => ({ ...prev, pdfData: Array(5).fill({}) })); // Still reset paste area
+                 showNotification('No se encontraron coincidencias o datos nuevos para combinar desde el PDF.', 'info');
+                 console.log('No PDF data merged.');
+             }
 
 
+           }, [state.pdfData, state.finalData, showNotification]); // Dependencies
+
+
+          // --- Update Row in Area 3 (Review Area) ---
           const updateFinalDataRow = useCallback((noOrden, partialUpdate) => {
-              // Ensure noOrden is a string for comparison
               const keyToUpdate = String(noOrden);
-             setState((prev) => {
-               // Ensure finalData is an array
-              const currentFinalData = Array.isArray(prev.finalData) ? prev.finalData : [];
-              const newData = currentFinalData.map(row =>
-                (row && String(row.No_Orden) === keyToUpdate) ? { ...row, ...partialUpdate } : row
-              );
-              return { ...prev, finalData: newData };
-            });
-            // Increment edits count immediately without waiting for state update
-            incrementEdits();
-          }, [incrementEdits]); // Dependency on incrementEdits
+             setState(prev => {
+                const currentFinalData = Array.isArray(prev.finalData) ? prev.finalData : [];
+                let rowUpdated = false;
+                const newData = currentFinalData.map(row => {
+                  if (row && String(row.No_Orden) === keyToUpdate) {
+                      // Check if any value in partialUpdate is actually different
+                      const isChanged = Object.keys(partialUpdate).some(updateKey => String(row[updateKey] ?? '') !== String(partialUpdate[updateKey] ?? ''));
+                      if (isChanged) {
+                         rowUpdated = true;
+                         return { ...row, ...partialUpdate }; // Create new object only if changed
+                      }
+                  }
+                  return row; // Return original object reference if no change
+                });
+
+                // Only update state and increment edits if a row was actually changed
+                if (rowUpdated) {
+                   console.log(`Updating finalData row ${keyToUpdate}`);
+                   return { ...prev, finalData: newData, editsCount: prev.editsCount + 1 };
+                } else {
+                   return prev; // No change, return previous state
+                }
+             });
+          }, []); // Removed incrementEdits dependency as it's handled internally
 
 
+          // --- Clear Area 3 Data ---
           const handleClearReviewData = useCallback(() => {
-            if (window.confirm("¿Limpiar la tabla de Revisión (Área 3)?\n\nEsto NO borrará datos de la hoja 'TOTAL' en Google Sheets.")) {
+            // Check if there's data to clear
+            if (!Array.isArray(state.finalData) || state.finalData.length === 0) {
+                 showNotification("La tabla de Revisión ya está vacía.", "info");
+                 return;
+            }
+            if (window.confirm("¿Estás seguro de que quieres limpiar toda la tabla de Revisión (Área 3)?\nLos datos no guardados se perderán.\n\nEsto NO afecta los datos en Google Sheets.")) {
                 setState(prev => ({ ...prev, finalData: [] })); // Only clear local state
                 showNotification("Tabla de Revisión limpiada.", "info");
+                // Note: editsCount is NOT reset here, as clearing is an action itself that might need saving if other areas were edited. It resets on successful save.
             }
-          }, [showNotification]); // Dependency
+          }, [showNotification, state.finalData]);
 
 
-          const handleSendToTracking = useCallback((selectedOrderKeys) => { // Receive Set keys (strings)
-            console.log("Sending selected items to tracking:", selectedOrderKeys); // Debug log
-             // Ensure finalData and templates are arrays
+          // --- Send to Area 4 (Tracking) ---
+          const handleSendToTracking = useCallback((selectedOrderKeys) => { // Receive array of string keys
+             console.log("Attempting to send items to tracking:", selectedOrderKeys);
             const currentFinalData = Array.isArray(state.finalData) ? state.finalData : [];
             const safeTemplates = Array.isArray(state.templates) ? state.templates : [];
 
             const itemsToSend = currentFinalData
-              .filter(row => row && selectedOrderKeys.includes(String(row.No_Orden))) // Filter using string keys
-              .filter(row => {
+              .filter(row => row && selectedOrderKeys.includes(String(row.No_Orden)))
+              .filter(row => { // Filter based on criteria
                 const template = safeTemplates.find((t) => t.id === row.Tipo_Carta);
-                return (
-                  template &&
-                  template.name.toUpperCase().includes('COMPLEMENTARIEDAD') &&
-                  row.Radicado_Comp &&
-                  String(row.Radicado_Comp).trim() !== ''
-                );
+                const hasComplementariedadTemplate = template && template.name.toUpperCase().includes('COMPLEMENTARIEDAD');
+                const hasRadicado = row.Radicado_Comp && String(row.Radicado_Comp).trim() !== '';
+                if (hasComplementariedadTemplate && !hasRadicado) {
+                   console.warn(`Row ${row.No_Orden} has Complementariedad template but no Radicado. Skipping.`);
+                   showNotification(`El caso ${row.No_Orden} tiene plantilla de Complementariedad pero falta el número de Radicado. No se enviará a seguimiento.`, 'warning');
+                }
+                return hasComplementariedadTemplate && hasRadicado; // Must meet both
               });
+
 
             if (itemsToSend.length === 0) {
               showNotification("No hay ítems seleccionados que cumplan los criterios (Tipo 'COMPLEMENTARIEDAD' con 'Radicado') para enviar a seguimiento.", 'warning');
               return;
             }
-             console.log(`${itemsToSend.length} items meet criteria for tracking.`); // Debug log
+             console.log(`${itemsToSend.length} items meet criteria for tracking.`);
 
             setState(prev => {
-                // Ensure trackingData and finalData are arrays
                const currentTrackingData = Array.isArray(prev.trackingData) ? prev.trackingData : [];
                let newTrackingData = [...currentTrackingData];
                let newFinalData = Array.isArray(prev.finalData) ? [...prev.finalData] : [];
                let addedCount = 0;
                let updatedCount = 0;
+               let skippedCount = 0;
+               const itemsActuallyMovedKeys = new Set(); // Track keys of items successfully moved/updated
 
                itemsToSend.forEach(item => {
                  const itemOrderKey = String(item.No_Orden);
                  const existingIndex = newTrackingData.findIndex(t => t && String(t.No_Orden) === itemOrderKey);
-                 if (existingIndex !== -1) {
-                   if (window.confirm(`El caso ${itemOrderKey} ya está en seguimiento activo. ¿Actualizar Radicado?`)) {
-                     newTrackingData[existingIndex] = { ...newTrackingData[existingIndex], Radicado: item.Radicado_Comp }; // Update existing
-                     updatedCount++;
-                   }
-                 } else {
-                   newTrackingData.push({ // Add new
-                     Fecha_Ing: item.Fecha_Neg || new Date().toISOString().slice(0,10), // Use Neg date or today
+
+                 if (existingIndex !== -1) { // Item already exists in tracking
+                    // Optional: Confirm update only if Radicado is different
+                    if (newTrackingData[existingIndex].Radicado !== item.Radicado_Comp) {
+                       if (window.confirm(`El caso ${itemOrderKey} ya está en seguimiento activo con Radicado "${newTrackingData[existingIndex].Radicado}".\n¿Actualizar a "${item.Radicado_Comp}"?`)) {
+                         // Create a new object for the updated tracking item
+                         newTrackingData[existingIndex] = { ...newTrackingData[existingIndex], Radicado: item.Radicado_Comp };
+                         updatedCount++;
+                         itemsActuallyMovedKeys.add(itemOrderKey);
+                       } else {
+                          skippedCount++; // User chose not to update
+                       }
+                    } else {
+                         skippedCount++; // Already exists with same Radicado
+                         console.log(`Skipping ${itemOrderKey}, already in tracking with same Radicado.`);
+                    }
+                 } else { // Item is new to tracking
+                   newTrackingData.push({
+                     Fecha_Ing: item.Fecha_Neg || new Date().toISOString().slice(0,10),
                      No_Orden: item.No_Orden,
                      Nombre: item.Nombre || '',
                      EPS: item.EPS || '',
-                     Radicado: item.Radicado_Comp, // Already validated not empty
-                     Estado: 'Pendiente',
+                     Radicado: item.Radicado_Comp,
+                     Estado: TRACKING_STATUSES[0], // Default state
                      Notas: '',
                    });
                    addedCount++;
+                   itemsActuallyMovedKeys.add(itemOrderKey);
                  }
                });
 
-               // Remove sent items from finalData
-               const itemsSentOrderKeys = itemsToSend.map(i => String(i.No_Orden));
-               newFinalData = newFinalData.filter(f => f && !itemsSentOrderKeys.includes(String(f.No_Orden)));
+               // Remove ONLY the successfully moved/updated items from finalData
+               newFinalData = newFinalData.filter(f => !(f && itemsActuallyMovedKeys.has(String(f.No_Orden))));
+
+               let summaryMessage = "";
+               if (addedCount > 0) summaryMessage += `${addedCount} nuevo(s) enviado(s) a Seguimiento. `;
+               if (updatedCount > 0) summaryMessage += `${updatedCount} actualizado(s) en Seguimiento. `;
+               if (skippedCount > 0) summaryMessage += `${skippedCount} omitido(s) (ya existían o no se actualizó).`;
 
                if(addedCount > 0 || updatedCount > 0){
-                   showNotification(`${addedCount} nuevo(s) enviado(s), ${updatedCount} actualizado(s) en Seguimiento Activo.`, 'success');
+                   showNotification(summaryMessage.trim(), 'success');
+                   // Increment edits count for the items moved/updated
+                   return { ...prev, trackingData: newTrackingData, finalData: newFinalData, editsCount: prev.editsCount + addedCount + updatedCount };
+               } else {
+                   showNotification(summaryMessage.trim() || "No se realizaron cambios en Seguimiento.", 'info');
+                   return { ...prev, finalData: newFinalData }; // Still update finalData if skips occurred but no moves/updates
                }
-
-               return { ...prev, trackingData: newTrackingData, finalData: newFinalData, editsCount: prev.editsCount + itemsToSend.length }; // Count sending as edits
             });
 
-          }, [state.templates, state.finalData, showNotification]); // Dependencies
+          }, [state.templates, state.finalData, state.trackingData, showNotification]); // Dependencies
 
 
+          // --- Export Area 3 Data for Mail Merge ---
           const exportForMailMerge = useCallback((dataToExport) => {
-              // Ensure data is an array
               const currentData = Array.isArray(dataToExport) ? dataToExport : [];
-              if (!currentData || currentData.length === 0) {
+              if (currentData.length === 0) {
                   showNotification("No hay datos en revisión (Área 3) para exportar.", "warning");
                   return;
               }
-              console.log(`Exporting ${currentData.length} rows for mail merge.`); // Debug log
+              console.log(`Exporting ${currentData.length} rows for mail merge.`);
               try {
                   const safeTemplates = Array.isArray(state.templates) ? state.templates : [];
-                  const exportable = currentData.map(row => ({
-                      // Ensure all keys exist, default to empty string
-                      "Fecha": row?.Fecha_Neg || '',
-                      "Orden": row?.No_Orden || '',
-                      "Cedula": row?.No_Cedula || '',
-                      "Nombre": row?.Nombre || '',
-                      "EPS": row?.EPS || '',
-                      "Programa": row?.Programa || '',
-                      "Email": row?.Email || '',
-                      "Motivo": row?.Motivo_Negacion || '',
-                      "Desc": row?.Descripcion_PDF || '',
-                      "Just": row?.Justificacion_PDF || '',
-                      "Fund": row?.Fundamento_Legal_PDF || '',
-                      "Carta": safeTemplates.find(t => t.id === row?.Tipo_Carta)?.name || "NO_SELECCIONADA",
-                      "Radicado": row?.Radicado_Comp || ''
-                  }));
+                  const exportable = currentData.map(row => {
+                      const templateName = safeTemplates.find(t => t.id === row?.Tipo_Carta)?.name || "NO_SELECCIONADA";
+                      // Select and rename columns for the export
+                      return {
+                          "Fecha": row?.Fecha_Neg || '',
+                          "Orden": row?.No_Orden || '',
+                          "Cedula": row?.No_Cedula || '',
+                          "Nombre": row?.Nombre || '',
+                          "EPS": row?.EPS || '',
+                          "Programa": row?.Programa || '',
+                          "Email": row?.Email || '',
+                          "Motivo": row?.Motivo_Negacion || '',
+                          "Desc_PDF": row?.Descripcion_PDF || '',
+                          "Just_PDF": row?.Justificacion_PDF || '',
+                          "Fund_PDF": row?.Fundamento_Legal_PDF || '',
+                          "Tipo_Carta_Seleccionada": templateName,
+                          "Radicado_Complementariedad": row?.Radicado_Comp || ''
+                          // Add any other columns needed for mail merge here
+                      };
+                  });
                   const ws = XLSX.utils.json_to_sheet(exportable);
                   const wb = XLSX.utils.book_new();
                   XLSX.utils.book_append_sheet(wb, ws, "DatosParaEnvio");
-                  XLSX.writeFile(wb, "Sigweb_Procesado_MailMerge.xlsx");
-                  showNotification("Archivo 'Sigweb_Procesado_MailMerge.xlsx' generado.", "success");
+                  XLSX.writeFile(wb, `Sigweb_Procesado_MailMerge_${new Date().toISOString().slice(0, 10)}.xlsx`);
+                  showNotification("Archivo para Envío Masivo generado.", "success");
               } catch (error) {
                    console.error("Error exporting for mail merge:", error);
                    showNotification("Error al generar el archivo para envío masivo.", "error");
@@ -1705,124 +2042,143 @@
           }, [state.templates, showNotification]); // Dependencies
 
 
+          // --- Update Row in Area 4 (Tracking/Archived) ---
           const updateTrackingData = useCallback((index, updatedRow, isArchived) => {
-              // Ensure index is a valid number
               if (typeof index !== 'number' || index < 0) {
                  console.error("Invalid index provided to updateTrackingData:", index);
                  return;
               }
             const dataKey = isArchived ? 'archivedData' : 'trackingData';
             setState(prev => {
-                // Ensure the target array exists and is an array
-               const currentData = Array.isArray(prev[dataKey]) ? [...prev[dataKey]] : [];
-               if(index < currentData.length) { // Check if index is within bounds
-                 currentData[index] = updatedRow;
-                 console.log(`Updated item at index ${index} in ${dataKey}`); // Debug log
-                 return { ...prev, [dataKey]: currentData, editsCount: prev.editsCount + 1 }; // Increment edits count on change
+               const currentData = Array.isArray(prev[dataKey]) ? prev[dataKey] : [];
+               if(index < currentData.length) {
+                   // Avoid mutation: create a new array with the updated item
+                   const newData = [...currentData];
+                   newData[index] = updatedRow; // Place the already updated row object
+                   console.log(`Updated item at index ${index} in ${dataKey}`);
+                   // Increment edits count only if it's not already saving (prevents double counting during save process)
+                   const newEditsCount = prev.isSaving ? prev.editsCount : prev.editsCount + 1;
+                   return { ...prev, [dataKey]: newData, editsCount: newEditsCount };
                } else {
                    console.error(`Index ${index} out of bounds for ${dataKey}`);
-                   return prev; // Return previous state if index is invalid
+                   return prev;
                }
             });
-          }, []); // No external dependencies needed
+          }, []); // No external dependencies, relies on functional update
 
 
+          // --- Archive/Unarchive Items in Area 4 ---
           const archiveItems = useCallback((indicesToMove, fromArchived) => {
-              // Ensure indicesToMove is an array of numbers
-              if (!Array.isArray(indicesToMove) || indicesToMove.some(isNaN)){
-                 console.error("Invalid indices provided to archiveItems:", indicesToMove);
+              if (!Array.isArray(indicesToMove) || indicesToMove.some(isNaN) || indicesToMove.length === 0){
+                 console.warn("Invalid or empty indices provided to archiveItems:", indicesToMove);
                  return;
               }
-              console.log(`${fromArchived ? 'Unarchiving' : 'Archiving'} indices:`, indicesToMove); // Debug log
+              console.log(`${fromArchived ? 'Unarchiving' : 'Archiving'} indices:`, indicesToMove);
             const sourceKey = fromArchived ? 'archivedData' : 'trackingData';
             const targetKey = fromArchived ? 'trackingData' : 'archivedData';
 
             setState(prev => {
-                // Ensure source and target data are arrays
-               const sourceData = Array.isArray(prev[sourceKey]) ? [...prev[sourceKey]] : [];
-               const targetData = Array.isArray(prev[targetKey]) ? [...prev[targetKey]] : [];
+               const sourceData = Array.isArray(prev[sourceKey]) ? prev[sourceKey] : [];
+               const targetData = Array.isArray(prev[targetKey]) ? [...prev[targetKey]] : []; // Start target as copy
 
                const itemsToMove = [];
-               const remainingSource = [];
+               const remainingSourceIndices = new Set(); // Keep track of indices *not* moved
 
-               // Separate items to move and items to keep, handling potential sparse arrays or invalid indices
                sourceData.forEach((item, index) => {
-                   if (indicesToMove.includes(index)) {
-                       if (item) itemsToMove.push(item); // Only move valid items
-                   } else {
-                        if(item) remainingSource.push(item); // Keep valid items
+                   if (!indicesToMove.includes(index)) {
+                       remainingSourceIndices.add(index);
                    }
                });
 
-               console.log(`Moving ${itemsToMove.length} items from ${sourceKey} to ${targetKey}.`); // Debug log
+               // Build the new source array based on remaining indices
+               const newSourceData = Array.from(remainingSourceIndices).map(index => sourceData[index]);
+
+               // Find the items to move based on the provided indices
+               indicesToMove.forEach(index => {
+                  if(index >= 0 && index < sourceData.length && sourceData[index]){
+                     itemsToMove.push(sourceData[index]); // Get the actual items to move
+                  }
+               });
+
+
+               if (itemsToMove.length === 0) {
+                    console.warn("No valid items found for the given indices to move.");
+                    return prev; // No changes if no valid items were found
+               }
+
+               console.log(`Moving ${itemsToMove.length} items from ${sourceKey} to ${targetKey}.`);
+
+               // Append moved items to the target array
+               const newTargetData = [...targetData, ...itemsToMove];
+
 
                return {
                  ...prev,
-                 [sourceKey]: remainingSource,
-                 [targetKey]: [...targetData, ...itemsToMove], // Append moved items
-                 editsCount: prev.editsCount + itemsToMove.length // Increment edits for each moved item
+                 [sourceKey]: newSourceData, // Updated source (items removed)
+                 [targetKey]: newTargetData, // Updated target (items added)
+                 // Increment edits count only if not currently saving
+                 editsCount: prev.isSaving ? prev.editsCount : prev.editsCount + itemsToMove.length
                };
             });
           }, []); // No external dependencies
 
+
+          // --- Template Management Callbacks ---
           const handleSaveTemplates = useCallback((newTemplates) => {
-            // Ensure newTemplates is an array
-            const templatesToSave = Array.isArray(newTemplates) ? newTemplates : defaultTemplates; // Fallback to defaults if invalid
-            setState((prev) => ({ ...prev, templates: templatesToSave }));
-            saveTemplates(templatesToSave); // saveTemplates defined earlier
+            const templatesToSave = Array.isArray(newTemplates) ? newTemplates : defaultTemplates;
+            setState(prev => ({ ...prev, templates: templatesToSave }));
+            saveTemplates(templatesToSave);
             showNotification('Plantillas de correo guardadas localmente.', 'success');
-          }, [showNotification]); // Dependency
+          }, [showNotification]);
 
           const handleResetTemplates = useCallback(() => {
-            if (window.confirm('¿Restaurar plantillas predeterminadas? Se perderán las personalizadas.')) {
-              handleSaveTemplates(defaultTemplates); // Use defaultTemplates constant
+            if (window.confirm('¿Estás seguro de que quieres restaurar las plantillas predeterminadas?\n\nTodas las plantillas personalizadas se perderán.')) {
+              handleSaveTemplates([...defaultTemplates]); // Save a copy of defaults
             }
-          }, [handleSaveTemplates]); // Dependency
+          }, [handleSaveTemplates]);
 
-          // Memoized sorted data for Area 3
+          // --- Memoized Sorted Data for Review Area ---
           const sortedFinalData = useMemo(() => {
-              // Ensure finalData is an array
             let sortableItems = Array.isArray(state.finalData) ? [...state.finalData] : [];
             if (sortConfig.key) {
                 sortableItems.sort((a, b) => {
-                    // Handle potential null/undefined rows during sort
                     if (!a || !b) return 0;
-                    // Safely access sort key, default to empty string if missing
-                    const aVal = a[sortConfig.key] !== undefined && a[sortConfig.key] !== null ? String(a[sortConfig.key]) : '';
-                    const bVal = b[sortConfig.key] !== undefined && b[sortConfig.key] !== null ? String(b[sortConfig.key]) : '';
-
-                    // LocaleCompare for potentially better string sorting, including numbers within strings
-                    const comparison = aVal.localeCompare(bVal, undefined, { numeric: true, sensitivity: 'base' });
-
+                    const aVal = a[sortConfig.key] ?? ''; // Use nullish coalescing for cleaner default
+                    const bVal = b[sortConfig.key] ?? '';
+                    const comparison = String(aVal).localeCompare(String(bVal), undefined, { numeric: true, sensitivity: 'base' });
                     return sortConfig.direction === 'ascending' ? comparison : -comparison;
                 });
             }
             return sortableItems;
-          }, [state.finalData, sortConfig]); // Dependencies
+          }, [state.finalData, sortConfig]);
+
+          // --- Close Setup Modal Callback ---
+           const handleCloseSetupModal = useCallback(() => {
+                // Only allow closing if it's NOT the initial setup OR if a URL is now present
+                if (!state.isSetupNeeded || state.scriptUrl) {
+                    setState(prev => ({ ...prev, isReconfiguring: false }));
+                } else {
+                    alert("Debes configurar y verificar la URL del script para poder usar la aplicación.");
+                }
+           }, [state.isSetupNeeded, state.scriptUrl]);
+
 
           // ================== Render Logic ==================
 
-          if (state.isLoading && !state.isSetupNeeded) { // Show loader only if not in initial setup
+          if (state.isLoading && !state.isSetupNeeded) { // Show loader only if not in initial setup and still loading
             return <div className="fixed inset-0 bg-background/90 flex items-center justify-center z-[300]"><Spinner /> <span className="ml-4 text-xl">Cargando Datos Iniciales...</span></div>;
           }
 
-          // Show Setup Modal if needed or reconfiguring
+          // Show Setup Modal if needed (initial setup OR reconfiguring)
           if (state.isSetupNeeded || state.isReconfiguring) {
             return <SetupModal
-                onSave={handleSetScriptUrl}
-                onClose={() => {
-                    // Only close if not in initial setup, otherwise keep showing it
-                    if(!state.isSetupNeeded) {
-                        setState(prev => ({ ...prev, isReconfiguring: false }));
-                    } else {
-                         alert("Debes configurar la URL del script para continuar.");
-                    }
-                }}
+                onSave={handleSetScriptUrl} // This now handles closing the modal on success
+                onClose={handleCloseSetupModal} // Special close handler
                 initialUrl={state.scriptUrl || ''}
              />;
           }
 
-          // Main App Render
+          // Main App Render (only if setup is complete and not loading)
           return (
             <div className="p-4 sm:p-8 bg-background min-h-screen">
               {/* Notification Area */}
@@ -1830,17 +2186,17 @@
                 <Notification
                   message={state.notification.message}
                   type={state.notification.type}
-                  onClose={hideNotification}
+                  onClose={hideNotification} // Pass hideNotification to allow manual close
                 />
               )}
               {/* Offline Indicator */}
               {!state.onlineStatus && (
-                   <div className="bg-yellow-600 text-white text-center p-2 fixed top-0 left-0 w-full z-[100]">
+                   <div className="bg-yellow-600 text-black text-center p-2 fixed top-0 left-0 w-full z-[100] shadow"> {/* Black text */}
                     ⚠ Estás desconectado. El guardado en la nube está deshabilitado.
                    </div>
               )}
 
-              <main className={`max-w-screen-2xl mx-auto bg-surface p-4 sm:p-6 rounded-xl border border-border-color space-y-8 ${!state.onlineStatus ? 'pt-10' : ''}`}> {/* Add padding top if offline banner shows */}
+              <main className={`max-w-screen-2xl mx-auto bg-surface p-4 sm:p-6 rounded-xl border border-border-color space-y-8 ${!state.onlineStatus ? 'pt-12 sm:pt-16' : ''}`}> {/* Adjusted padding */}
                 <Header
                     onSave={handleSave}
                     onManageTemplates={() => setState(prev => ({ ...prev, isTemplateManagerOpen: true }))}
@@ -1850,64 +2206,60 @@
                   reviewCount={Array.isArray(state.finalData) ? state.finalData.length : 0}
                   trackingCount={Array.isArray(state.trackingData) ? state.trackingData.length : 0}
                   archivedCount={Array.isArray(state.archivedData) ? state.archivedData.length : 0}
-                  editsCount={state.editsCount}
+                  editsCount={state.editsCount} // Display number of unsaved edits
                 />
                 <div className="text-right">
                        <button
                            onClick={() => exportDetailedReport(state.finalData, state.trackingData, state.archivedData)}
-                           className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                           className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm" // Changed color
                        >
-                           Descargar Reporte Detallado
+                           Descargar Reporte Detallado Excel
                        </button>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  {/* Area 1: File Upload */}
                   <DataInputArea
                     id="portal-area"
                     title="Área 1: Cargar Excel del Portal"
                     headers={PORTAL_HEADERS}
-                    data={state.portalData} // Bind to portalData
+                    data={state.portalData}
                     onDataChange={(newData) => setState(prev => ({ ...prev, portalData: newData }))}
-                    onProcess={processPortalData} // Use specific processor
-                    processButtonText="Procesar Datos del Archivo"
+                    onProcess={processPortalData}
+                    processButtonText="Procesar y Añadir a Revisión"
                     inputType="file"
                   />
-                  {/* Area 2: Paste PDF Data */}
                   <DataInputArea
                     id="pdf-area"
                     title="Área 2: Pegar Datos del Extractor PDF"
                     headers={PDF_HEADERS}
-                    data={state.pdfData} // Bind to pdfData
+                    data={state.pdfData}
                     onDataChange={(newData) => setState(prev => ({ ...prev, pdfData: newData }))}
-                    onProcess={mergePdfData} // Use specific processor
-                    processButtonText="Combinar con Datos del PDF"
+                    onProcess={mergePdfData}
+                    processButtonText="Combinar PDF con Revisión"
                     inputType="paste"
                   />
                 </div>
-                 {/* Area 3: Review */}
                 <ReviewArea
-                  data={sortedFinalData} // Use memoized sorted data
+                  data={sortedFinalData} // Use memoized sorted data from state.finalData
                   templates={state.templates}
-                  updateRow={updateFinalDataRow}
-                  incrementEdits={incrementEdits}
-                  onSendToTracking={handleSendToTracking}
-                  onPreview={(row) => setState(prev => ({ ...prev, previewData: row }))}
-                  onExportForMailMerge={exportForMailMerge}
-                  onClearReviewData={handleClearReviewData}
-                  sortConfig={sortConfig}
-                  setSortConfig={setSortConfig}
+                  updateRow={updateFinalDataRow} // Callback to update state.finalData
+                  incrementEdits={incrementEdits} // Callback to update state.editsCount (now called internally by updateFinalDataRow)
+                  onSendToTracking={handleSendToTracking} // Callback to move items from finalData to trackingData
+                  onPreview={(row) => setState(prev => ({ ...prev, previewData: row }))} // Set state for preview modal
+                  onExportForMailMerge={exportForMailMerge} // Callback to export finalData subset
+                  onClearReviewData={handleClearReviewData} // Callback to clear finalData
+                  sortConfig={sortConfig} // Current sort state
+                  setSortConfig={setSortConfig} // Callback to update sort state
                 />
-                 {/* Area 4: Tracking */}
                 <TrackingArea
                   trackingData={state.trackingData}
                   archivedData={state.archivedData}
-                  updateTrackingData={updateTrackingData}
-                  archiveItems={archiveItems}
+                  updateTrackingData={updateTrackingData} // Callback to update tracking/archived state
+                  archiveItems={archiveItems} // Callback to move items between tracking/archived
                 />
 
                 {/* Saving Indicator */}
-                {state.isSaving && <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-[300]"><Spinner /> <span className="ml-4 text-xl">Guardando Datos...</span></div>}
+                {state.isSaving && <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-[300]"><Spinner /> <span className="ml-4 text-xl">Guardando Datos en la Nube...</span></div>}
               </main>
 
               {/* Template Manager Modal */}
@@ -1915,15 +2267,15 @@
                 <TemplateManagerModal
                   templates={state.templates}
                   onClose={() => setState(prev => ({...prev, isTemplateManagerOpen: false}))}
-                  onSave={handleSaveTemplates}
-                  onReset={handleResetTemplates}
+                  onSave={handleSaveTemplates} // Saves to state and localStorage
+                  onReset={handleResetTemplates} // Resets state and localStorage to defaults
                 />
               )}
                {/* Preview Modal */}
               {state.previewData && (
                 <PreviewModal
                   data={state.previewData}
-                  template={Array.isArray(state.templates) ? state.templates.find(t => t.id === state.previewData?.Tipo_Carta) : null} // Safely find template
+                  template={Array.isArray(state.templates) ? state.templates.find(t => t.id === state.previewData?.Tipo_Carta) : null}
                   onClose={() => setState(prev => ({...prev, previewData: null}))}
                 />
               )}
@@ -1936,16 +2288,17 @@
         // =================================================================================
         const rootElement = document.getElementById('root');
         if (!rootElement) {
-          console.error("Fatal Error: Root element 'root' not found in HTML."); // Log error
-          // Optionally display a message to the user in the body
-          document.body.innerHTML = '<div style="color: red; padding: 20px;">Error Crítico: No se encontró el elemento raíz de la aplicación.</div>';
+          console.error("Fatal Error: Root element 'root' not found in HTML.");
+          document.body.innerHTML = '<div style="color: red; padding: 20px; font-family: sans-serif; background-color: #333;">Error Crítico: No se encontró el elemento raíz de la aplicación (#root). Verifica el HTML.</div>';
         } else {
             try {
                const root = ReactDOM.createRoot(rootElement);
-               root.render(<React.StrictMode><App /></React.StrictMode>); // Added StrictMode for development checks
+               // Render without StrictMode for now to avoid potential double-render issues with effects if not needed
+               // root.render(<React.StrictMode><App /></React.StrictMode>);
+               root.render(<App />);
             } catch(error) {
                 console.error("Error rendering React application:", error);
-                 rootElement.innerHTML = '<div style="color: red; padding: 20px;">Error Crítico: Falló al iniciar la aplicación React.</div>';
+                 rootElement.innerHTML = `<div style="color: orange; padding: 20px; font-family: sans-serif; background-color: #333;">Error Crítico al iniciar la aplicación React:<pre>${error.stack || error.message}</pre></div>`;
             }
         }
 
