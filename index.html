@@ -1,197 +1,86 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Inicio - Menú Inicial</title>
-  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Administrador - Herramientas</title>
+  <link rel="stylesheet" href="styles.css" />
   <style>
-    body {
-      background-color: #121212;
-      color: #f0f0f0;
-      font-family: 'Lato', sans-serif;
-      margin: 0;
-      padding: 0;
-      line-height: 1.6;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-    }
-    header {
-      background-color: #1f1f1f;
-      padding: 2rem;
-      width: 100%;
-      text-align: center;
-      border-bottom: 1px solid #333;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 1rem;
-    }
-    .header-left { display:flex; align-items:center; gap:1rem; }
-    .header-right { display:flex; align-items:center; gap:.5rem; }
-    .btn-prueba {
-      background: linear-gradient(180deg,#2b6cb0,#2c5282);
-      color: white;
-      border: none;
-      padding: .6rem .9rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-    .btn-prueba:hover { opacity: .95; }
-    .main-content {
-      width: 90%;
-      max-width: 1200px;
-      margin: 2rem auto;
-      flex-grow: 1;
-    }
-    .search-container {
-      text-align: center;
-      margin-bottom: 2rem;
-    }
-    input[type="text"] {
-      padding: 0.75rem 1rem;
-      width: 100%;
-      max-width: 500px;
-      border: 1px solid #444;
-      border-radius: 25px;
-      background-color: #2c2c2c;
-      color: #f0f0f0;
-      font-size: 1rem;
-      transition: border-color 0.3s;
-    }
-    input[type="text"]:focus {
-      outline: none;
-      border-color: #005f73;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 20px;
-      justify-content: center;
-    }
-    /* Todas las tarjetas igual que SIGWEB */
-    .card {
-      background: linear-gradient(135deg, #1e90ff, #00bfff 80%);
-      border: 1px solid #1976d2;
-      color: #fff;
-      border-radius: 12px;
-      padding: 25px;
-      text-align: center;
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-      box-shadow: 0 4px 12px rgba(25, 118, 210, 0.15);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      min-height: 220px;
-    }
-    .card:hover {
-      transform: translateY(-5px) scale(1.02);
-      box-shadow: 0 8px 16px rgba(25, 118, 210, 0.30);
-    }
-    .card h2 {
-      margin: 0 0 10px 0;
-      font-size: 1.7rem;
-      color: #fff;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      letter-spacing: 0.5px;
-    }
-    .card p {
-      color: #e3f2fd;
-      font-size: 1rem;
-      margin-bottom: 20px;
-      flex-grow: 1;
-    }
-    .card a {
-      color: #fff;
-      text-decoration: none;
-      font-weight: bold;
-      background-color: #1976d2;
-      padding: 14px 0;
-      border-radius: 28px;
-      transition: background-color 0.3s ease, box-shadow 0.3s ease;
-      display: block;
-      width: 80%;
-      margin: 0 auto;
-      font-size: 1.1rem;
-      margin-top: auto;
-      box-shadow: 0 2px 8px rgba(25, 118, 210, 0.15);
-      letter-spacing: 0.5px;
-      border: none;
-    }
-    .card a:hover {
-      background-color: #1565c0;
-      box-shadow: 0 4px 12px rgba(25, 118, 210, 0.25);
-      text-decoration: underline;
-    }
-    /* Responsive grid spacing */
-    @media (max-width: 600px) {
-      .grid {
-        grid-template-columns: 1fr;
-      }
-    }
+    /* Styles de respaldo para que los botones mantengan el mismo aspecto */
+    .cards-grid { display:flex; flex-wrap:wrap; gap:20px; }
+    .card { width:240px; background: linear-gradient(180deg,#2fc2ff,#0088ff); color:#fff; border-radius:10px; padding:18px; box-shadow:0 6px 0 rgba(0,0,0,0.35); text-align:left; position:relative; }
+    .card-icon { font-size:26px; margin-bottom:8px; }
+    .card-title { font-size:18px; font-weight:800; margin:6px 0; }
+    .card-desc { font-size:13px; opacity:0.95; margin-bottom:18px; }
+    .card-btn, .btn-tool { display:inline-block; background:rgba(0,0,0,0.12); color:#fff; padding:10px 18px; border-radius:22px; text-decoration:none; box-shadow: inset 0 -6px 0 rgba(0,0,0,0.08); font-weight:700; }
+    .card-btn:hover, .btn-tool:hover { filter:brightness(0.95); }
+    .cards-container { padding:24px; }
   </style>
 </head>
 <body>
-  <header>
-    <div class="header-left">
-      <h1>Panel de Gestion Eje Cafetero</h1>
-    </div>
+  <main class="cards-container">
+    <h1 style="color:#fff; margin-bottom:16px;">Herramientas</h1>
 
-    <div class="header-right">
-      <button id="prueba-btn" class="btn-prueba" onclick="window.location.href='Prueba.html'">Ir a Prueba</button>
-    </div>
-  </header>
+    <div class="cards-grid">
 
-  <div class="main-content">
-    <div class="search-container">
-      <input type="text" id="search" placeholder="Buscar herramienta..." oninput="filtrarTarjetas()">
-    </div>
-    <div class="grid" id="appGrid">
+      <!-- Ejemplo de tarjeta existente: SIGWEB -->
       <div class="card">
-        <h2>🌐 SIGWEB</h2>
-        <p>Accede al sistema SIGWEB para gestión de las negaciones a nivel Eje Cafetero.</p>
-        <a href="Sigweb.htm">Ir a SIGWEB</a>
+        <div class="card-icon">🌐</div>
+        <h3 class="card-title">SIGWEB</h3>
+        <p class="card-desc">Accede al sistema SIGWEB para gestión de las negociaciones a nivel Eje Cafetero.</p>
+        <a href="sigweb.html" class="card-btn">Ir a SIGWEB</a>
       </div>
-      <div class="card">
-        <h2>📄 Extractor Pdf Sigweb</h2>
-        <p>Extrae información de múltiples archivos PDF para el manejo de negaciones Sigweb.</p>
-        <a href="extractor.html">Abrir herramienta</a>
-      </div>
-      <div class="card">
-        <h2>🧩 Configuración de Códigos para Extractor PDF</h2>
-        <p>Convierte archivos Excel a JSON para usar en el extractor de PDF.</p>
-        <a href="configuracion.html">Abrir herramienta</a>
-      </div>
-      <div class="card">
-        <h2>⏳ Gestor de Pendientes</h2>
-        <p>Administra casos pendientes con recordatorios, prioridades y base de datos local.</p>
-        <a href="GESTOR PENDIENTES.htm">Abrir herramienta</a>
-      </div>
-      <div class="card">
-        <h2>🗂️ SORWEB</h2>
-        <p>Redirige a la página principal de SORWEB para el manejo de autorizaciones a nivel Eje Cagetero.</p>
-        <a href="SORWEB.htm">Ir a SORWEB</a>
-      </div>
-    </div>
-  </div>
 
-  <script>
-    function filtrarTarjetas() {
-      const input = document.getElementById('search').value.toLowerCase();
-      const cards = document.querySelectorAll('.card');
-      cards.forEach(card => {
-        const text = card.textContent.toLowerCase();
-        card.style.display = text.includes(input) ? 'flex' : 'none';
-      });
-    }
-  </script>
+      <!-- Extractor PDF -->
+      <div class="card">
+        <div class="card-icon">📄</div>
+        <h3 class="card-title">Extractor Pdf Sigweb</h3>
+        <p class="card-desc">Extrae información de múltiples archivos PDF para el manejo de negociaciones Sigweb.</p>
+        <a href="extractor.html" class="card-btn">Abrir herramienta</a>
+      </div>
+
+      <!-- Configuración de códigos para extractor PDF -->
+      <div class="card">
+        <div class="card-icon">🧩</div>
+        <h3 class="card-title">Configuración de Códigos para Extractor PDF</h3>
+        <p class="card-desc">Convierte archivos Excel a JSON para usar en el extractor de PDF.</p>
+        <a href="config-codigos.html" class="card-btn">Abrir herramienta</a>
+      </div>
+
+      <!-- Gestor de pendientes -->
+      <div class="card">
+        <div class="card-icon">⏳</div>
+        <h3 class="card-title">Gestor de Pendientes</h3>
+        <p class="card-desc">Administra casos pendientes con recordatorios, prioridades y base de datos local.</p>
+        <a href="pendientes.html" class="card-btn">Abrir herramienta</a>
+      </div>
+
+      <!-- SORWEB -->
+      <div class="card">
+        <div class="card-icon">📁</div>
+        <h3 class="card-title">SORWEB</h3>
+        <p class="card-desc">Redirige a la página principal de SORWEB para el manejo de autorizaciones a nivel Eje Cagetero.</p>
+        <a href="sorweb.html" class="card-btn">Ir a SORWEB</a>
+      </div>
+
+      <!-- TARJETA PRUEBA - se actualiza para usar el mismo estilo de botón -->
+      <div class="card">
+        <div class="card-icon">🧪</div>
+        <h3 class="card-title">PRUEBA</h3>
+        <p class="card-desc">Accede a la herramienta de prueba.</p>
+        <!-- Botón con el mismo estilo que los demás -->
+        <a href="prueba.html" class="card-btn">Abrir herramienta</a>
+      </div>
+
+      <!-- NUEVA TARJETA TRANSCRIBIR - añadida y apunta a Transcribir.html -->
+      <div class="card">
+        <div class="card-icon">🎙️</div>
+        <h3 class="card-title">TRANSCRIBIR</h3>
+        <p class="card-desc">Transcribe audio o archivos a texto con la herramienta de transcripción.</p>
+        <a href="Transcribir.html" class="card-btn">Abrir herramienta</a>
+      </div>
+
+    </div>
+  </main>
 </body>
 </html>
