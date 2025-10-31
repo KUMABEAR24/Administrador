@@ -1,383 +1,198 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reescritor de Capturas</title>
-    <style>
-        :root {
-            --color-fondo: #121212;
-            --color-superficie: #1e1e1e;
-            --color-primario: #bb86fc;
-            --color-texto: #e0e0e0;
-            --color-texto-secundario: #a0a0a0;
-            --color-error: #cf6679;
-            --color-exito: #03dac6;
-            --borde-radio: 8px;
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--color-fondo);
-            color: var(--color-texto);
-            line-height: 1.6;
-            padding-top: 70px; 
-        }
-        .api-panel {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            background-color: var(--color-superficie);
-            padding: 12px 20px;
-            border-bottom: 1px solid #333;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            z-index: 100;
-        }
-        .api-panel label { font-size: 0.9em; color: var(--color-texto-secundario); }
-        .api-panel input[type="password"] {
-            flex-grow: 1;
-            background-color: var(--color-fondo);
-            color: var(--color-texto);
-            border: 1px solid #444;
-            border-radius: var(--borde-radio);
-            padding: 8px 12px;
-            font-size: 0.9em;
-        }
-        .api-panel button {
-            background-color: var(--color-primario);
-            color: var(--color-fondo);
-            border: none;
-            padding: 8px 15px;
-            border-radius: var(--borde-radio);
-            cursor: pointer;
-            font-weight: bold;
-            transition: opacity 0.3s;
-        }
-        .api-panel button:hover { opacity: 0.8; }
-        #api-status-message {
-            font-size: 0.9em;
-            margin-left: 10px;
-            opacity: 0;
-            transition: opacity 0.5s;
-        }
-        #api-status-message.success { color: var(--color-exito); }
-        #api-status-message.error { color: var(--color-error); }
-        .container { max-width: 800px; margin: 20px auto; padding: 0 20px; }
-        .upload-zone {
-            border: 2px dashed #444;
-            border-radius: var(--borde-radio);
-            padding: 30px;
-            text-align: center;
-            background-color: var(--color-superficie);
-            margin-bottom: 20px;
-        }
-        .upload-zone:hover { border-color: var(--color-primario); }
-        .upload-zone .small-text { font-size: 0.8em; color: var(--color-texto-secundario); margin-top: 5px; }
-        #file-uploader { display: none; }
-        .file-label {
-            display: inline-block;
-            background-color: var(--color-primario);
-            color: var(--color-fondo);
-            padding: 10px 15px;
-            border-radius: var(--borde-radio);
-            cursor: pointer;
-            font-weight: bold;
-            margin: 10px 0;
-            transition: opacity 0.3s;
-        }
-        .file-label:hover { opacity: 0.8; }
-        .chat-container { display: flex; flex-direction: column; gap: 15px; }
-        .message {
-            padding: 15px;
-            border-radius: var(--borde-radio);
-            background-color: var(--color-superficie);
-            max-width: 90%;
-        }
-        .message.user {
-            align-self: flex-end;
-            background-color: var(--color-primario);
-            color: var(--color-fondo);
-        }
-        .message.model { align-self: flex-start; border: 1px solid #333; }
-        .message.model.error-message {
-            background-color: #3f2328;
-            border-color: var(--color-error);
-            color: var(--color-error);
-        }
-        .message.loading { color: var(--color-texto-secundario); font-style: italic; }
-        .message p { white-space: pre-wrap; }
-        .message img, .message embed { max-width: 100%; height: auto; border-radius: 4px; margin-top: 10px; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Inicio - Menú Inicial</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background-color: #121212;
+      color: #f0f0f0;
+      font-family: 'Lato', sans-serif;
+      margin: 0;
+      padding: 0;
+      line-height: 1.6;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    header {
+      background-color: #1f1f1f;
+      padding: 2rem;
+      width: 100%;
+      text-align: center;
+      border-bottom: 1px solid #333;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      display: flex;
+      justify-content: space-between; /* Ajustado para alinear solo el título */
+      align-items: center;
+      gap: 1rem;
+    }
+    .header-left { display:flex; align-items:center; gap:1rem; }
+    
+    /* --- CSS .btn-prueba y .btn-header ELIMINADOS --- */
+    /* Ya no se necesitan, usamos el estilo de .card a */
+
+    .main-content {
+      width: 90%;
+      max-width: 1200px;
+      margin: 2rem auto;
+      flex-grow: 1;
+    }
+    .search-container {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    input[type="text"] {
+      padding: 0.75rem 1rem;
+      width: 100%;
+      max-width: 500px;
+      border: 1px solid #444;
+      border-radius: 25px;
+      background-color: #2c2c2c;
+      color: #f0f0f0;
+      font-size: 1rem;
+      transition: border-color 0.3s;
+    }
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #005f73;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      justify-content: center;
+    }
+    /* Todas las tarjetas igual que SIGWEB */
+    .card {
+      background: linear-gradient(135deg, #1e90ff, #00bfff 80%);
+      border: 1px solid #1976d2;
+      color: #fff;
+      border-radius: 12px;
+      padding: 25px;
+      text-align: center;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      box-shadow: 0 4px 12px rgba(25, 118, 210, 0.15);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 220px;
+    }
+    .card:hover {
+      transform: translateY(-5px) scale(1.02);
+      box-shadow: 0 8px 16px rgba(25, 118, 210, 0.30);
+    }
+    .card h2 {
+      margin: 0 0 10px 0;
+      font-size: 1.7rem;
+      color: #fff;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      letter-spacing: 0.5px;
+    }
+    .card p {
+      color: #e3f2fd;
+      font-size: 1rem;
+      margin-bottom: 20px;
+      flex-grow: 1;
+    }
+    .card a {
+      color: #fff;
+      text-decoration: none;
+      font-weight: bold;
+      background-color: #1976d2;
+      padding: 14px 0;
+      border-radius: 28px;
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      display: block;
+      width: 80%;
+      margin: 0 auto;
+      font-size: 1.1rem;
+      margin-top: auto;
+      box-shadow: 0 2px 8px rgba(25, 118, 210, 0.15);
+      letter-spacing: 0.5px;
+      border: none;
+    }
+    .card a:hover {
+      background-color: #1565c0;
+      box-shadow: 0 4px 12px rgba(25, 118, 210, 0.25);
+      text-decoration: underline;
+    }
+    /* Responsive grid spacing */
+    @media (max-width: 600px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
 <body>
-
-    <div class="api-panel">
-        <label for="api-key-input">Clave API de Gemini:</label>
-        <input type="password" id="api-key-input" placeholder="Pega tu clave API aquí...">
-        <button id="save-key-btn">Guardar</button>
-        <span id="api-status-message"></span>
+  
+  <header>
+    <div class="header-left">
+      <h1>Panel de Gestion Eje Cafetero</h1>
     </div>
+    </header>
 
-    <div class="container">
-        <div class="upload-zone" id="upload-zone">
-            <p>Pega una captura (Ctrl+V) o</p>
-            <input type="file" id="file-uploader" accept="image/*,application/pdf">
-            <label for="file-uploader" class="file-label">Sube un archivo</label>
-            <p class="small-text">(Imágenes o PDF)</p>
-        </div>
-        <div class="chat-container" id="chat-container">
-            <div class="message model">
-                <p>¡Hola! Pega una captura de pantalla o sube un archivo (imagen/PDF) y extraeré el texto para reescribirlo por ti.</p>
-            </div>
-        </div>
+  <div class="main-content">
+    <div class="search-container">
+      <input type="text" id="search" placeholder="Buscar herramienta..." oninput="filtrarTarjetas()">
     </div>
+    <div class="grid" id="appGrid">
+      <div class="card">
+        <h2>🌐 SIGWEB</h2>
+        <p>Accede al sistema SIGWEB para gestión de las negaciones a nivel Eje Cafetero.</p>
+        <a href="Sigweb.htm">Ir a SIGWEB</a>
+      </div>
+      <div class="card">
+        <h2>📄 Extractor Pdf Sigweb</h2>
+        <p>Extrae información de múltiples archivos PDF para el manejo de negaciones Sigweb.</p>
+        <a href="extractor.html">Abrir herramienta</a>
+      </div>
+      <div class="card">
+        <h2>🧩 Configuración de Códigos para Extractor PDF</h2>
+        <p>Convierte archivos Excel a JSON para usar en el extractor de PDF.</p>
+        <a href="configuracion.html">Abrir herramienta</a>
+      </div>
+      <div class="card">
+        <h2>⏳ Gestor de Pendientes</h2>
+        <p>Administra casos pendientes con recordatorios, prioridades y base de datos local.</p>
+        <a href="GESTOR PENDIENTES.htm">Abrir herramienta</a>
+      </div>
+      <div class="card">
+        <h2>🗂️ SORWEB</h2>
+        <p>Redirige a la página principal de SORWEB para el manejo de autorizaciones a nivel Eje Cagetero.</p>
+        <a href="SORWEB.htm">Ir a SORWEB</a>
+      </div>
 
-    <script>
-        const apiKeyInput = document.getElementById('api-key-input');
-        const saveKeyBtn = document.getElementById('save-key-btn');
-        const uploadZone = document.getElementById('upload-zone');
-        const fileUploader = document.getElementById('file-uploader');
-        const chatContainer = document.getElementById('chat-container');
-        const apiStatusMsg = document.getElementById('api-status-message');
+      <div class="card">
+        <h2>🧪 Prueba</h2>
+        <p>Página de pruebas para implementar y revisar nuevas funcionalidades.</p>
+        <a href="Prueba.html">Ir a Prueba</a>
+      </div>
+      <div class="card">
+        <h2>🎙️ TRANSCRIBIR</h2>
+        <p>Herramienta para la transcripción de audio a texto u otras funciones relacionadas.</p>
+        <a href="Transcribir.html">Abrir herramienta</a>
+      </div>
+      </div>
+  </div>
 
-        let geminiApiKey = '';
-        
-        // ==========================================================
-        // *** ¡AQUÍ ESTÁ LA CORRECCIÓN! ***
-        // Cambiamos 'gemini-1.5-flash' por 'gemini-pro-vision'
-        // ==========================================================
-        const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=";
-
-        const REWRITE_PROMPT = `
-Toma el texto contenido en el siguiente archivo (imagen o PDF).
-Tu tarea es:
-1. Extraer todo el texto visible.
-2. Reescribir el texto para que sea más claro, conciso y profesional.
-3. Si es un chat, resúmelo. Si es código, mejóralo. Si son notas, organízalas.
-4. Devuelve únicamente el texto reescrito. Si no encuentras texto, responde "No se encontró texto en el archivo."
-`;
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const savedKey = localStorage.getItem('gemini_api_key');
-            if (savedKey) {
-                geminiApiKey = savedKey;
-                apiKeyInput.value = savedKey;
-                apiKeyInput.placeholder = "Clave API cargada";
-            }
-        });
-
-        saveKeyBtn.addEventListener('click', () => {
-            geminiApiKey = apiKeyInput.value;
-            if (geminiApiKey) {
-                localStorage.setItem('gemini_api_key', geminiApiKey);
-                showApiStatus('¡Guardada!', false);
-            } else {
-                showApiStatus('Por favor, ingresa una clave.', true);
-            }
-        });
-
-        window.addEventListener('paste', (e) => {
-            if (!checkApiKey()) return;
-            const items = e.clipboardData.items;
-            for (const item of items) {
-                if (item.type.indexOf('image') !== -1) {
-                    const file = item.getAsFile();
-                    if (file) {
-                        displayUserFile(file);
-                        processFile(file);
-                    }
-                    e.preventDefault(); 
-                    return;
-                }
-            }
-        });
-
-        fileUploader.addEventListener('change', (e) => {
-            if (!checkApiKey()) return;
-            const file = e.target.files[0];
-            if (file) {
-                displayUserFile(file);
-                processFile(file);
-            }
-        });
-
-        uploadZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadZone.style.borderColor = 'var(--color-primario)';
-        });
-        uploadZone.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            uploadZone.style.borderColor = '#444';
-        });
-        uploadZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            if (!checkApiKey()) return;
-            uploadZone.style.borderColor = '#444';
-            const file = e.dataTransfer.files[0];
-            if (file) {
-                displayUserFile(file);
-                processFile(file);
-            }
-        });
-
-        function showApiStatus(message, isError = false) {
-            apiStatusMsg.textContent = message;
-            apiStatusMsg.className = isError ? 'error' : 'success';
-            apiStatusMsg.style.opacity = 1;
-            setTimeout(() => { apiStatusMsg.style.opacity = 0; }, 3000);
-        }
-
-        function checkApiKey() {
-            if (!geminiApiKey) {
-                showApiStatus('¡Guarda tu clave API primero!', true);
-                apiKeyInput.focus();
-                return false;
-            }
-            return true;
-        }
-
-        function displayUserFile(file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                let fileElement;
-                if (file.type.startsWith('image/')) {
-                    fileElement = document.createElement('img');
-                    fileElement.src = e.target.result;
-                } else if (file.type === 'application/pdf') {
-                    fileElement = document.createElement('embed');
-                    fileElement.src = e.target.result;
-                    fileElement.type = 'application/pdf';
-                    fileElement.width = '100%';
-                    fileElement.height = '150px';
-                }
-
-                const messageDiv = document.createElement('div');
-                messageDiv.className = 'message user';
-                const textElement = document.createElement('p');
-                textElement.textContent = `Archivo: ${file.name}`;
-                
-                messageDiv.appendChild(textElement);
-                if (fileElement) { messageDiv.appendChild(fileElement); }
-                chatContainer.appendChild(messageDiv);
-                chatContainer.scrollTop = chatContainer.scrollHeight;
-            };
-            if (file.type.startsWith('image/') || file.type === 'application/pdf') {
-                reader.readAsDataURL(file);
-            }
-        }
-
-        function displayModelResponse(text, isLoading = false, isError = false) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'message model';
-            if (isLoading) {
-                messageDiv.classList.add('loading');
-                messageDiv.id = 'loading-message';
-            }
-            if (isError) { messageDiv.classList.add('error-message'); }
-            
-            const textElement = document.createElement('p');
-            textElement.textContent = text;
-            messageDiv.appendChild(textElement);
-            chatContainer.appendChild(messageDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-            return messageDiv;
-        }
-
-        function removeLoadingMessage() {
-            const loadingMsg = document.getElementById('loading-message');
-            if (loadingMsg) { loadingMsg.remove(); }
-        }
-
-        async function processFile(file) {
-            displayModelResponse('Reconociendo y reescribiendo texto...', true);
-
-            let base64Data;
-            try {
-                base64Data = await fileToBase64(file);
-            } catch (error) {
-                removeLoadingMessage();
-                displayModelResponse(`Error al leer el archivo: ${error.message}`, false, true);
-                return;
-            }
-
-            // NOTA: 'gemini-pro-vision' (el modelo que usamos ahora)
-            // prefiere que el texto y la imagen estén en partes separadas.
-            // El formato que ya teníamos es compatible.
-            const requestBody = {
-                "contents": [
-                    {
-                        "parts": [
-                            { "text": REWRITE_PROMPT },
-                            {
-                                "inline_data": {
-                                    "mime_type": file.type,
-                                    "data": base64Data
-                                }
-                            }
-                        ]
-                    }
-                ],
-                "generationConfig": {
-                    "temperature": 0.4,
-                    "topK": 32,
-                    "topP": 1,
-                    "maxOutputTokens": 4096,
-                }
-            };
-
-            try {
-                const response = await fetch(API_URL + geminiApiKey, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(requestBody)
-                });
-
-                removeLoadingMessage(); 
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    const errorMsg = `Error de la API (${response.status}): ${errorData.error.message}\n\nAsegúrate de que tu clave API sea correcta y tenga permisos para el modelo 'gemini-pro-vision'.`;
-                    displayModelResponse(errorMsg, false, true);
-                    return;
-                }
-
-                const data = await response.json();
-                
-                if (!data.candidates || !data.candidates[0].content || !data.candidates[0].content.parts[0].text) {
-                    // Manejar posible bloqueo por seguridad (safetySettings)
-                    if (data.candidates && data.candidates[0].finishReason === 'SAFETY') {
-                        displayModelResponse("El contenido fue bloqueado por la configuración de seguridad de la API.", false, true);
-                    } else {
-                        displayModelResponse("La API no devolvió una respuesta de texto válida.", false, true);
-                        console.log("Respuesta inesperada de la API:", data);
-                    }
-                    return;
-                }
-
-                const rewrittenText = data.candidates[0].content.parts[0].text;
-                displayModelResponse(rewrittenText);
-
-            } catch (error) {
-                console.error(error);
-                removeLoadingMessage();
-                displayModelResponse(`ERROR DE CONEXIÓN: ${error.message}. \n\nRevisa tu conexión a internet o si el navegador está bloqueando la solicitud.`, false, true);
-            }
-        }
-
-        function fileToBase64(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = () => {
-                    const base64String = reader.result.split(',')[1];
-                    resolve(base64String);
-                };
-                reader.onerror = (error) => reject(error);
-            });
-        }
-    </script>
+  <script>
+    function filtrarTarjetas() {
+      const input = document.getElementById('search').value.toLowerCase();
+      const cards = document.querySelectorAll('.card');
+      cards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.style.display = text.includes(input) ? 'flex' : 'none';
+      });
+    }
+  </script>
 </body>
 </html>
