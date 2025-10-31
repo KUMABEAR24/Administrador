@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reescritor de Capturas</title>
-
     <style>
         :root {
             --color-fondo: #121212;
@@ -16,13 +15,7 @@
             --color-exito: #03dac6;
             --borde-radio: 8px;
         }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--color-fondo);
@@ -30,7 +23,6 @@
             line-height: 1.6;
             padding-top: 70px; 
         }
-
         .api-panel {
             position: fixed;
             top: 0;
@@ -44,12 +36,7 @@
             gap: 10px;
             z-index: 100;
         }
-
-        .api-panel label {
-            font-size: 0.9em;
-            color: var(--color-texto-secundario);
-        }
-
+        .api-panel label { font-size: 0.9em; color: var(--color-texto-secundario); }
         .api-panel input[type="password"] {
             flex-grow: 1;
             background-color: var(--color-fondo);
@@ -59,7 +46,6 @@
             padding: 8px 12px;
             font-size: 0.9em;
         }
-
         .api-panel button {
             background-color: var(--color-primario);
             color: var(--color-fondo);
@@ -70,33 +56,16 @@
             font-weight: bold;
             transition: opacity 0.3s;
         }
-
-        .api-panel button:hover {
-            opacity: 0.8;
-        }
-
-        /* --- NUEVO ESTILO PARA MENSAJES DE ESTADO --- */
+        .api-panel button:hover { opacity: 0.8; }
         #api-status-message {
             font-size: 0.9em;
             margin-left: 10px;
             opacity: 0;
             transition: opacity 0.5s;
         }
-        #api-status-message.success {
-            color: var(--color-exito);
-        }
-        #api-status-message.error {
-            color: var(--color-error);
-        }
-        /* --- FIN DE NUEVO ESTILO --- */
-
-
-        .container {
-            max-width: 800px;
-            margin: 20px auto;
-            padding: 0 20px;
-        }
-
+        #api-status-message.success { color: var(--color-exito); }
+        #api-status-message.error { color: var(--color-error); }
+        .container { max-width: 800px; margin: 20px auto; padding: 0 20px; }
         .upload-zone {
             border: 2px dashed #444;
             border-radius: var(--borde-radio);
@@ -105,21 +74,9 @@
             background-color: var(--color-superficie);
             margin-bottom: 20px;
         }
-
-        .upload-zone:hover {
-            border-color: var(--color-primario);
-        }
-
-        .upload-zone .small-text {
-            font-size: 0.8em;
-            color: var(--color-texto-secundario);
-            margin-top: 5px;
-        }
-
-        #file-uploader {
-            display: none;
-        }
-
+        .upload-zone:hover { border-color: var(--color-primario); }
+        .upload-zone .small-text { font-size: 0.8em; color: var(--color-texto-secundario); margin-top: 5px; }
+        #file-uploader { display: none; }
         .file-label {
             display: inline-block;
             background-color: var(--color-primario);
@@ -131,57 +88,28 @@
             margin: 10px 0;
             transition: opacity 0.3s;
         }
-
-        .file-label:hover {
-            opacity: 0.8;
-        }
-
-        .chat-container {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
+        .file-label:hover { opacity: 0.8; }
+        .chat-container { display: flex; flex-direction: column; gap: 15px; }
         .message {
             padding: 15px;
             border-radius: var(--borde-radio);
             background-color: var(--color-superficie);
             max-width: 90%;
         }
-
         .message.user {
             align-self: flex-end;
             background-color: var(--color-primario);
             color: var(--color-fondo);
         }
-
-        .message.model {
-            align-self: flex-start;
-            border: 1px solid #333;
-        }
-        
-        /* Mensaje de error del modelo */
+        .message.model { align-self: flex-start; border: 1px solid #333; }
         .message.model.error-message {
             background-color: #3f2328;
             border-color: var(--color-error);
             color: var(--color-error);
         }
-
-        .message.loading {
-            color: var(--color-texto-secundario);
-            font-style: italic;
-        }
-
-        .message p {
-            white-space: pre-wrap; 
-        }
-
-        .message img, .message embed {
-            max-width: 100%;
-            height: auto;
-            border-radius: 4px;
-            margin-top: 10px;
-        }
+        .message.loading { color: var(--color-texto-secundario); font-style: italic; }
+        .message p { white-space: pre-wrap; }
+        .message img, .message embed { max-width: 100%; height: auto; border-radius: 4px; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -190,7 +118,6 @@
         <label for="api-key-input">Clave API de Gemini:</label>
         <input type="password" id="api-key-input" placeholder="Pega tu clave API aquí...">
         <button id="save-key-btn">Guardar</button>
-        
         <span id="api-status-message"></span>
     </div>
 
@@ -201,7 +128,6 @@
             <label for="file-uploader" class="file-label">Sube un archivo</label>
             <p class="small-text">(Imágenes o PDF)</p>
         </div>
-
         <div class="chat-container" id="chat-container">
             <div class="message model">
                 <p>¡Hola! Pega una captura de pantalla o sube un archivo (imagen/PDF) y extraeré el texto para reescribirlo por ti.</p>
@@ -210,22 +136,21 @@
     </div>
 
     <script>
-        // --- ELEMENTOS DEL DOM ---
         const apiKeyInput = document.getElementById('api-key-input');
         const saveKeyBtn = document.getElementById('save-key-btn');
         const uploadZone = document.getElementById('upload-zone');
         const fileUploader = document.getElementById('file-uploader');
         const chatContainer = document.getElementById('chat-container');
-        
-        // *** CAMBIO AQUÍ: Elemento de estado ***
         const apiStatusMsg = document.getElementById('api-status-message');
 
-        // --- VARIABLES ---
         let geminiApiKey = '';
-        // Usamos gemini-1.5-flash. Tu clave DEBE tener permisos para este modelo.
-        const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=";
+        
+        // ==========================================================
+        // *** ¡AQUÍ ESTÁ LA CORRECCIÓN! ***
+        // Cambiamos 'gemini-1.5-flash' por 'gemini-pro-vision'
+        // ==========================================================
+        const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=";
 
-        // --- INSTRUCCIÓN (PROMPT) PARA GEMINI ---
         const REWRITE_PROMPT = `
 Toma el texto contenido en el siguiente archivo (imagen o PDF).
 Tu tarea es:
@@ -235,9 +160,6 @@ Tu tarea es:
 4. Devuelve únicamente el texto reescrito. Si no encuentras texto, responde "No se encontró texto en el archivo."
 `;
 
-        // --- MANEJO DE LA CLAVE API ---
-
-        // Cargar clave guardada al iniciar
         document.addEventListener('DOMContentLoaded', () => {
             const savedKey = localStorage.getItem('gemini_api_key');
             if (savedKey) {
@@ -247,20 +169,15 @@ Tu tarea es:
             }
         });
 
-        // Guardar clave
         saveKeyBtn.addEventListener('click', () => {
             geminiApiKey = apiKeyInput.value;
             if (geminiApiKey) {
                 localStorage.setItem('gemini_api_key', geminiApiKey);
-                // *** CAMBIO AQUÍ: Reemplazamos alert() ***
                 showApiStatus('¡Guardada!', false);
             } else {
-                // *** CAMBIO AQUÍ: Reemplazamos alert() ***
                 showApiStatus('Por favor, ingresa una clave.', true);
             }
         });
-
-        // --- MANEJO DE ARCHIVOS (PEGAR Y SUBIR) ---
 
         window.addEventListener('paste', (e) => {
             if (!checkApiKey()) return;
@@ -306,22 +223,15 @@ Tu tarea es:
             }
         });
 
-        // --- FUNCIONES AUXILIARES ---
-
-        // *** CAMBIO AQUÍ: Nueva función para mostrar estado (sin alert) ***
         function showApiStatus(message, isError = false) {
             apiStatusMsg.textContent = message;
             apiStatusMsg.className = isError ? 'error' : 'success';
             apiStatusMsg.style.opacity = 1;
-
-            setTimeout(() => {
-                apiStatusMsg.style.opacity = 0;
-            }, 3000); // El mensaje desaparece después de 3 segundos
+            setTimeout(() => { apiStatusMsg.style.opacity = 0; }, 3000);
         }
 
         function checkApiKey() {
             if (!geminiApiKey) {
-                // *** CAMBIO AQUÍ: Reemplazamos alert() ***
                 showApiStatus('¡Guarda tu clave API primero!', true);
                 apiKeyInput.focus();
                 return false;
@@ -350,19 +260,15 @@ Tu tarea es:
                 textElement.textContent = `Archivo: ${file.name}`;
                 
                 messageDiv.appendChild(textElement);
-                if (fileElement) {
-                    messageDiv.appendChild(fileElement);
-                }
+                if (fileElement) { messageDiv.appendChild(fileElement); }
                 chatContainer.appendChild(messageDiv);
                 chatContainer.scrollTop = chatContainer.scrollHeight;
             };
-
             if (file.type.startsWith('image/') || file.type === 'application/pdf') {
                 reader.readAsDataURL(file);
             }
         }
 
-        // Muestra la respuesta del modelo (o un estado de carga)
         function displayModelResponse(text, isLoading = false, isError = false) {
             const messageDiv = document.createElement('div');
             messageDiv.className = 'message model';
@@ -370,15 +276,11 @@ Tu tarea es:
                 messageDiv.classList.add('loading');
                 messageDiv.id = 'loading-message';
             }
-            // *** CAMBIO AQUÍ: Añadimos clase de error si es necesario ***
-            if (isError) {
-                messageDiv.classList.add('error-message');
-            }
+            if (isError) { messageDiv.classList.add('error-message'); }
             
             const textElement = document.createElement('p');
             textElement.textContent = text;
             messageDiv.appendChild(textElement);
-            
             chatContainer.appendChild(messageDiv);
             chatContainer.scrollTop = chatContainer.scrollHeight;
             return messageDiv;
@@ -386,12 +288,8 @@ Tu tarea es:
 
         function removeLoadingMessage() {
             const loadingMsg = document.getElementById('loading-message');
-            if (loadingMsg) {
-                loadingMsg.remove();
-            }
+            if (loadingMsg) { loadingMsg.remove(); }
         }
-
-        // --- LÓGICA PRINCIPAL (PROCESAR Y LLAMAR A GEMINI) ---
 
         async function processFile(file) {
             displayModelResponse('Reconociendo y reescribiendo texto...', true);
@@ -401,11 +299,13 @@ Tu tarea es:
                 base64Data = await fileToBase64(file);
             } catch (error) {
                 removeLoadingMessage();
-                // *** CAMBIO AQUÍ: Usamos la función de mostrar respuesta para errores ***
                 displayModelResponse(`Error al leer el archivo: ${error.message}`, false, true);
                 return;
             }
 
+            // NOTA: 'gemini-pro-vision' (el modelo que usamos ahora)
+            // prefiere que el texto y la imagen estén en partes separadas.
+            // El formato que ya teníamos es compatible.
             const requestBody = {
                 "contents": [
                     {
@@ -435,20 +335,25 @@ Tu tarea es:
                     body: JSON.stringify(requestBody)
                 });
 
-                removeLoadingMessage(); // Quitar "cargando"
+                removeLoadingMessage(); 
 
                 if (!response.ok) {
                     const errorData = await response.json();
-                    // *** CAMBIO AQUÍ: Error de API más detallado ***
-                    const errorMsg = `Error de la API (${response.status}): ${errorData.error.message}\n\nAsegúrate de que tu clave API sea correcta y tenga permisos para el modelo 'gemini-1.5-flash'.`;
+                    const errorMsg = `Error de la API (${response.status}): ${errorData.error.message}\n\nAsegúrate de que tu clave API sea correcta y tenga permisos para el modelo 'gemini-pro-vision'.`;
                     displayModelResponse(errorMsg, false, true);
                     return;
                 }
 
                 const data = await response.json();
                 
-                if (!data.candidates || !data.candidates[0].content.parts[0].text) {
-                    displayModelResponse("La API no devolvió una respuesta válida.", false, true);
+                if (!data.candidates || !data.candidates[0].content || !data.candidates[0].content.parts[0].text) {
+                    // Manejar posible bloqueo por seguridad (safetySettings)
+                    if (data.candidates && data.candidates[0].finishReason === 'SAFETY') {
+                        displayModelResponse("El contenido fue bloqueado por la configuración de seguridad de la API.", false, true);
+                    } else {
+                        displayModelResponse("La API no devolvió una respuesta de texto válida.", false, true);
+                        console.log("Respuesta inesperada de la API:", data);
+                    }
                     return;
                 }
 
@@ -458,7 +363,6 @@ Tu tarea es:
             } catch (error) {
                 console.error(error);
                 removeLoadingMessage();
-                // *** CAMBIO AQUÍ: Error de red o general ***
                 displayModelResponse(`ERROR DE CONEXIÓN: ${error.message}. \n\nRevisa tu conexión a internet o si el navegador está bloqueando la solicitud.`, false, true);
             }
         }
