@@ -26,36 +26,15 @@
       border-bottom: 1px solid #333;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
       display: flex;
-      justify-content: space-between;
+      justify-content: space-between; /* Ajustado para alinear solo el título */
       align-items: center;
       gap: 1rem;
     }
     .header-left { display:flex; align-items:center; gap:1rem; }
-    .header-right { display:flex; align-items:center; gap:.5rem; }
     
-    /* --- ESTILO DE BOTÓN MODIFICADO --- */
-    /* Reemplaza al antiguo .btn-prueba para que coincida con el estilo de .card a */
-    .btn-header {
-      background-color: #1976d2; /* Color de .card a */
-      color: white;
-      border: none;
-      padding: 0.7rem 1.3rem; /* Padding ajustado para header */
-      border-radius: 28px; /* Bordes redondeados de .card a */
-      cursor: pointer;
-      font-weight: bold; /* Fuente de .card a */
-      font-size: 0.9rem; /* Tamaño de fuente adaptado para header */
-      text-decoration: none;
-      transition: background-color 0.3s ease, box-shadow 0.3s ease; /* Transición de .card a */
-      box-shadow: 0 2px 8px rgba(25, 118, 210, 0.15); /* Sombra de .card a */
-      letter-spacing: 0.5px; /* Espaciado de .card a */
-    }
-    .btn-header:hover {
-      background-color: #1565c0; /* Efecto hover de .card a */
-      box-shadow: 0 4px 12px rgba(25, 118, 210, 0.25); /* Sombra hover de .card a */
-      text-decoration: underline; /* Subrayado hover de .card a */
-    }
-    /* --- FIN DE LA MODIFICACIÓN --- */
-    
+    /* --- CSS .btn-prueba y .btn-header ELIMINADOS --- */
+    /* Ya no se necesitan, usamos el estilo de .card a */
+
     .main-content {
       width: 90%;
       max-width: 1200px;
@@ -154,14 +133,10 @@
   </style>
 </head>
 <body>
+  
   <header>
     <div class="header-left">
       <h1>Panel de Gestion Eje Cafetero</h1>
-    </div>
-
-    <div class="header-right">
-      <button id="prueba-btn" class="btn-header" onclick="window.location.href='Prueba.html'">Ir a Prueba</button>
-      <button id="transcribir-btn" class="btn-header" onclick="window.location.href='Transcribir.html'">TRANSCRIBIR</button>
     </div>
     </header>
 
@@ -195,7 +170,18 @@
         <p>Redirige a la página principal de SORWEB para el manejo de autorizaciones a nivel Eje Cagetero.</p>
         <a href="SORWEB.htm">Ir a SORWEB</a>
       </div>
-    </div>
+
+      <div class="card">
+        <h2>🧪 Prueba</h2>
+        <p>Página de pruebas para implementar y revisar nuevas funcionalidades.</p>
+        <a href="Prueba.html">Ir a Prueba</a>
+      </div>
+      <div class="card">
+        <h2>🎙️ TRANSCRIBIR</h2>
+        <p>Herramienta para la transcripción de audio a texto u otras funciones relacionadas.</p>
+        <a href="Transcribir.html">Abrir herramienta</a>
+      </div>
+      </div>
   </div>
 
   <script>
