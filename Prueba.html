@@ -65,7 +65,7 @@
         // =================================================================================
         
         // --- CORRECCIÓN 1: Cabeceras del Portal (Área 1) ---
-        // Deben coincidir EXACTAMENTE con las columnas que pegas
+        // Columnas exactas que se pegan
         const PORTAL_HEADERS = [
           "Fecha_Asignacion", "EJECUTIVO", "FECHA NEGA", "REGIONAL", "NÚMERO OR", 
           "TIPO IDENTIFICAC", "NOMBRE AFI", "EDAD", "PROCEDIMIE", "MOTIVO NEG", 
@@ -421,11 +421,12 @@
         // =================================================================================
         // INLINED: components/ReviewArea.tsx
         // =================================================================================
+        // --- CORRECCIÓN 3: Columnas de Área 3 actualizadas ---
         const ReviewArea = ({
           data,
           templates,
           updateRow,
-          incrementEdits, // <-- CORRECCIÓN 2: Se corrigió el nombre de la prop
+          incrementEdits,
           onSendToTracking,
           onPreview,
           onExportForMailMerge,
@@ -436,14 +437,15 @@
           const [selectedRows, setSelectedRows] = useState(new Set());
           const [filter, setFilter] = useState('');
           
+          // Columnas exactas solicitadas por el usuario
           const REVIEW_HEADERS = [
-              { key: 'Fecha_Neg', label: 'Fecha Neg.' },
-              { key: 'No_Orden', label: 'No. Orden' },
-              { key: 'No_Cedula', label: 'No. Cédula' },
-              { key: 'Nombre', label: 'Nombre' },
+              { key: 'Fecha_Neg', label: 'Fecha de Negación' },
+              { key: 'No_Orden', label: 'Número de Orden' },
+              { key: 'No_Cedula', label: 'Número de Cédula' },
+              { key: 'Nombre', label: 'Nombre Afiliado' },
               { key: 'EPS', label: 'EPS' },
               { key: 'Programa', label: 'Programa', compact: true },
-              { key: 'Motivo_Negacion', label: 'Motivo Neg.', compact: true },
+              { key: 'Motivo_Negacion', label: 'Motivo Neg', compact: true },
               { key: 'Descripcion_PDF', label: 'Descripción', compact: true },
               { key: 'Justificacion_PDF', label: 'Justificación', compact: true },
               { key: 'Fundamento_Legal_PDF', label: 'Fund. Legal', compact: true },
@@ -482,7 +484,7 @@
             const originalRow = data.find(r => r.No_Orden === noOrden);
             if (originalRow && originalRow[key] !== value) {
               updateRow(noOrden, { [key]: value });
-              incrementEdits(); // <-- CORRECCIÓN 2: Ahora esta función existe
+              incrementEdits();
             }
           };
           
@@ -493,7 +495,7 @@
                 changes.Radicado_Comp = '';
             }
             updateRow(noOrden, changes);
-            incrementEdits(); // <-- También contamos esto como una edición
+            incrementEdits();
           };
 
           const requestSort = (key) => {
@@ -538,18 +540,21 @@
                     </tr>
                   </thead>
                   <tbody>
-                    {/* --- CORRECCIÓN 2: Se añade 'rowIndex' a la 'key' para garantizar unicidad --- */}
                     {filteredData.map((row, rowIndex) => {
                       const template = templates.find(t => t.id === row.Tipo_Carta);
                       const isComplementariedad = template && template.name.toUpperCase().includes('COMPLEMENTARIEDAD');
                       const requiresRadicado = isComplementariedad;
                       
+                      // Clave única para la fila
+                      const rowKey = `${row.No_Orden || 'new'}-${rowIndex}`;
+
                       return (
-                        <tr key={`${row.No_Orden}-${rowIndex}`} className={`border-b border-border-color hover:bg-highlight ${isComplementariedad ? 'bg-indigo-900/50' : ''}`}>
+                        <tr key={rowKey} className={`border-b border-border-color hover:bg-highlight ${isComplementariedad ? 'bg-indigo-900/50' : ''}`}>
                           <td className="px-4 py-2"><input type="checkbox" checked={selectedRows.has(row.No_Orden)} onChange={() => handleSelectRow(row.No_Orden)} /></td>
                           <td className="px-4 py-2 text-lg cursor-pointer" onClick={() => onPreview(row)}>👁️</td>
+                          
                           {REVIEW_HEADERS.map(({ key, compact }) => (
-                            <td key={`${row.No_Orden}-${key}`}
+                            <td key={`${rowKey}-${key}`}
                                 className={`px-4 py-2 border-r border-border-color focus:bg-primary focus:text-black outline-none ${compact ? 'max-w-[150px] overflow-hidden text-ellipsis whitespace-nowrap' : ''}`}
                                 contentEditable
                                 onBlur={(e) => handleCellBlur(row.No_Orden, key, e.currentTarget.innerText)}
@@ -558,6 +563,7 @@
                                 {row[key]}
                             </td>
                           ))}
+
                           <td className="px-4 py-2">
                             <div className="flex flex-col gap-1">
                               <select 
@@ -616,6 +622,7 @@
         // =================================================================================
         // INLINED: components/TrackingArea.tsx
         // =================================================================================
+        // --- CORRECCIÓN 4: Columnas de Área 4 actualizadas ---
         const TrackingTable = ({ data, isArchived, onUpdate, onArchive, filter }) => {
             
           const [selectedRows, setSelectedRows] = useState(new Set());
@@ -676,15 +683,16 @@
               <div className="table-container max-h-[400px] overflow-auto border border-border-color rounded-lg">
                 <table className="w-full text-sm text-left text-text-secondary">
                   <thead className="text-xs text-text-primary uppercase bg-header sticky top-0">
+                    {/* Columnas actualizadas según la imagen del usuario */}
                     <tr>
                       <th className="px-4 py-3"><input type="checkbox" onChange={handleSelectAll} checked={selectedRows.size === filteredData.length && filteredData.length > 0}/></th>
-                      <th className="px-4 py-3">Fecha Ing.</th>
-                      <th className="px-4 py-3">No. Orden</th>
+                      <th className="px-4 py-3">Fecha_Neg</th>
+                      <th className="px-4 py-3">No_Orden</th>
+                      <th className="px-4 py-3">No_Cedula</th>
                       <th className="px-4 py-3">Nombre</th>
                       <th className="px-4 py-3">EPS</th>
                       <th className="px-4 py-3">Radicado</th>
                       <th className="px-4 py-3">Estado</th>
-                      <th className="px-4 py-3">Notas</th>
                       <th className="px-4 py-3">Acción</th>
                     </tr>
                   </thead>
@@ -696,6 +704,7 @@
                           <td className="px-4 py-2"><input type="checkbox" checked={selectedRows.has(originalIndex)} onChange={() => handleSelectRow(originalIndex)} /></td>
                           <td className="px-4 py-2">{row.Fecha_Ing}</td>
                           <td className="px-4 py-2">{row.No_Orden}</td>
+                          <td className="px-4 py-2">{row.No_Cedula}</td>
                           <td className="px-4 py-2">{row.Nombre}</td>
                           <td className="px-4 py-2">{row.EPS}</td>
                           <td className="px-4 py-2">{row.Radicado}</td>
@@ -708,7 +717,6 @@
                               {TRACKING_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
                             </select>
                           </td>
-                          <td className="px-4 py-2 outline-none focus:bg-primary focus:text-black" contentEditable onBlur={e => onUpdate(originalIndex, { ...row, Notas: e.currentTarget.innerText })} suppressContentEditableWarning={true}>{row.Notas}</td>
                           <td className="px-4 py-2 text-lg cursor-pointer" onClick={() => onArchive([originalIndex])}>{isArchived ? '♻️' : '🗄️'}</td>
                         </tr>
                       );
@@ -1094,7 +1102,7 @@
                 archivedData: state.archivedData,
               });
               showNotification('¡Datos sincronizados con la nube con éxito!', 'success');
-              setState((prev) => ({ ...prev, editsCount: 0 })); // Reset edits on successful save
+              setState((prev) => ({ ...prev, editsCount: 0 }));
             } catch (error) {
               console.error(error);
               showNotification('Falló el guardado de datos. Por favor, inténtalo de nuevo.', 'error');
@@ -1106,17 +1114,31 @@
           // --- CORRECCIÓN 1: Lógica de procesamiento de datos (Área 1) ---
           const processPortalData = useCallback(() => {
             const processedData = state.portalData
-              // 1. Filtra filas vacías basándose en la nueva columna "NÚMERO OR"
               .filter((row) => row['NÚMERO OR'] && String(row['NÚMERO OR']).trim())
               .map((row) => {
-                // 2. Mapea las columnas del paste (ej. "NÚMERO OR")
-                //    a las columnas internas de la app (ej. "No_Orden")
+                
+                // Lógica para dividir la Cédula y el Nombre
+                const nombreAfi = row['NOMBRE AFI'] || '';
+                const cedulaMatch = nombreAfi.match(/^([\d\.]+)\s/); // Busca números (y puntos) al inicio
+                let cedula = '';
+                let nombre = '';
+
+                if (cedulaMatch && cedulaMatch[1]) {
+                  cedula = cedulaMatch[1]; // El número (ej. "1088334764")
+                  nombre = nombreAfi.replace(cedulaMatch[0], '').trim(); // El resto (ej. "LAURA LILIANA...")
+                } else {
+                  // Si no encuentra número, pasa el dato tal cual
+                  cedula = 'ErrorVerificar';
+                  nombre = nombreAfi; 
+                }
+
                 const newRow = {
                   // Mapeo 1:1 de los nuevos datos a la estructura interna
                   Fecha_Neg: row['FECHA NEGA'] || '',
                   No_Orden: row['NÚMERO OR'] || '',
-                  No_Cedula: row['TIPO IDENTIFICAC'] || '',
-                  Nombre: capitalizeWords(row['NOMBRE AFI'] || ''),
+                  No_Cedula: cedula, // <-- DATO CORREGIDO
+                  Nombre: capitalizeWords(nombre), // <-- DATO CORREGIDO
+                  Tipo_Identificacion: row['TIPO IDENTIFICAC'] || '', // Se guarda por si acaso
                   Motivo_Negacion: row['MOTIVO NEG'] || '',
                   Programa: row.PROGRAMA || '',
                   Plan: row.PLAN || '',
@@ -1158,7 +1180,7 @@
               `${processedData.length} filas procesadas desde los datos del Portal.`,
               'success'
             );
-          }, [state.portalData]); // Depende de portalData
+          }, [state.portalData]);
 
           const mergePdfData = useCallback(() => {
             const pdfMap = new Map();
@@ -1181,7 +1203,6 @@
             showNotification(`Datos del PDF combinados en el Área de Revisión.`, 'success');
           }, [state.pdfData, state.finalData]);
 
-          // --- CORRECCIÓN 2: Lógica de actualización de filas ---
           const updateFinalDataRow = (noOrden, partialUpdate) => {
             setState(prev => {
               const newData = prev.finalData.map(row => {
@@ -1201,18 +1222,12 @@
             }
           };
 
-          // --- CORRECCIÓN 3 y 4: Lógica de "Enviar a Seguimiento" ---
           const handleSendToTracking = (selectedOrderNumbers) => {
             const itemsToSend = state.finalData.filter(row => selectedOrderNumbers.includes(row.No_Orden))
               .filter((row) => {
                 const template = state.templates.find((t) => t.id === row.Tipo_Carta);
                 const isComplementariedad = template && template.name.toUpperCase().includes('COMPLEMENTARIEDAD');
                 const hasRadicado = row.Radicado_Comp && row.Radicado_Comp.trim() !== '';
-                
-                // Lógica de depuración
-                if (isComplementariedad && !hasRadicado) {
-                  console.warn(`Caso ${row.No_Orden} es Complementariedad pero le falta Radicado.`);
-                }
                 
                 return isComplementariedad && hasRadicado;
               });
@@ -1221,7 +1236,7 @@
               showNotification(
                 "No hay ítems para enviar. Asegúrate de que: 1) Sean 'COMPLEMENTARIEDAD', y 2) Tengan un 'Radicado' escrito.",
                 'warning',
-                8000 // Notificación más larga
+                8000
               );
               return;
             }
@@ -1239,7 +1254,7 @@
                     updatedCount++;
                   }
               } else {
-                  // Se envían los datos correctos (incluyendo No_Cedula)
+                  // Ahora 'item.No_Cedula' y 'item.Nombre' son correctos gracias al nuevo processPortalData
                   newTrackingData.push({
                       Fecha_Ing: item.Fecha_Neg,
                       No_Orden: item.No_Orden,
@@ -1248,7 +1263,7 @@
                       EPS: item.EPS,
                       Radicado: item.Radicado_Comp,
                       Estado: 'Pendiente',
-                      Notas: '',
+                      Notas: '', // 'Notas' ya no se muestra, pero se mantiene internamente
                   });
                   addedCount++;
               }
@@ -1261,17 +1276,17 @@
               ...prev,
               trackingData: newTrackingData,
               finalData: newFinalData,
+              editsCount: prev.editsCount + addedCount + updatedCount
             }));
             showNotification(`${addedCount} nuevos ítems enviados, ${updatedCount} ítems actualizados en seguimiento.`, 'success');
           };
           
-          // --- CORRECCIÓN 5: Verificación de Exportaciones ---
           const exportForMailMerge = (data) => {
                if (!data || data.length === 0) {
                    showNotification("No hay datos en revisión para exportar.", "warning");
                    return;
                }
-               // Los datos internos (ej. row.No_Cedula) ahora son correctos
+               // Los datos ahora son correctos
                const dataToExport = data.map(row => ({
                    "Fecha": row.Fecha_Neg,
                    "Orden": row.No_Orden,
@@ -1299,7 +1314,7 @@
               showNotification("No hay datos de seguimiento (activos o archivados) para exportar.", "warning");
               return;
             }
-            // Los datos internos (ej. row.No_Cedula) ahora son correctos
+            // Los datos ahora son correctos
             const formattedData = dataToExport.map(row => ({
               "Fecha_Neg": row.Fecha_Ing,
               "No_Orden": row.No_Orden,
