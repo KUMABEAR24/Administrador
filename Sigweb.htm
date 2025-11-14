@@ -1,15 +1,11 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GESTION NEGACIONES EJE CAFETERO</title>
-    <!-- Tailwind CSS JIT CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- SheetJS for Excel Exports -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- Babel Standalone for in-browser JSX transpilation -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
     <script>
@@ -48,7 +44,6 @@
       }
     </script>
     
-    <!-- ES Module Import Map for React -->
     <script type="importmap">
     {
       "imports": {
@@ -61,11 +56,6 @@
 <body class="bg-background text-text-primary">
     <div id="root"></div>
 
-    <!-- 
-      ============================================
-      ENTIRE REACT APPLICATION BUNDLED BELOW
-      ============================================
-    -->
     <script type="text/babel" data-presets="react" data-type="module">
         import React, { useState, useEffect, useCallback, useMemo } from 'react';
         import ReactDOM from 'react-dom/client';
@@ -73,11 +63,14 @@
         // =================================================================================
         // INLINED: constants.ts
         // =================================================================================
+        
+        // --- CORRECCIÓN 1: Cabeceras del Portal (Área 1) ---
+        // Tus 18 columnas, en el orden exacto.
         const PORTAL_HEADERS = [
-          "Fecha_Neg", "Sucursal", "No_Orden", "No_Cedula", "Nombre", 
-          "Motivo_Negacion", "Auditor", "Programa", "Plan", "Antiguedad", 
-          "EPS", "Telefono", "Celular", "Direccion", "Email", 
-          "Edad", "Tipo_Usuario", "Usuario_Emitio", "Regional", "Gestion_Negacion"
+          "Fecha_Asignacion", "EJECUTIVO", "FECHA NEGACIÓN", "REGIONAL", "NÚMERO ORDEN", 
+          "TIPO DOCUMENTO", "IDENTIFICACIÓN AFILIADO", "NOMBRE AFILIADO", "EDAD", 
+          "PROCEDIMIENTO", "MOTIVO NEGACIÓN", "PLAN", "PROGRAMA", "EPS", 
+          "Fecha_Ingreso", "EMAIL", "CELULAR", "ESTADO"
         ];
 
         const PDF_HEADERS = [
@@ -192,7 +185,6 @@
           try {
             const storedTemplates = localStorage.getItem(TEMPLATE_STORAGE_KEY);
             if (storedTemplates) {
-              // Basic validation to prevent loading corrupted data
               const parsed = JSON.parse(storedTemplates);
               if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].id && parsed[0].name) {
                 return parsed;
@@ -296,18 +288,18 @@
                   Gestionar Plantillas
                 </button>
                 <button onClick={onReconfigure} className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0L8.21 5.15a1.5 1.5 0 01-1.25.82l-2.09.28c-1.68.23-2.34 2.26-1.09 3.42l1.52 1.48a1.5 1.5 0 01-.42 2.1l-1.83 1.25c-1.38.94-.92 3.01.7 3.42l2.05.51a1.5 1.5 0 011.1.98l.8 2.07c.43 1.12 2.29 1.12 2.72 0l.8-2.07a1.5 1.5 0 011.1-.98l2.05-.51c1.62-.4 2.08-2.48.7-3.42l-1.83-1.25a1.5 1.5 0 01-.42-2.1l1.52-1.48c1.25-1.16.59-3.19-1.09-3.42L13 5.97a1.5 1.5 0 01-1.25-.82l-.3-1.98zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
-                    </svg>
-                    Reconfigurar Conexión
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0L8.21 5.15a1.5 1.5 0 01-1.25.82l-2.09.28c-1.68.23-2.34 2.26-1.09 3.42l1.52 1.48a1.5 1.5 0 01-.42 2.1l-1.83 1.25c-1.38.94-.92 3.01.7 3.42l2.05.51a1.5 1.5 0 011.1.98l.8 2.07c.43 1.12 2.29 1.12 2.72 0l.8-2.07a1.5 1.5 0 011.1-.98l2.05-.51c1.62-.4 2.08-2.48.7-3.42l-1.83-1.25a1.5 1.5 0 01-.42-2.1l1.52-1.48c1.25-1.16.59-3.19-1.09-3.42L13 5.97a1.5 1.5 0 01-1.25-.82l-.3-1.98zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+                  </svg>
+                  Reconfigurar Conexión
                 </button>
                 <button onClick={onSave} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M5.5 16.5a2.5 2.5 0 01-5 0V4.414a1.5 1.5 0 01.44-1.06L4.354.439A1.5 1.5 0 015.414 0H12.5a2.5 2.5 0 012.5 2.5v2" />
-                        <path d="M5.5 16.5h8a2.5 2.5 0 002.5-2.5V8.5h-13v5.5a2.5 2.5 0 002.5 2.5z" />
-                        <path d="M10.5 10a.5.5 0 01.5-.5h2a.5.5 0 010 1h-2a.5.5 0 01-.5-.5z" />
-                    </svg>
-                    Guardar en la Nube
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M5.5 16.5a2.5 2.5 0 01-5 0V4.414a1.5 1.5 0 01.44-1.06L4.354.439A1.5 1.5 0 015.414 0H12.5a2.5 2.5 0 012.5 2.5v2" />
+                      <path d="M5.5 16.5h8a2.5 2.5 0 002.5-2.5V8.5h-13v5.5a2.5 2.5 0 002.5 2.5z" />
+                      <path d="M10.5 10a.5.5 0 01.5-.5h2a.5.5 0 010 1h-2a.5.5 0 01-.5-.5z" />
+                  </svg>
+                  Guardar en la Nube
                 </button>
               </div>
             </header>
@@ -430,6 +422,7 @@
         // =================================================================================
         // INLINED: components/ReviewArea.tsx
         // =================================================================================
+        // Columnas de Área 3 (como en la versión anterior)
         const ReviewArea = ({
           data,
           templates,
@@ -445,14 +438,15 @@
           const [selectedRows, setSelectedRows] = useState(new Set());
           const [filter, setFilter] = useState('');
           
+          // Columnas exactas solicitadas por el usuario
           const REVIEW_HEADERS = [
-              { key: 'Fecha_Neg', label: 'Fecha Neg.' },
-              { key: 'No_Orden', label: 'No. Orden' },
-              { key: 'No_Cedula', label: 'No. Cédula' },
-              { key: 'Nombre', label: 'Nombre' },
+              { key: 'Fecha_Neg', label: 'Fecha de Negación' },
+              { key: 'No_Orden', label: 'Número de Orden' },
+              { key: 'No_Cedula', label: 'Número de Cédula' },
+              { key: 'Nombre', label: 'Nombre Afiliado' },
               { key: 'EPS', label: 'EPS' },
               { key: 'Programa', label: 'Programa', compact: true },
-              { key: 'Motivo_Negacion', label: 'Motivo Neg.', compact: true },
+              { key: 'Motivo_Negacion', label: 'Motivo Neg', compact: true },
               { key: 'Descripcion_PDF', label: 'Descripción', compact: true },
               { key: 'Justificacion_PDF', label: 'Justificación', compact: true },
               { key: 'Fundamento_Legal_PDF', label: 'Fund. Legal', compact: true },
@@ -502,6 +496,7 @@
                 changes.Radicado_Comp = '';
             }
             updateRow(noOrden, changes);
+            incrementEdits();
           };
 
           const requestSort = (key) => {
@@ -537,26 +532,29 @@
                     <tr>
                       <th className="px-4 py-3"><input type="checkbox" onChange={handleSelectAll} checked={selectedRows.size === filteredData.length && filteredData.length > 0} /></th>
                       <th className="px-4 py-3">👁️</th>
-                       {REVIEW_HEADERS.map(({ key, label, compact }) => (
-                        <th key={key} onClick={() => requestSort(key)} className={`px-4 py-3 cursor-pointer ${compact ? 'max-w-[150px]' : ''}`}>
-                            {label}{getSortIndicator(key)}
-                        </th>
-                      ))}
+                        {REVIEW_HEADERS.map(({ key, label, compact }) => (
+                          <th key={key} onClick={() => requestSort(key)} className={`px-4 py-3 cursor-pointer ${compact ? 'max-w-[150px]' : ''}`}>
+                              {label}{getSortIndicator(key)}
+                          </th>
+                        ))}
                       <th className="px-4 py-3">Tipo de Carta</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredData.map((row) => {
+                    {filteredData.map((row, rowIndex) => {
                       const template = templates.find(t => t.id === row.Tipo_Carta);
                       const isComplementariedad = template && template.name.toUpperCase().includes('COMPLEMENTARIEDAD');
                       const requiresRadicado = isComplementariedad;
                       
+                      const rowKey = `${row.No_Orden || 'new'}-${rowIndex}`;
+
                       return (
-                        <tr key={row.No_Orden} className={`border-b border-border-color hover:bg-highlight ${isComplementariedad ? 'bg-indigo-900/50' : ''}`}>
+                        <tr key={rowKey} className={`border-b border-border-color hover:bg-highlight ${isComplementariedad ? 'bg-indigo-900/50' : ''}`}>
                           <td className="px-4 py-2"><input type="checkbox" checked={selectedRows.has(row.No_Orden)} onChange={() => handleSelectRow(row.No_Orden)} /></td>
                           <td className="px-4 py-2 text-lg cursor-pointer" onClick={() => onPreview(row)}>👁️</td>
+                          
                           {REVIEW_HEADERS.map(({ key, compact }) => (
-                            <td key={key} 
+                            <td key={`${rowKey}-${key}`}
                                 className={`px-4 py-2 border-r border-border-color focus:bg-primary focus:text-black outline-none ${compact ? 'max-w-[150px] overflow-hidden text-ellipsis whitespace-nowrap' : ''}`}
                                 contentEditable
                                 onBlur={(e) => handleCellBlur(row.No_Orden, key, e.currentTarget.innerText)}
@@ -565,6 +563,7 @@
                                 {row[key]}
                             </td>
                           ))}
+
                           <td className="px-4 py-2">
                             <div className="flex flex-col gap-1">
                               <select 
@@ -580,7 +579,10 @@
                                   type="text"
                                   placeholder="Radicado..."
                                   value={row.Radicado_Comp || ''}
-                                  onChange={(e) => updateRow(row.No_Orden, { Radicado_Comp: e.target.value })}
+                                  onChange={(e) => {
+                                      updateRow(row.No_Orden, { Radicado_Comp: e.target.value });
+                                      incrementEdits();
+                                  }}
                                   className="bg-surface border border-border-color rounded-md px-2 py-1 text-text-primary w-full mt-1"
                                 />
                               )}
@@ -620,6 +622,7 @@
         // =================================================================================
         // INLINED: components/TrackingArea.tsx
         // =================================================================================
+        // Columnas de Área 4 (como en la versión anterior)
         const TrackingTable = ({ data, isArchived, onUpdate, onArchive, filter }) => {
             
           const [selectedRows, setSelectedRows] = useState(new Set());
@@ -668,27 +671,27 @@
           return (
             <div className="space-y-4">
               <div className="flex justify-end">
-                 {selectedRows.size > 0 && (
-                     <button
-                        onClick={handleBulkArchive}
-                        className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors"
-                     >
-                        {isArchived ? `Restaurar ${selectedRows.size} Seleccionados` : `Archivar ${selectedRows.size} Seleccionados`}
-                     </button>
-                 )}
+                   {selectedRows.size > 0 && (
+                       <button
+                           onClick={handleBulkArchive}
+                           className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                       >
+                           {isArchived ? `Restaurar ${selectedRows.size} Seleccionados` : `Archivar ${selectedRows.size} Seleccionados`}
+                       </button>
+                   )}
               </div>
               <div className="table-container max-h-[400px] overflow-auto border border-border-color rounded-lg">
                 <table className="w-full text-sm text-left text-text-secondary">
                   <thead className="text-xs text-text-primary uppercase bg-header sticky top-0">
                     <tr>
                       <th className="px-4 py-3"><input type="checkbox" onChange={handleSelectAll} checked={selectedRows.size === filteredData.length && filteredData.length > 0}/></th>
-                      <th className="px-4 py-3">Fecha Ing.</th>
-                      <th className="px-4 py-3">No. Orden</th>
+                      <th className="px-4 py-3">Fecha_Neg</th>
+                      <th className="px-4 py-3">No_Orden</th>
+                      <th className="px-4 py-3">No_Cedula</th>
                       <th className="px-4 py-3">Nombre</th>
                       <th className="px-4 py-3">EPS</th>
                       <th className="px-4 py-3">Radicado</th>
                       <th className="px-4 py-3">Estado</th>
-                      <th className="px-4 py-3">Notas</th>
                       <th className="px-4 py-3">Acción</th>
                     </tr>
                   </thead>
@@ -696,25 +699,25 @@
                     {filteredData.map((row, index) => {
                       const originalIndex = data.indexOf(row);
                       return (
-                      <tr key={originalIndex} className={`border-b border-border-color hover:bg-highlight transition-colors ${isArchived ? 'bg-archive/50 text-text-secondary' : statusClasses[row.Estado] || ''}`}>
-                        <td className="px-4 py-2"><input type="checkbox" checked={selectedRows.has(originalIndex)} onChange={() => handleSelectRow(originalIndex)} /></td>
-                        <td className="px-4 py-2">{row.Fecha_Ing}</td>
-                        <td className="px-4 py-2">{row.No_Orden}</td>
-                        <td className="px-4 py-2">{row.Nombre}</td>
-                        <td className="px-4 py-2">{row.EPS}</td>
-                        <td className="px-4 py-2">{row.Radicado}</td>
-                        <td className="px-4 py-2">
-                          <select
-                            value={row.Estado}
-                            onChange={e => onUpdate(originalIndex, { ...row, Estado: e.target.value })}
-                            className="bg-surface border border-border-color rounded-md px-2 py-1 text-text-primary"
-                          >
-                            {TRACKING_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
-                          </select>
-                        </td>
-                        <td className="px-4 py-2 outline-none focus:bg-primary focus:text-black" contentEditable onBlur={e => onUpdate(originalIndex, { ...row, Notas: e.currentTarget.innerText })} suppressContentEditableWarning={true}>{row.Notas}</td>
-                        <td className="px-4 py-2 text-lg cursor-pointer" onClick={() => onArchive([originalIndex])}>{isArchived ? '♻️' : '🗄️'}</td>
-                      </tr>
+                        <tr key={originalIndex} className={`border-b border-border-color hover:bg-highlight transition-colors ${isArchived ? 'bg-archive/50 text-text-secondary' : statusClasses[row.Estado] || ''}`}>
+                          <td className="px-4 py-2"><input type="checkbox" checked={selectedRows.has(originalIndex)} onChange={() => handleSelectRow(originalIndex)} /></td>
+                          <td className="px-4 py-2">{row.Fecha_Ing}</td>
+                          <td className="px-4 py-2">{row.No_Orden}</td>
+                          <td className="px-4 py-2">{row.No_Cedula}</td>
+                          <td className="px-4 py-2">{row.Nombre}</td>
+                          <td className="px-4 py-2">{row.EPS}</td>
+                          <td className="px-4 py-2">{row.Radicado}</td>
+                          <td className="px-4 py-2">
+                            <select
+                              value={row.Estado}
+                              onChange={e => onUpdate(originalIndex, { ...row, Estado: e.target.value })}
+                              className="bg-surface border border-border-color rounded-md px-2 py-1 text-text-primary"
+                            >
+                              {TRACKING_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                          </td>
+                          <td className="px-4 py-2 text-lg cursor-pointer" onClick={() => onArchive([originalIndex])}>{isArchived ? '♻️' : '🗄️'}</td>
+                        </tr>
                       );
                     })}
                   </tbody>
@@ -724,7 +727,7 @@
           );
         };
 
-        const TrackingArea = ({ trackingData, archivedData, updateTrackingData, archiveItems }) => {
+        const TrackingArea = ({ trackingData, archivedData, updateTrackingData, archiveItems, onExportComplementariedades }) => {
           const [showArchived, setShowArchived] = useState(false);
           const [filter, setFilter] = useState('');
 
@@ -741,6 +744,12 @@
                 />
                 <button onClick={() => setShowArchived(!showArchived)} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg">
                   {showArchived ? 'Ocultar' : 'Mostrar'} Archivados ({archivedData.length})
+                </button>
+                <button 
+                  onClick={onExportComplementariedades} 
+                  className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                >
+                  Exportar Complementariedades
                 </button>
               </div>
 
@@ -778,8 +787,8 @@
 
           const handleSave = async () => {
             if (!url.startsWith('https://script.google.com/macros/s/')) {
-                alert("Por favor, introduce una URL válida de Google Apps Script.");
-                return;
+              alert("Por favor, introduce una URL válida de Google Apps Script.");
+              return;
             }
             setIsVerifying(true);
             await onSave(url);
@@ -790,38 +799,38 @@
             <div className="fixed inset-0 bg-background bg-opacity-90 flex justify-center items-center z-50 p-4">
               <div className="bg-surface rounded-lg shadow-xl w-full max-w-lg border border-border-color p-8 space-y-6">
                 <div className="text-center">
-                    <h2 className="text-2xl font-bold text-primary">Configuración de Conexión</h2>
-                    <p className="text-text-secondary mt-2">
-                        Proporciona la URL de Google Apps Script para conectar a tu base de datos.
-                    </p>
+                  <h2 className="text-2xl font-bold text-primary">Configuración de Conexión</h2>
+                  <p className="text-text-secondary mt-2">
+                      Proporciona la URL de Google Apps Script para conectar a tu base de datos.
+                  </p>
                 </div>
                 <div>
-                    <label htmlFor="script-url" className="block text-sm font-medium text-text-primary mb-1">
-                        URL del Script
-                    </label>
-                    <input
-                        id="script-url"
-                        type="url"
-                        value={url}
-                        onChange={(e) => setUrl(e.target.value)}
-                        placeholder="https://script.google.com/macros/s/..."
-                        className="w-full bg-background border border-border-color rounded-md px-3 py-2 text-text-primary placeholder-text-secondary focus:ring-primary focus:border-primary"
-                    />
+                  <label htmlFor="script-url" className="block text-sm font-medium text-text-primary mb-1">
+                      URL del Script
+                  </label>
+                  <input
+                    id="script-url"
+                    type="url"
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    placeholder="https://script.google.com/macros/s/..."
+                    className="w-full bg-background border border-border-color rounded-md px-3 py-2 text-text-primary placeholder-text-secondary focus:ring-primary focus:border-primary"
+                  />
                 </div>
                 <div className="flex justify-end gap-4">
-                    <button
-                        onClick={onClose}
-                        className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        onClick={handleSave}
-                        disabled={isVerifying || !url}
-                        className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
-                    >
-                        {isVerifying ? 'Verificando...' : 'Guardar y Verificar'}
-                    </button>
+                  <button
+                    onClick={onClose}
+                    className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    disabled={isVerifying || !url}
+                    className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
+                  >
+                    {isVerifying ? 'Verificando...' : 'Guardar y Verificar'}
+                  </button>
                 </div>
               </div>
             </div>
@@ -898,7 +907,7 @@
                       <h4 className="text-lg font-semibold mb-2">{editingTemplate ? 'Editar Plantilla' : 'Crear Nueva Plantilla'}</h4>
                       {editingTemplate ? (
                         <div className="space-y-4 p-4 border border-border-color rounded-lg bg-highlight">
-                           <input
+                            <input
                             type="text"
                             placeholder="Nombre de la Plantilla"
                             value={editingTemplate.name || ''}
@@ -911,7 +920,7 @@
                             onChange={(e) => setEditingTemplate({ ...editingTemplate, body: e.target.value })}
                             className="w-full bg-background border border-border-color rounded-md px-3 py-2 h-40 resize-y"
                           />
-                           <p className="text-xs text-text-secondary">Marcadores: {`{{Nombre}}`}, {`{{No_Orden}}`}, etc.</p>
+                            <p className="text-xs text-text-secondary">Marcadores: {`{{Nombre}}`}, {`{{No_Orden}}`}, etc.</p>
                           <div className="flex gap-2">
                             <button onClick={handleSaveTemplateEdit} className="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm">Guardar Cambios</button>
                             <button onClick={() => setEditingTemplate(null)} className="bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm">Cancelar</button>
@@ -1086,15 +1095,13 @@
             }
             setState((prev) => ({ ...prev, isSaving: true }));
             try {
-              // El backend ahora tiene una protección para no borrar la hoja de 'Revisión'
-              // si se envía un array vacío, así que es seguro enviar el estado actual.
               await saveData(state.scriptUrl, {
                 finalData: state.finalData,
                 trackingData: state.trackingData,
                 archivedData: state.archivedData,
               });
               showNotification('¡Datos sincronizados con la nube con éxito!', 'success');
-              setState((prev) => ({ ...prev, editsCount: 0 })); // Reset edits on successful save
+              setState((prev) => ({ ...prev, editsCount: 0 }));
             } catch (error) {
               console.error(error);
               showNotification('Falló el guardado de datos. Por favor, inténtalo de nuevo.', 'error');
@@ -1103,36 +1110,54 @@
             }
           };
 
+          // --- CORRECCIÓN 1 Y 2: Lógica de procesamiento de datos (Área 1) ---
           const processPortalData = useCallback(() => {
             const processedData = state.portalData
-              .filter((row) => row.No_Orden && String(row.No_Orden).trim())
-              .map((row) => ({
-                Fecha_Neg: row.Fecha_Neg || '',
-                Sucursal: row.Sucursal || '',
-                No_Orden: row.No_Orden || '',
-                No_Cedula: row.No_Cedula || '',
-                Nombre: capitalizeWords(row.Nombre || ''),
-                Motivo_Negacion: row.Motivo_Negacion || '',
-                Auditor: row.Auditor || '',
-                Programa: row.Programa || '',
-                Plan: row.Plan || '',
-                Antiguedad: row.Antiguedad || '',
-                EPS: (row.EPS || '').toUpperCase(),
-                Telefono: row.Telefono || '',
-                Celular: row.Celular || '',
-                Direccion: row.Direccion || '',
-                Email: row.Email || '',
-                Edad: row.Edad || '',
-                Tipo_Usuario: row.Tipo_Usuario || '',
-                Usuario_Emitio: row.Usuario_Emitio || '',
-                Regional: row.Regional || '',
-                Gestion_Negacion: row.Gestion_Negacion || '',
-                Descripcion_PDF: '(pendiente)',
-                Justificacion_PDF: '(pendiente)',
-                Fundamento_Legal_PDF: '(pendiente)',
-                Tipo_Carta: '',
-                Radicado_Comp: '',
-              }));
+              // 1. Filtra filas vacías Y la fila de header
+              .filter((row) => {
+                const numOrden = String(row['NÚMERO ORDEN'] || '').trim();
+                if (numOrden === '') return false; // Elimina vacías
+                if (numOrden.toUpperCase() === 'NÚMERO ORDEN') return false; // Elimina header
+                return true;
+              })
+              .map((row) => {
+                
+                // 2. Mapeo directo de las 18 columnas a la estructura interna
+                const newRow = {
+                  Fecha_Neg: row['FECHA NEGACIÓN'] || '',
+                  No_Orden: row['NÚMERO ORDEN'] || '',
+                  No_Cedula: row['IDENTIFICACIÓN AFILIADO'] || '', // <-- Corregido
+                  Nombre: capitalizeWords(row['NOMBRE AFILIADO'] || ''), // <-- Corregido
+                  Tipo_Identificacion: row['TIPO DOCUMENTO'] || '',
+                  Motivo_Negacion: row['MOTIVO NEGACIÓN'] || '',
+                  Programa: row.PROGRAMA || '',
+                  Plan: row.PLAN || '',
+                  EPS: (row.EPS || '').toUpperCase(),
+                  Email: row.EMAIL || '',
+                  Celular: row.CELULAR || '',
+                  Edad: row.EDAD || '',
+                  Regional: row.REGIONAL || '',
+                  
+                  // Campos extra que se guardan
+                  Fecha_Asignacion: row.Fecha_Asignacion || '',
+                  EJECUTIVO: row.EJECUTIVO || '',
+                  PROCEDIMIE: row.PROCEDIMIENTO || '',
+                  Fecha_Ingres: row.Fecha_Ingreso || '',
+                  ESTADO_PORTAL: row.ESTADO || '',
+
+                  // Campos viejos que ya no vienen (se inicializan vacíos)
+                  Sucursal: '', Auditor: '', Antiguedad: '', Telefono: '',
+                  Direccion: '', Tipo_Usuario: '', Usuario_Emitio: '', Gestion_Negacion: '',
+                  
+                  // Campos por defecto para el Área 3
+                  Descripcion_PDF: '(pendiente)',
+                  Justificacion_PDF: '(pendiente)',
+                  Fundamento_Legal_PDF: '(pendiente)',
+                  Tipo_Carta: '',
+                  Radicado_Comp: '',
+                };
+                return newRow;
+              });
 
             setState((prev) => ({ ...prev, finalData: processedData }));
             showNotification(
@@ -1163,10 +1188,15 @@
           }, [state.pdfData, state.finalData]);
 
           const updateFinalDataRow = (noOrden, partialUpdate) => {
-            const newData = state.finalData.map(row => 
-                row.No_Orden === noOrden ? { ...row, ...partialUpdate } : row
-            );
-            setState((prev) => ({ ...prev, finalData: newData }));
+            setState(prev => {
+              const newData = prev.finalData.map(row => {
+                if (row.No_Orden === noOrden) {
+                  return { ...row, ...partialUpdate };
+                }
+                return row;
+              });
+              return { ...prev, finalData: newData };
+            });
           };
           
           const handleClearReviewData = () => {
@@ -1180,18 +1210,17 @@
             const itemsToSend = state.finalData.filter(row => selectedOrderNumbers.includes(row.No_Orden))
               .filter((row) => {
                 const template = state.templates.find((t) => t.id === row.Tipo_Carta);
-                return (
-                  template &&
-                  template.name.toUpperCase().includes('COMPLEMENTARIEDAD') &&
-                  row.Radicado_Comp &&
-                  row.Radicado_Comp.trim() !== ''
-                );
+                const isComplementariedad = template && template.name.toUpperCase().includes('COMPLEMENTARIEDAD');
+                const hasRadicado = row.Radicado_Comp && row.Radicado_Comp.trim() !== '';
+                
+                return isComplementariedad && hasRadicado;
               });
 
             if (itemsToSend.length === 0) {
               showNotification(
-                "No hay ítems para enviar. Asegúrate de que sean del tipo 'COMPLEMENTARIEDAD' y tengan un 'Radicado'.",
-                'warning'
+                "No hay ítems para enviar. Asegúrate de que: 1) Sean 'COMPLEMENTARIEDAD', y 2) Tengan un 'Radicado' escrito.",
+                'warning',
+                8000
               );
               return;
             }
@@ -1204,19 +1233,21 @@
             itemsToSend.forEach((item) => {
               const existingIndex = newTrackingData.findIndex((t) => t.No_Orden === item.No_Orden);
               if (existingIndex !== -1) {
-                 if(window.confirm(`El caso ${item.No_Orden} ya está en seguimiento. ¿Quieres actualizarlo?`)) {
+                  if(window.confirm(`El caso ${item.No_Orden} ya está en seguimiento. ¿Quieres actualizarlo?`)) {
                     newTrackingData[existingIndex].Radicado = item.Radicado_Comp;
                     updatedCount++;
-                 }
+                  }
               } else {
+                  // Los datos (item.No_Cedula) ya son correctos
                   newTrackingData.push({
                       Fecha_Ing: item.Fecha_Neg,
                       No_Orden: item.No_Orden,
+                      No_Cedula: item.No_Cedula,
                       Nombre: item.Nombre,
                       EPS: item.EPS,
                       Radicado: item.Radicado_Comp,
                       Estado: 'Pendiente',
-                      Notas: '',
+                      Notas: '', 
                   });
                   addedCount++;
               }
@@ -1225,39 +1256,62 @@
             const itemsSentOrderNumbers = itemsToSend.map(i => i.No_Orden);
             newFinalData = newFinalData.filter(f => !itemsSentOrderNumbers.includes(f.No_Orden));
 
-
             setState((prev) => ({
               ...prev,
               trackingData: newTrackingData,
               finalData: newFinalData,
+              editsCount: prev.editsCount + addedCount + updatedCount
             }));
             showNotification(`${addedCount} nuevos ítems enviados, ${updatedCount} ítems actualizados en seguimiento.`, 'success');
           };
           
           const exportForMailMerge = (data) => {
-              if (!data || data.length === 0) {
-                  showNotification("No hay datos en revisión para exportar.", "warning");
-                  return;
-              }
-              const dataToExport = data.map(row => ({
-                  "Fecha": row.Fecha_Neg, // Nombre de columna corregido para VBA
-                  "Orden": row.No_Orden,
-                  "Cedula": row.No_Cedula,
-                  "Nombre": row.Nombre,
-                  "EPS": row.EPS,
-                  "Programa": row.Programa,
-                  "Email": row.Email,
-                  "Motivo": row.Motivo_Negacion,
-                  "Desc": row.Descripcion_PDF,
-                  "Just": row.Justificacion_PDF,
-                  "Fund": row.Fundamento_Legal_PDF,
-                  "Carta": state.templates.find(t => t.id === row.Tipo_Carta)?.name || "NO_SELECCIONADA",
-                  "Radicado": row.Radicado_Comp
-              }));
-              const ws = XLSX.utils.json_to_sheet(dataToExport);
-              const wb = XLSX.utils.book_new();
-              XLSX.utils.book_append_sheet(wb, ws, "DatosParaEnvio");
-              XLSX.writeFile(wb, "Sigweb_Procesado.xlsx");
+               if (!data || data.length === 0) {
+                   showNotification("No hay datos en revisión para exportar.", "warning");
+                   return;
+               }
+               const dataToExport = data.map(row => ({
+                   "Fecha": row.Fecha_Neg,
+                   "Orden": row.No_Orden,
+                   "Cedula": row.No_Cedula,
+                   "Nombre": row.Nombre,
+                   "EPS": row.EPS,
+                   "Programa": row.Programa,
+                   "Email": row.Email,
+                   "Motivo": row.Motivo_Negacion,
+                   "Desc": row.Descripcion_PDF,
+                   "Just": row.Justificacion_PDF,
+                   "Fund": row.Fundamento_Legal_PDF,
+                   "Carta": state.templates.find(t => t.id === row.Tipo_Carta)?.name || "NO_SELECCIONADA",
+                   "Radicado": row.Radicado_Comp
+               }));
+               const ws = XLSX.utils.json_to_sheet(dataToExport);
+               const wb = XLSX.utils.book_new();
+               XLSX.utils.book_append_sheet(wb, ws, "DatosParaEnvio");
+               XLSX.writeFile(wb, "Sigweb_Procesado.xlsx");
+           };
+
+          const exportComplementaridadReport = () => {
+            const dataToExport = [...state.trackingData, ...state.archivedData];
+            if (dataToExport.length === 0) {
+              showNotification("No hay datos de seguimiento (activos o archivados) para exportar.", "warning");
+              return;
+            }
+            const formattedData = dataToExport.map(row => ({
+              "Fecha_Neg": row.Fecha_Ing,
+              "No_Orden": row.No_Orden,
+              "No_Cedula": row.No_Cedula,
+              "Nombre": row.Nombre,
+              "EPS": row.EPS,
+              "Radicado": row.Radicado,
+              "Estado": row.Estado
+            }));
+            
+            const ws = XLSX.utils.json_to_sheet(formattedData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Complementariedades");
+            XLSX.writeFile(wb, `Sigweb_Reporte_Complementariedades_${new Date().toISOString().slice(0, 10)}.xlsx`);
+            showNotification("Reporte de complementariedades generado.", "success");
           };
 
 
@@ -1265,7 +1319,7 @@
             const dataKey = isArchived ? 'archivedData' : 'trackingData';
             const currentData = [...state[dataKey]];
             currentData[index] = updatedRow;
-            setState((prev) => ({ ...prev, [dataKey]: currentData }));
+            setState((prev) => ({ ...prev, [dataKey]: currentData, editsCount: prev.editsCount + 1 }));
           };
 
           const archiveItems = (indices, fromArchived) => {
@@ -1276,6 +1330,7 @@
                 ...prev,
                 trackingData: [...prev.trackingData, ...itemsToMove],
                 archivedData: remainingArchived,
+                editsCount: prev.editsCount + itemsToMove.length
               }));
             } else { // Archive
               const itemsToMove = indices.map(i => state.trackingData[i]).filter(Boolean);
@@ -1284,6 +1339,7 @@
                 ...prev,
                 archivedData: [...prev.archivedData, ...itemsToMove],
                 trackingData: remainingTracking,
+                editsCount: prev.editsCount + itemsToMove.length
               }));
             }
           };
@@ -1336,12 +1392,13 @@
                 />
               )}
               {!state.onlineStatus && (
-                 <div className="bg-yellow-600 text-white text-center p-2 fixed top-0 left-0 w-full z-50">
-                   Actualmente estás desconectado. La sincronización de datos está en pausa.
-                 </div>
-              )}
+                   <div className="bg-yellow-600 text-white text-center p-2 fixed top-0 left-0 w-full z-50">
+                     Actualmente estás desconectado. La sincronización de datos está en pausa.
+                   </div>
+               )}
 
-              <main className="max-w-screen-2xl mx-auto bg-surface p-4 sm:p-6 rounded-xl border border-border-color space-y-8">
+              {/* Contenedor principal (más ancho) */}
+              <main className="mx-auto bg-surface p-4 sm:p-6 rounded-xl border border-border-color space-y-8">
                 <Header 
                     onSave={handleSave} 
                     onManageTemplates={() => setState(prev => ({ ...prev, isTemplateManagerOpen: true }))}
@@ -1354,12 +1411,12 @@
                   editsCount={state.editsCount}
                 />
                 <div className="text-right">
-                     <button
-                        onClick={() => exportDetailedReport(state.finalData, state.trackingData, state.archivedData)}
-                        className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
-                    >
-                        Descargar Reporte Detallado
-                    </button>
+                       <button
+                           onClick={() => exportDetailedReport(state.finalData, state.trackingData, state.archivedData)}
+                           className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                       >
+                           Descargar Reporte Detallado
+                       </button>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -1400,6 +1457,7 @@
                   archivedData={state.archivedData}
                   updateTrackingData={updateTrackingData}
                   archiveItems={archiveItems}
+                  onExportComplementariedades={exportComplementaridadReport}
                 />
                 
                 {state.isSaving && <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50"><Spinner /> <span className="ml-4 text-xl">Guardando Datos...</span></div>}
