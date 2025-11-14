@@ -64,7 +64,8 @@
         // INLINED: constants.ts
         // =================================================================================
         
-        // --- MODIFICACIÓN 1: Cabeceras del Portal actualizadas ---
+        // --- CORRECCIÓN 1: Cabeceras del Portal (Área 1) ---
+        // Deben coincidir EXACTAMENTE con las columnas que pegas
         const PORTAL_HEADERS = [
           "Fecha_Asignacion", "EJECUTIVO", "FECHA NEGA", "REGIONAL", "NÚMERO OR", 
           "TIPO IDENTIFICAC", "NOMBRE AFI", "EDAD", "PROCEDIMIE", "MOTIVO NEG", 
@@ -183,7 +184,6 @@
           try {
             const storedTemplates = localStorage.getItem(TEMPLATE_STORAGE_KEY);
             if (storedTemplates) {
-              // Basic validation to prevent loading corrupted data
               const parsed = JSON.parse(storedTemplates);
               if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].id && parsed[0].name) {
                 return parsed;
@@ -425,7 +425,7 @@
           data,
           templates,
           updateRow,
-          incrementEdits,
+          incrementEdits, // <-- CORRECCIÓN 2: Se corrigió el nombre de la prop
           onSendToTracking,
           onPreview,
           onExportForMailMerge,
@@ -482,7 +482,7 @@
             const originalRow = data.find(r => r.No_Orden === noOrden);
             if (originalRow && originalRow[key] !== value) {
               updateRow(noOrden, { [key]: value });
-              incrementEdits();
+              incrementEdits(); // <-- CORRECCIÓN 2: Ahora esta función existe
             }
           };
           
@@ -493,6 +493,7 @@
                 changes.Radicado_Comp = '';
             }
             updateRow(noOrden, changes);
+            incrementEdits(); // <-- También contamos esto como una edición
           };
 
           const requestSort = (key) => {
@@ -537,17 +538,18 @@
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredData.map((row) => {
+                    {/* --- CORRECCIÓN 2: Se añade 'rowIndex' a la 'key' para garantizar unicidad --- */}
+                    {filteredData.map((row, rowIndex) => {
                       const template = templates.find(t => t.id === row.Tipo_Carta);
                       const isComplementariedad = template && template.name.toUpperCase().includes('COMPLEMENTARIEDAD');
                       const requiresRadicado = isComplementariedad;
                       
                       return (
-                        <tr key={row.No_Orden} className={`border-b border-border-color hover:bg-highlight ${isComplementariedad ? 'bg-indigo-900/50' : ''}`}>
+                        <tr key={`${row.No_Orden}-${rowIndex}`} className={`border-b border-border-color hover:bg-highlight ${isComplementariedad ? 'bg-indigo-900/50' : ''}`}>
                           <td className="px-4 py-2"><input type="checkbox" checked={selectedRows.has(row.No_Orden)} onChange={() => handleSelectRow(row.No_Orden)} /></td>
                           <td className="px-4 py-2 text-lg cursor-pointer" onClick={() => onPreview(row)}>👁️</td>
                           {REVIEW_HEADERS.map(({ key, compact }) => (
-                            <td key={key} 
+                            <td key={`${row.No_Orden}-${key}`}
                                 className={`px-4 py-2 border-r border-border-color focus:bg-primary focus:text-black outline-none ${compact ? 'max-w-[150px] overflow-hidden text-ellipsis whitespace-nowrap' : ''}`}
                                 contentEditable
                                 onBlur={(e) => handleCellBlur(row.No_Orden, key, e.currentTarget.innerText)}
@@ -571,7 +573,10 @@
                                   type="text"
                                   placeholder="Radicado..."
                                   value={row.Radicado_Comp || ''}
-                                  onChange={(e) => updateRow(row.No_Orden, { Radicado_Comp: e.target.value })}
+                                  onChange={(e) => {
+                                      updateRow(row.No_Orden, { Radicado_Comp: e.target.value });
+                                      incrementEdits();
+                                  }}
                                   className="bg-surface border border-border-color rounded-md px-2 py-1 text-text-primary w-full mt-1"
                                 />
                               )}
@@ -715,7 +720,6 @@
           );
         };
 
-        // --- MODIFICACIÓN 4: Área de Seguimiento actualizada ---
         const TrackingArea = ({ trackingData, archivedData, updateTrackingData, archiveItems, onExportComplementariedades }) => {
           const [showArchived, setShowArchived] = useState(false);
           const [filter, setFilter] = useState('');
@@ -734,7 +738,6 @@
                 <button onClick={() => setShowArchived(!showArchived)} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg">
                   {showArchived ? 'Ocultar' : 'Mostrar'} Archivados ({archivedData.length})
                 </button>
-                {/* --- NUEVO BOTÓN AÑADIDO --- */}
                 <button 
                   onClick={onExportComplementariedades} 
                   className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
@@ -1085,8 +1088,6 @@
             }
             setState((prev) => ({ ...prev, isSaving: true }));
             try {
-              // El backend ahora tiene una protección para no borrar la hoja de 'Revisión'
-              // si se envía un array vacío, así que es seguro enviar el estado actual.
               await saveData(state.scriptUrl, {
                 finalData: state.finalData,
                 trackingData: state.trackingData,
@@ -1102,56 +1103,62 @@
             }
           };
 
-          // --- MODIFICACIÓN 1: Lógica de procesamiento actualizada ---
+          // --- CORRECCIÓN 1: Lógica de procesamiento de datos (Área 1) ---
           const processPortalData = useCallback(() => {
             const processedData = state.portalData
+              // 1. Filtra filas vacías basándose en la nueva columna "NÚMERO OR"
               .filter((row) => row['NÚMERO OR'] && String(row['NÚMERO OR']).trim())
-              .map((row) => ({
-                // Mapeo de campos nuevos a la estructura interna
-                Fecha_Neg: row['FECHA NEGA'] || '',
-                No_Orden: row['NÚMERO OR'] || '',
-                No_Cedula: row['TIPO IDENTIFICAC'] || '',
-                Nombre: capitalizeWords(row['NOMBRE AFI'] || ''),
-                Motivo_Negacion: row['MOTIVO NEG'] || '',
-                Programa: row.PROGRAMA || '',
-                Plan: row.PLAN || '',
-                EPS: (row.EPS || '').toUpperCase(),
-                Email: row.Email || '',
-                Celular: row.CELULAR || '',
-                Edad: row.EDAD || '',
-                Regional: row.REGIONAL || '',
-                
-                // Campos nuevos que se guardan pero no se usan activamente
-                Fecha_Asignacion: row.Fecha_Asignacion || '',
-                EJECUTIVO: row.EJECUTIVO || '',
-                PROCEDIMIE: row.PROCEDIMIE || '',
-                Fecha_Ingres: row.Fecha_Ingres || '',
-                ESTADO_PORTAL: row.ESTADO || '', // Renombrado para no chocar
+              .map((row) => {
+                // 2. Mapea las columnas del paste (ej. "NÚMERO OR")
+                //    a las columnas internas de la app (ej. "No_Orden")
+                const newRow = {
+                  // Mapeo 1:1 de los nuevos datos a la estructura interna
+                  Fecha_Neg: row['FECHA NEGA'] || '',
+                  No_Orden: row['NÚMERO OR'] || '',
+                  No_Cedula: row['TIPO IDENTIFICAC'] || '',
+                  Nombre: capitalizeWords(row['NOMBRE AFI'] || ''),
+                  Motivo_Negacion: row['MOTIVO NEG'] || '',
+                  Programa: row.PROGRAMA || '',
+                  Plan: row.PLAN || '',
+                  EPS: (row.EPS || '').toUpperCase(),
+                  Email: row.Email || '',
+                  Celular: row.CELULAR || '',
+                  Edad: row.EDAD || '',
+                  Regional: row.REGIONAL || '',
+                  
+                  // Nuevos campos que solo se guardan como referencia
+                  Fecha_Asignacion: row.Fecha_Asignacion || '',
+                  EJECUTIVO: row.EJECUTIVO || '',
+                  PROCEDIMIE: row.PROCEDIMIE || '',
+                  Fecha_Ingres: row.Fecha_Ingres || '',
+                  ESTADO_PORTAL: row.ESTADO || '',
 
-                // Campos viejos que ya no vienen (se inicializan vacíos)
-                Sucursal: '',
-                Auditor: '',
-                Antiguedad: '',
-                Telefono: '',
-                Direccion: '',
-                Tipo_Usuario: '',
-                Usuario_Emitio: '',
-                Gestion_Negacion: '',
-                
-                // Campos por defecto para Área 3
-                Descripcion_PDF: '(pendiente)',
-                Justificacion_PDF: '(pendiente)',
-                Fundamento_Legal_PDF: '(pendiente)',
-                Tipo_Carta: '',
-                Radicado_Comp: '',
-              }));
+                  // Campos viejos que ya no vienen (se inicializan vacíos)
+                  Sucursal: '',
+                  Auditor: '',
+                  Antiguedad: '',
+                  Telefono: '',
+                  Direccion: '',
+                  Tipo_Usuario: '',
+                  Usuario_Emitio: '',
+                  Gestion_Negacion: '',
+                  
+                  // Campos por defecto para el Área 3
+                  Descripcion_PDF: '(pendiente)',
+                  Justificacion_PDF: '(pendiente)',
+                  Fundamento_Legal_PDF: '(pendiente)',
+                  Tipo_Carta: '',
+                  Radicado_Comp: '',
+                };
+                return newRow;
+              });
 
             setState((prev) => ({ ...prev, finalData: processedData }));
             showNotification(
               `${processedData.length} filas procesadas desde los datos del Portal.`,
               'success'
             );
-          }, [state.portalData]);
+          }, [state.portalData]); // Depende de portalData
 
           const mergePdfData = useCallback(() => {
             const pdfMap = new Map();
@@ -1174,11 +1181,17 @@
             showNotification(`Datos del PDF combinados en el Área de Revisión.`, 'success');
           }, [state.pdfData, state.finalData]);
 
+          // --- CORRECCIÓN 2: Lógica de actualización de filas ---
           const updateFinalDataRow = (noOrden, partialUpdate) => {
-            const newData = state.finalData.map(row => 
-                row.No_Orden === noOrden ? { ...row, ...partialUpdate } : row
-            );
-            setState((prev) => ({ ...prev, finalData: newData }));
+            setState(prev => {
+              const newData = prev.finalData.map(row => {
+                if (row.No_Orden === noOrden) {
+                  return { ...row, ...partialUpdate };
+                }
+                return row;
+              });
+              return { ...prev, finalData: newData };
+            });
           };
           
           const handleClearReviewData = () => {
@@ -1188,23 +1201,27 @@
             }
           };
 
-          // --- MODIFICACIÓN 5: Se añade "No_Cedula" al enviar a seguimiento ---
+          // --- CORRECCIÓN 3 y 4: Lógica de "Enviar a Seguimiento" ---
           const handleSendToTracking = (selectedOrderNumbers) => {
             const itemsToSend = state.finalData.filter(row => selectedOrderNumbers.includes(row.No_Orden))
               .filter((row) => {
                 const template = state.templates.find((t) => t.id === row.Tipo_Carta);
-                return (
-                  template &&
-                  template.name.toUpperCase().includes('COMPLEMENTARIEDAD') &&
-                  row.Radicado_Comp &&
-                  row.Radicado_Comp.trim() !== ''
-                );
+                const isComplementariedad = template && template.name.toUpperCase().includes('COMPLEMENTARIEDAD');
+                const hasRadicado = row.Radicado_Comp && row.Radicado_Comp.trim() !== '';
+                
+                // Lógica de depuración
+                if (isComplementariedad && !hasRadicado) {
+                  console.warn(`Caso ${row.No_Orden} es Complementariedad pero le falta Radicado.`);
+                }
+                
+                return isComplementariedad && hasRadicado;
               });
 
             if (itemsToSend.length === 0) {
               showNotification(
-                "No hay ítems para enviar. Asegúrate de que sean del tipo 'COMPLEMENTARIEDAD' y tengan un 'Radicado'.",
-                'warning'
+                "No hay ítems para enviar. Asegúrate de que: 1) Sean 'COMPLEMENTARIEDAD', y 2) Tengan un 'Radicado' escrito.",
+                'warning',
+                8000 // Notificación más larga
               );
               return;
             }
@@ -1222,10 +1239,11 @@
                     updatedCount++;
                   }
               } else {
+                  // Se envían los datos correctos (incluyendo No_Cedula)
                   newTrackingData.push({
                       Fecha_Ing: item.Fecha_Neg,
                       No_Orden: item.No_Orden,
-                      No_Cedula: item.No_Cedula, // <-- AÑADIDO
+                      No_Cedula: item.No_Cedula,
                       Nombre: item.Nombre,
                       EPS: item.EPS,
                       Radicado: item.Radicado_Comp,
@@ -1239,7 +1257,6 @@
             const itemsSentOrderNumbers = itemsToSend.map(i => i.No_Orden);
             newFinalData = newFinalData.filter(f => !itemsSentOrderNumbers.includes(f.No_Orden));
 
-
             setState((prev) => ({
               ...prev,
               trackingData: newTrackingData,
@@ -1248,13 +1265,15 @@
             showNotification(`${addedCount} nuevos ítems enviados, ${updatedCount} ítems actualizados en seguimiento.`, 'success');
           };
           
+          // --- CORRECCIÓN 5: Verificación de Exportaciones ---
           const exportForMailMerge = (data) => {
                if (!data || data.length === 0) {
                    showNotification("No hay datos en revisión para exportar.", "warning");
                    return;
                }
+               // Los datos internos (ej. row.No_Cedula) ahora son correctos
                const dataToExport = data.map(row => ({
-                   "Fecha": row.Fecha_Neg, // Nombre de columna corregido para VBA
+                   "Fecha": row.Fecha_Neg,
                    "Orden": row.No_Orden,
                    "Cedula": row.No_Cedula,
                    "Nombre": row.Nombre,
@@ -1274,14 +1293,13 @@
                XLSX.writeFile(wb, "Sigweb_Procesado.xlsx");
            };
 
-          // --- MODIFICACIÓN 5: Nueva función de exportación ---
           const exportComplementaridadReport = () => {
             const dataToExport = [...state.trackingData, ...state.archivedData];
             if (dataToExport.length === 0) {
               showNotification("No hay datos de seguimiento (activos o archivados) para exportar.", "warning");
               return;
             }
-            // Formateo para que coincida con la imagen de columnas
+            // Los datos internos (ej. row.No_Cedula) ahora son correctos
             const formattedData = dataToExport.map(row => ({
               "Fecha_Neg": row.Fecha_Ing,
               "No_Orden": row.No_Orden,
@@ -1304,7 +1322,7 @@
             const dataKey = isArchived ? 'archivedData' : 'trackingData';
             const currentData = [...state[dataKey]];
             currentData[index] = updatedRow;
-            setState((prev) => ({ ...prev, [dataKey]: currentData }));
+            setState((prev) => ({ ...prev, [dataKey]: currentData, editsCount: prev.editsCount + 1 }));
           };
 
           const archiveItems = (indices, fromArchived) => {
@@ -1315,6 +1333,7 @@
                 ...prev,
                 trackingData: [...prev.trackingData, ...itemsToMove],
                 archivedData: remainingArchived,
+                editsCount: prev.editsCount + itemsToMove.length
               }));
             } else { // Archive
               const itemsToMove = indices.map(i => state.trackingData[i]).filter(Boolean);
@@ -1323,6 +1342,7 @@
                 ...prev,
                 archivedData: [...prev.archivedData, ...itemsToMove],
                 trackingData: remainingTracking,
+                editsCount: prev.editsCount + itemsToMove.length
               }));
             }
           };
@@ -1380,7 +1400,7 @@
                    </div>
                )}
 
-              {/* --- MODIFICACIÓN 3: Se quita 'max-w-screen-2xl' para hacerla más ancha --- */}
+              {/* Contenedor principal (más ancho) */}
               <main className="mx-auto bg-surface p-4 sm:p-6 rounded-xl border border-border-color space-y-8">
                 <Header 
                     onSave={handleSave} 
