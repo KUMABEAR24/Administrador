@@ -3,20 +3,13 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-    <meta http-equiv="Content-Security-Policy"
-          content="default-src 'self' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://unpkg.com https://esm.sh;
-                   script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://unpkg.com https://esm.sh;
-                   style-src 'self' 'unsafe-inline';
-                   connect-src 'self' https://script.google.com https://unpkg.com;"> {/* Añadido unpkg.com */}
-
     <title>GESTION NEGACIONES EJE CAFETERO</title>
-
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
+    
     <script>
+      // Tailwind CSS Configuration
       tailwind.config = {
         theme: {
           extend: {
@@ -39,17 +32,18 @@
             },
             animation: {
               'flash-success': 'flash-success 1s ease-out',
-               'fade-in-down': 'fade-in-down 0.5s ease-out forwards',
             },
             keyframes: {
-              'flash-success': { 'from': { backgroundColor: '#28a745' }, 'to': { backgroundColor: 'transparent' }, },
-               'fade-in-down': { '0%': { opacity: '0', transform: 'translateY(-10px)' }, '100%': { opacity: '1', transform: 'translateY(0)' }, },
+              'flash-success': {
+                'from': { backgroundColor: '#28a745' },
+                'to': { backgroundColor: 'transparent' },
+              }
             }
           }
         }
       }
     </script>
-
+    
     <script type="importmap">
     {
       "imports": {
@@ -59,28 +53,33 @@
     }
     </script>
 </head>
-
 <body class="bg-background text-text-primary">
     <div id="root"></div>
 
     <script type="text/babel" data-presets="react" data-type="module">
-        import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+        import React, { useState, useEffect, useCallback, useMemo } from 'react';
         import ReactDOM from 'react-dom/client';
 
         // =================================================================================
         // INLINED: constants.ts
         // =================================================================================
+        
+        // --- MODIFICACIÓN 1: Cabeceras del Portal actualizadas ---
         const PORTAL_HEADERS = [
-            "Fecha_Neg", "Sucursal", "No_Orden", "No_Cedula", "Nombre", "Entidad_Ejecutora",
-            "Motivo_Negacion", "Usuario_Emitio", "Auditor", "Observacion_Auditor", "Observacion_Ejecutivo",
-            "Programa", "Plan", "Antiguedad", "EPS", "Telefono", "Celular", "Direccion", "Email", "Edad",
-            "Tipo_Usuario", "Llamada", "Complementariedad", "Notificacion", "Gestion_Negacion", "Alternativa",
-            "Observacion_Alternativa", "Monto", "Nit_Prestador", "Fecha_Complementariedad", "Tiempo_de_Gestion", "Regional"
+          "Fecha_Asignacion", "EJECUTIVO", "FECHA NEGA", "REGIONAL", "NÚMERO OR", 
+          "TIPO IDENTIFICAC", "NOMBRE AFI", "EDAD", "PROCEDIMIE", "MOTIVO NEG", 
+          "PLAN", "PROGRAMA", "EPS", "Fecha_Ingres", "Email", "CELULAR", "ESTADO"
         ];
-        const PDF_HEADERS = ["Archivo (No. Orden)", "Descripción", "Justificación", "Fundamento Legal", "Código"];
+
+        const PDF_HEADERS = [
+          "Archivo (No. Orden)", "Descripción", "Justificación", "Fundamento Legal", "Código"
+        ];
+
         const TRACKING_STATUSES = ['Pendiente', 'En Gestión', 'Finalizado'];
+        
         const COMMON_EMAIL_BODY = `<br><br><b>Si tiene alguna duda puede contactarse por medio de los canales que tenemos disponibles para usted:</b><br>· Nuestra línea nacional 018000931666. O con nuestras líneas locales: Cali (602) 489 0073, Bogotá (601) 743 5485, Medellín (604) 604 4507, Barranquilla (605) 385 3165, Bucaramanga (607) 697 3350, Cartagena (605) 693 9853, Tuluá (602) 235 9483, Valledupar (605)588 5699, Pereira (606) 340 2635.<br>· WhatsApp: 317-224-07-94<br><br>Gracias por su Atención.`;
         const SIGNATURE = `<br><br>Cordialmente,<br><br><b>Juan Ricardo Morales Agudelo</b><br>Ejecutivo De Atención Integral<br>Coomeva Medicina Prepagada<br>Cra. 13 No.11-12 Centro Médico Circunvalar<br>Coomeva Medicina Prepagada Pereira, Risaralda<br><br><i>Este correo es generado automáticamente, por favor no responda este mensaje.</i>`;
+
         const defaultTemplates = [
             { id: 'tpl_neg_gen', name: 'PLANTILLA NEGACION GENERAL', body: `Apreciado usuario;<br><br>Agradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y la de su familia. Por medio de este correo queremos brindar información acerca del servicio {{Motivo_Negacion}} que en esta oportunidad no está aprobado debido a que corresponde a EXCLUSIÓN ({{Descripcion_PDF}}), ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).<br><br>El servicio negado anteriormente; debe tramitarlo a través su EPS asignada. Adjuntamos soporte de la carta de negación.` },
             { id: 'tpl_neg_pert', name: 'PLANTILLA NO PERTINENCIA Y TEMAS ESTETICOS', body: `Apreciado usuario;<br><br>Agradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y la de su familia. Por medio de este correo queremos brindar información acerca del servicio {{Motivo_Negacion}} que en esta oportunidad No está aprobado debido a que corresponde a NO PERTINENCIA ({{Descripcion_PDF}}), ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).<br><br>` },
@@ -106,7 +105,9 @@
               const cells = rowText.split('\t');
               const rowObject = {};
               headers.forEach((header, index) => {
-                 rowObject[header] = cells[index] ? cells[index].trim() : '';
+                if (cells[index]) {
+                  rowObject[header] = cells[index].trim();
+                }
               });
               return rowObject;
             });
@@ -115,47 +116,63 @@
         const replacePlaceholders = (templateBody, data) => {
           const getOficinaVirtual = (eps) => {
             const e = (eps || "").toUpperCase();
-            if (e.includes("NUEVA EPS")) return `<a href='https://portal.nuevaeps.com.co/Portal/home.jspx' target='_blank' rel='noopener noreferrer' style='color: #1a73e8; text-decoration: underline;'>NUEVA EPS</a>`;
-            if (e.includes("SALUD TOTAL")) return `<a href='https://saludtotal.com.co/' target='_blank' rel='noopener noreferrer' style='color: #1a73e8; text-decoration: underline;'>SALUD TOTAL</a>`;
-            return eps || '';
+            if (e.includes("NUEVA EPS")) return `<a href='https://portal.nuevaeps.com.co/Portal/home.jspx' target='_blank' rel='noopener noreferrer'>NUEVA EPS</a>`;
+            if (e.includes("SALUD TOTAL")) return `<a href='https://saludtotal.com.co/' target='_blank' rel='noopener noreferrer'>SALUD TOTAL</a>`;
+            return eps;
           };
-          const safeData = (typeof data === 'object' && data !== null) ? data : {};
-          const fullData = { ...safeData, Oficina_Virtual_EPS: getOficinaVirtual(safeData.EPS) };
-          const safeTemplateBody = typeof templateBody === 'string' ? templateBody : '';
-          return safeTemplateBody.replace(/\{\{(\w+)\}\}/g, (match, key) => {
-            const value = fullData[key];
-            return value !== null && value !== undefined ? String(value) : '';
+
+          const fullData = { ...data, Oficina_Virtual_EPS: getOficinaVirtual(data.EPS) };
+
+          return templateBody.replace(/\{\{(\w+)\}\}/g, (match, key) => {
+            return fullData[key] || match;
           });
         };
 
         const exportDetailedReport = (finalData, trackingData, archivedData) => {
           try {
             const masterDataMap = new Map();
-            const safeFD = Array.isArray(finalData) ? finalData : [];
-            const safeTD = Array.isArray(trackingData) ? trackingData : [];
-            const safeAD = Array.isArray(archivedData) ? archivedData : [];
 
-            [...safeFD, ...safeTD, ...safeAD].forEach(row => {
-              if (row && row.No_Orden) {
-                const key = String(row.No_Orden).trim();
-                if (key) { masterDataMap.set(key, { ...(masterDataMap.get(key) || {}), ...row }); }
+            [...finalData, ...trackingData, ...archivedData].forEach(row => {
+              if (row.No_Orden) {
+                const key = row.No_Orden.trim();
+                const existing = masterDataMap.get(key) || {};
+                masterDataMap.set(key, { ...existing, ...row });
               }
             });
-
+            
             const masterData = Array.from(masterDataMap.values());
-            if (masterData.length === 0) { alert("No hay datos para exportar."); return; }
+
+            if (masterData.length === 0) {
+              alert("No hay datos consolidados para exportar.");
+              return;
+            }
 
             const wb = XLSX.utils.book_new();
-            const allHeaders = [...new Set([...PORTAL_HEADERS, 'Fecha_Ing', 'Radicado', 'Estado', 'Notas'])];
+            
+            if (finalData.length > 0) {
+              const ws1 = XLSX.utils.json_to_sheet(finalData);
+              XLSX.utils.book_append_sheet(wb, ws1, "Casos en Revisión");
+            }
+            
+            if (trackingData.length > 0) {
+              const ws2 = XLSX.utils.json_to_sheet(trackingData);
+              XLSX.utils.book_append_sheet(wb, ws2, "Seguimiento Activo");
+            }
 
-            if (safeFD.length > 0) { XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(safeFD, { header: allHeaders }), "Revisión"); }
-            if (safeTD.length > 0) { XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(safeTD, { header: allHeaders }), "Seguimiento"); }
-            if (safeAD.length > 0) { XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(safeAD, { header: allHeaders }), "Archivados"); }
-            XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(masterData, { header: allHeaders }), "Maestro");
-            XLSX.writeFile(wb, `Sigweb_Reporte_${new Date().toISOString().slice(0, 10)}.xlsx`);
-          } catch (error) { console.error("Export Error:", error); alert("Error al exportar."); }
+            if (archivedData.length > 0) {
+              const ws3 = XLSX.utils.json_to_sheet(archivedData);
+              XLSX.utils.book_append_sheet(wb, ws3, "Seguimiento Archivado");
+            }
+            
+            const ws4 = XLSX.utils.json_to_sheet(masterData);
+            XLSX.utils.book_append_sheet(wb, ws4, "Maestro Consolidado");
+
+            XLSX.writeFile(wb, `Sigweb_Reporte_Detallado_${new Date().toISOString().slice(0, 10)}.xlsx`);
+          } catch (error) {
+            console.error("Falló la exportación del reporte Excel:", error);
+            alert("Ocurrió un error al generar el reporte.");
+          }
         };
-
 
         // =================================================================================
         // INLINED: services/templateService.ts
@@ -163,29 +180,28 @@
         const TEMPLATE_STORAGE_KEY = 'sigweb_emailTemplates';
 
         const loadTemplates = () => {
-          let loaded = [...defaultTemplates];
           try {
-            const stored = localStorage.getItem(TEMPLATE_STORAGE_KEY);
-            if (stored) {
-              const parsed = JSON.parse(stored);
-              if (Array.isArray(parsed) && parsed.every(t => t?.id && t.name && t.body)) {
-                 loaded = parsed; console.log("Templates loaded.");
-              } else { console.warn("Invalid stored templates."); localStorage.removeItem(TEMPLATE_STORAGE_KEY); }
-            } else { console.log("No stored templates."); }
-          } catch (e) { console.error("Error loading templates.", e); localStorage.removeItem(TEMPLATE_STORAGE_KEY); }
-          const loadedIds = new Set(loaded.map(t => t.id));
-          const missing = defaultTemplates.filter(d => !loadedIds.has(d.id));
-          if (missing.length > 0) { console.log("Adding missing defaults."); loaded = [...loaded, ...missing]; saveTemplates(loaded); }
-          return loaded;
+            const storedTemplates = localStorage.getItem(TEMPLATE_STORAGE_KEY);
+            if (storedTemplates) {
+              // Basic validation to prevent loading corrupted data
+              const parsed = JSON.parse(storedTemplates);
+              if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].id && parsed[0].name) {
+                return parsed;
+              }
+            }
+          } catch (error) {
+            console.error("Falló la carga de plantillas desde localStorage, se usarán las predeterminadas.", error);
+            localStorage.removeItem(TEMPLATE_STORAGE_KEY);
+          }
+          return defaultTemplates;
         };
 
         const saveTemplates = (templates) => {
           try {
-            if (!Array.isArray(templates) || !templates.every(t => t?.id && t.name && t.body)) {
-               console.error("Invalid templates data for saving."); alert("Error: Datos inválidos."); return;
-            }
-            localStorage.setItem(TEMPLATE_STORAGE_KEY, JSON.stringify(templates)); console.log("Templates saved.");
-          } catch (e) { console.error("Failed to save templates:", e); alert("Error al guardar."); }
+            localStorage.setItem(TEMPLATE_STORAGE_KEY, JSON.stringify(templates));
+          } catch (error) {
+            console.error("Falló el guardado de plantillas en localStorage", error);
+          }
         };
 
 
@@ -193,381 +209,1272 @@
         // INLINED: services/googleSheetService.ts
         // =================================================================================
         const fetchData = async (url) => {
-            console.log("Fetching data from:", url);
-            if (!url || typeof url !== 'string' || !url.startsWith('https://script.google.com/macros/s/')) { throw new Error("URL inválida para fetchData."); }
-            try {
-                const fetchUrl = `${url}?action=getData&t=${Date.now()}`;
-                const response = await fetch(fetchUrl);
-                console.log("Fetch status:", response.status, response.statusText);
-                if (!response.ok) {
-                    let errorText = `HTTP ${response.status} ${response.statusText}`; try { const body = await response.text(); if (body) errorText += ` - ${body}`; } catch (e) {}
-                    console.error("Fetch not ok:", errorText);
-                    if (response.status === 401 || response.status === 403) errorText += "\n\nSugerencia: Revisa permisos de ejecución/acceso anónimo.";
-                    else if (response.status === 404) errorText += "\n\nSugerencia: Revisa URL/implementación activa.";
-                    throw new Error(`Respuesta de red no ok: ${errorText}`);
-                }
-                const contentType = response.headers.get("content-type");
-                if (!contentType || !contentType.includes("application/json")) { console.error("Non-JSON:", await response.text()); throw new Error(`Respuesta inesperada (no JSON). Type: ${contentType}`); }
-                const data = await response.json(); console.log("Fetched data:", data);
-                return { finalData: Array.isArray(data.finalData) ? data.finalData : [], trackingData: Array.isArray(data.trackingData) ? data.trackingData : [], archivedData: Array.isArray(data.archivedData) ? data.archivedData : [], masterTrackingOrders: Array.isArray(data.masterTrackingOrders) ? data.masterTrackingOrders : [] };
-            } catch (error) {
-                 console.error("Fetch failed:", error);
-                 if (error instanceof TypeError && error.message.includes('Failed to fetch')) { throw new Error("Error de red: No se pudo conectar."); }
-                 if (error.message.startsWith("Respuesta de red no ok") || error.message.startsWith("Respuesta inesperada")) { throw error; }
-                 throw new Error(`Error al obtener datos: ${error.message}`);
+            const response = await fetch(`${url}?action=getData`);
+            if (!response.ok) {
+                throw new Error('La respuesta de la red no fue correcta');
             }
+            const data = await response.json();
+            return {
+                finalData: data.finalData || [],
+                trackingData: data.trackingData || [],
+                archivedData: data.archivedData || [],
+            };
         };
 
-        const saveData = async (url, requestBody) => {
-            console.log("Saving data to:", url);
-            if (!url || typeof url !== 'string' || !url.startsWith('https://script.google.com/macros/s/')) { throw new Error("URL inválida para saveData."); }
-            if (!requestBody?.action || !requestBody.payload) { console.error("Invalid body:", requestBody); throw new Error("Formato inválido."); }
-            const bodyString = JSON.stringify(requestBody); console.log(`Save size: ~${(bodyString.length / 1024).toFixed(2)} KB`);
-            try {
-                await fetch(url, { method: 'POST', mode: 'no-cors', cache: 'no-cache', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: bodyString });
-                console.log("Save request sent (no-cors).");
-                return { status: 'success', message: 'Enviado (respuesta no verificada).' };
-            } catch (error) {
-                console.error("Save fetch error:", error);
-                if (error instanceof TypeError && error.message.includes('Failed to fetch')) { throw new Error("Error de red al guardar."); }
-                if (bodyString.length > 5 * 1024 * 1024) { console.warn("Payload > 5MB, puede exceder límites."); } // Warn ~5MB
-                throw new Error(`Error al guardar: ${error.message}`);
-            }
+        const saveData = async (url, data) => {
+            const response = await fetch(url, {
+                method: 'POST',
+                mode: 'no-cors', 
+                headers: {
+                    'Content-Type': 'text/plain',
+                },
+                body: JSON.stringify(data),
+            });
+            
+            return { status: 'success', message: 'Datos enviados al servidor.' };
         };
 
 
         // =================================================================================
         // INLINED: components/Spinner.tsx
         // =================================================================================
-        const Spinner = React.memo(() => (
-          <div className="inline-block h-6 w-6 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em]" role="status">
-            <span className="sr-only">Cargando...</span> {/* Accessibility improvement */}
-          </div>
-        ));
+        const Spinner = () => {
+          return (
+            <div
+              className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
+              role="status"
+            >
+              <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">
+                Cargando...
+              </span>
+            </div>
+          );
+        };
+
 
         // =================================================================================
         // INLINED: components/Notification.tsx
         // =================================================================================
-        const Notification = React.memo(({ message, type = 'info', onClose }) => {
-            const typeClasses = { success: 'bg-green-600', error: 'bg-red-600', warning: 'bg-yellow-500 text-black', info: 'bg-blue-600' };
-            const [isVisible, setIsVisible] = useState(true);
-            const timeoutIdRef = useRef(null);
-            const handleClose = useCallback(() => { setIsVisible(false); if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current); if (onClose) onClose(); }, [onClose]);
-            useEffect(() => { if (onClose) { timeoutIdRef.current = setTimeout(handleClose, 5000); return () => { if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current); }; } }, [handleClose, onClose]);
-            if (!isVisible) return null;
-            return ( <div className={`fixed top-5 right-5 z-[250] p-3 rounded shadow-lg text-white ${typeClasses[type] || typeClasses.info} flex items-center gap-3 animate-fade-in-down text-sm`}> {/* Smaller padding/gap */} <span>{message}</span><button onClick={handleClose} className="text-lg font-bold leading-none ml-auto flex-shrink-0">&times;</button> </div> );
-        });
-
+        const Notification = ({ message, type, onClose }) => {
+          const typeClasses = {
+            success: 'bg-green-600',
+            error: 'bg-red-600',
+            warning: 'bg-yellow-500',
+            info: 'bg-blue-600',
+          };
+          return (
+            <div className={`fixed top-5 right-5 z-50 p-4 rounded-lg shadow-lg text-white ${typeClasses[type]} flex items-center gap-4`}>
+              <span>{message}</span>
+              <button onClick={onClose} className="text-xl font-bold">&times;</button>
+            </div>
+          );
+        };
 
         // =================================================================================
         // INLINED: components/Header.tsx
         // =================================================================================
-        const Header = React.memo(({ onSave, onManageTemplates, onReconfigure }) => {
+        const Header = ({ onSave, onManageTemplates, onReconfigure }) => {
           return (
             <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-border-color">
-              <div><h1 className="text-2xl lg:text-3xl font-bold text-white">GESTION NEGACIONES</h1><p className="text-text-secondary text-sm">Eje Cafetero - CMP</p></div>
+              <div>
+                <h1 className="text-3xl font-bold text-white">
+                  GESTION NEGACIONES EJE CAFETERO
+                </h1>
+                <p className="text-text-secondary">Sistema Integrado de Gestión de Flujos de Trabajo</p>
+              </div>
               <div className="flex flex-wrap gap-2">
-                <button onClick={onManageTemplates} className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-3 rounded-lg transition-colors text-xs sm:text-sm">Plantillas</button>
-                <button onClick={onReconfigure} className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-3 rounded-lg transition-colors flex items-center gap-1 text-xs sm:text-sm" title="Reconfigurar URL del Script"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0L8.21 5.15a1.5 1.5 0 01-1.25.82l-2.09.28c-1.68.23-2.34 2.26-1.09 3.42l1.52 1.48a1.5 1.5 0 01-.42 2.1l-1.83 1.25c-1.38.94-.92 3.01.7 3.42l2.05.51a1.5 1.5 0 011.1.98l.8 2.07c.43 1.12 2.29 1.12 2.72 0l.8-2.07a1.5 1.5 0 011.1-.98l2.05-.51c1.62-.4 2.08-2.48.7-3.42l-1.83-1.25a1.5 1.5 0 01-.42-2.1l1.52-1.48c1.25-1.16.59-3.19-1.09-3.42L13 5.97a1.5 1.5 0 01-1.25-.82l-.3-1.98zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" /></svg>Config</button>
-                <button onClick={onSave} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-3 rounded-lg transition-colors flex items-center gap-1 text-xs sm:text-sm" title="Guardar cambios en Google Sheet"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M5.5 16.5a2.5 2.5 0 01-5 0V4.414a1.5 1.5 0 01.44-1.06L4.354.439A1.5 1.5 0 015.414 0H12.5a2.5 2.5 0 012.5 2.5v2" /><path d="M5.5 16.5h8a2.5 2.5 0 002.5-2.5V8.5h-13v5.5a2.5 2.5 0 002.5 2.5z" /><path d="M10.5 10a.5.5 0 01.5-.5h2a.5.5 0 010 1h-2a.5.5 0 01-.5-.5z" /></svg>Guardar</button>
+                <button onClick={onManageTemplates} className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                  Gestionar Plantillas
+                </button>
+                <button onClick={onReconfigure} className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0L8.21 5.15a1.5 1.5 0 01-1.25.82l-2.09.28c-1.68.23-2.34 2.26-1.09 3.42l1.52 1.48a1.5 1.5 0 01-.42 2.1l-1.83 1.25c-1.38.94-.92 3.01.7 3.42l2.05.51a1.5 1.5 0 011.1.98l.8 2.07c.43 1.12 2.29 1.12 2.72 0l.8-2.07a1.5 1.5 0 011.1-.98l2.05-.51c1.62-.4 2.08-2.48.7-3.42l-1.83-1.25a1.5 1.5 0 01-.42-2.1l1.52-1.48c1.25-1.16.59-3.19-1.09-3.42L13 5.97a1.5 1.5 0 01-1.25-.82l-.3-1.98zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+                  </svg>
+                  Reconfigurar Conexión
+                </button>
+                <button onClick={onSave} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M5.5 16.5a2.5 2.5 0 01-5 0V4.414a1.5 1.5 0 01.44-1.06L4.354.439A1.5 1.5 0 015.414 0H12.5a2.5 2.5 0 012.5 2.5v2" />
+                      <path d="M5.5 16.5h8a2.5 2.5 0 002.5-2.5V8.5h-13v5.5a2.5 2.5 0 002.5 2.5z" />
+                      <path d="M10.5 10a.5.5 0 01.5-.5h2a.5.5 0 010 1h-2a.5.5 0 01-.5-.5z" />
+                  </svg>
+                  Guardar en la Nube
+                </button>
               </div>
             </header>
           );
-        });
+        };
+        
 
         // =================================================================================
         // INLINED: components/Dashboard.tsx
         // =================================================================================
-        const DashboardCard = React.memo(({ title, value, icon }) => (
-          <div className="bg-surface p-3 rounded-lg border border-border-color flex items-center shadow"> {/* Added shadow */}
-            <div className="text-2xl text-primary mr-3">{icon}</div>
-            <div><h4 className="text-xs font-semibold text-text-secondary uppercase tracking-wider">{title}</h4><p className="text-xl font-bold text-text-primary">{value}</p></div>
+        const DashboardCard = ({ title, value, icon }) => (
+          <div className="bg-surface p-4 rounded-lg border border-border-color flex items-center">
+            <div className="text-3xl text-primary mr-4">{icon}</div>
+            <div>
+              <h4 className="text-sm font-semibold text-text-secondary uppercase tracking-wider">{title}</h4>
+              <p className="text-2xl font-bold text-text-primary">{value}</p>
+            </div>
           </div>
-        ));
-        const Dashboard = React.memo(({ reviewCount, trackingCount, archivedCount, editsCount }) => (
-          <section id="dashboard" className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-            <DashboardCard title="En Revisión" value={reviewCount} icon={'📋'} /> <DashboardCard title="Seguimiento" value={trackingCount} icon={'⏳'} />
-            <DashboardCard title="Archivados" value={archivedCount} icon={'🗄️'} /> <DashboardCard title="Edits Pend." value={editsCount} icon={'✏️'} />
+        );
+
+        const Dashboard = ({ reviewCount, trackingCount, archivedCount, editsCount }) => (
+          <section id="dashboard" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <DashboardCard title="Casos en Revisión" value={reviewCount} icon={'📋'} />
+            <DashboardCard title="Seguimiento Activo" value={trackingCount} icon={'⏳'} />
+            <DashboardCard title="Casos Archivados" value={archivedCount} icon={'🗄️'} />
+            <DashboardCard title="Ediciones en Sesión" value={editsCount} icon={'✏️'} />
           </section>
-        ));
+        );
+
 
         // =================================================================================
-        // INLINED: components/DataInputArea.tsx - *** Restored function definition ***
+        // INLINED: components/DataInputArea.tsx
         // =================================================================================
-        function DataInputArea({ // Use function declaration - no React.memo here
-          id, title, headers, data, onDataChange, onProcess, processButtonText = "Procesar", inputType = "paste",
+        function DataInputArea({
+          id,
+          title,
+          headers,
+          data,
+          onDataChange,
+          onProcess,
+          processButtonText = "Procesar Datos",
         }) {
-          console.log(`Rendering DataInputArea: ${id}`);
-          // ... (Rest of the DataInputArea logic: handlePaste, handleCellChange, handleFileChange, clearTable, renderData, JSX) ...
-           const handlePaste = useCallback((e) => {
-             e.preventDefault(); const txt = e.clipboardData.getData('text/plain'); const rows = processPastedData(txt, headers);
-             const cur = Array.isArray(data)?data:[]; const filt = cur.filter(r=>r&&Object.values(r).some(v=>String(v).trim()!=='')); const upd = [...filt, ...rows];
-             if(inputType==='paste'){ const empty=upd.filter(r=>!r||!Object.values(r).some(v=>String(v).trim()!=='')).length; const target=5; if(empty<target) for(let i=0;i<(target-empty);i++) upd.push({}); }
-             onDataChange(upd);
-           }, [data, headers, onDataChange, inputType]);
+          
+          const handlePaste = useCallback((e) => {
+            e.preventDefault();
+            const pastedText = e.clipboardData.getData('text/plain');
+            const newRows = processPastedData(pastedText, headers);
 
-           const handleCellChange = useCallback((idx, hdr, val) => {
-             const cur = Array.isArray(data)?data:[]; const nData = [...cur];
-             if(nData[idx]) nData[idx]={...nData[idx],[hdr]:val}; else { console.warn(`Edit non-exist row: ${idx}`); return; }
-             if(inputType==='paste'){ const target=5; const nonE=nData.filter(r=>r&&Object.values(r).some(v=>String(v).trim()!=='')); const curE=nData.length-nonE.length; if(curE<target) for(let i=0;i<(target-curE);i++) nonE.push({}); const final=[...nonE]; while(final.filter(r=>!r||!Object.values(r).some(v=>String(v).trim()!=='')).length>target && final.length>target){ const lastE=final.findLastIndex(r=>!r||!Object.values(r).some(v=>String(v).trim()!=='')); if(lastE!==-1) final.splice(lastE,1); else break; } onDataChange(final);
-             } else { onDataChange(nData); }
-           }, [data, onDataChange, inputType]);
+            const updatedData = [...data.filter(row => Object.values(row).some(val => val)), ...newRows];
+            
+            const emptyRowCount = updatedData.filter(row => !Object.values(row).some(val => val)).length;
+            if (emptyRowCount < 5) {
+                for (let i = 0; i < (5 - emptyRowCount); i++) {
+                    updatedData.push({});
+                }
+            }
 
-           const handleFileChange = useCallback((e) => {
-             const f = e.target.files[0]; if (!f) return;
-             const r = new FileReader();
-             r.onload=(ev)=>{ try { const d=new Uint8Array(ev.target.result); const wb=XLSX.read(d,{type:'array',cellDates:true,dateNF:'yyyy-mm-dd'}); const ws=wb.Sheets[wb.SheetNames[0]]; const hr=XLSX.utils.sheet_to_json(ws,{header:1,range:0,raw:false,defval:''})[0]||[]; const eh=hr.map(h=>String(h).trim()); const jso=XLSX.utils.sheet_to_json(ws,{raw:false,defval:''}); if(jso.length===0){alert("Excel vacío.");onDataChange([]);e.target.value=null;return;}
-               const norm=(d)=>{ const km={'fecha neg.':'Fecha_Neg','no. orden':'No_Orden','no. cédula':'No_Cedula','entidad ejecutora':'Entidad_Ejecutora','motivo negación':'Motivo_Negacion','usuario emitió':'Usuario_Emitio','observación auditor':'Observacion_Auditor','observación ejecutivo':'Observacion_Ejecutivo','antigüedad':'Antiguedad','teléfono':'Telefono','dirección':'Direccion','tipo usuario':'Tipo_Usuario','notificación':'Notificacion','gestión':'Gestion_Negacion','observación alternativa':'Observacion_Alternativa','nit prestador':'Nit_Prestador','fecha complementariedad':'Fecha_Complementariedad','tiempo de gestion':'Tiempo_de_Gestion','sucursal':'Sucursal','nombre':'Nombre','programa':'Programa','plan':'Plan','eps':'EPS','celular':'Celular','email':'Email','edad':'Edad','llamada':'Llamada','complementariedad':'Complementariedad','alternativa':'Alternativa','monto':'Monto','regional':'Regional'}; const dKeys=new Set(['Fecha_Neg','Fecha_Complementariedad']);
-                 const pDate=(v)=>{ if(v==null||String(v).trim()==='')return''; if(typeof v==='number'){try{const jsd=XLSX.SSF.parse_date_code(v);if(jsd&&jsd.y>=1900)return`${jsd.y}-${String(jsd.m).padStart(2,'0')}-${String(jsd.d).padStart(2,'0')}`}catch(e){console.warn("Err date num:",v,e)}} else if(typeof v==='string'){if(/^\d{4}-\d{2}-\d{2}(T.*)?$/.test(v))return v.substring(0,10);try{const pDMY=v.match(/(\d{1,2})[/-](\d{1,2})[/-](\d{4})/);if(pDMY){const y=parseInt(pDMY[3]),m=parseInt(pDMY[2]),d=parseInt(pDMY[1]);if(y>=1900&&m>=1&&m<=12&&d>=1&&d<=31)return`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`} const p=new Date(v);if(!isNaN(p)&&p.getFullYear()>=1900)return p.toISOString().slice(0,10)}catch(e){console.warn("Err date str:",v,e)}} console.warn("Date as str:",v);return String(v)};
-                 return d.map(r=>{const nR={};PORTAL_HEADERS.forEach(h=>nR[h]='');for(const k in r){const iK=km[String(k).trim().toLowerCase()];if(iK){const rv=r[k];nR[iK]=dKeys.has(iK)?pDate(rv):(rv!=null?String(rv):'')}}return nR})};
-               onDataChange(norm(jso)); } catch(e){console.error("Err Excel:",e);alert("Error procesar Excel:\n"+e.message);onDataChange([])} finally{if(e.target)e.target.value=null}};
-             r.onerror=(e)=>{console.error("Err read file:",e);alert("Error leer archivo.");onDataChange([]);if(e.target)e.target.value=null}; r.readAsArrayBuffer(f);
-           }, [onDataChange, headers]); // headers is needed for processPastedData inside handlePaste
+            onDataChange(updatedData);
+          }, [data, headers, onDataChange]);
 
-           const clearTable = useCallback(() => {
-             if (inputType === 'file' && data.length > 0 && data.some(row => Object.values(row).some(v=>v))) { if (!window.confirm("¿Limpiar datos?")) return; }
-             onDataChange(inputType === 'paste' ? Array(5).fill({}) : []);
-           }, [inputType, onDataChange, data]);
+          const handleCellChange = (rowIndex, header, value) => {
+            const newData = [...data];
+            newData[rowIndex] = { ...newData[rowIndex], [header]: value };
+            
+            const emptyRowCount = newData.filter(row => !Object.values(row).some(val => val)).length;
+            if (emptyRowCount < 5) {
+                newData.push({});
+            }
 
-           const renderData = useMemo(() => Array.isArray(data) ? data : (inputType === 'paste' ? Array(5).fill({}) : []), [data, inputType]);
+            onDataChange(newData);
+          };
+          
+          const clearTable = () => {
+            onDataChange(Array(5).fill({}));
+          }
 
-          return ( // JSX for DataInputArea
+          return (
             <section id={id} className="space-y-4">
-              <h2 className="text-xl font-bold text-primary border-b border-border-color pb-2">{title}</h2>
-              {inputType === 'file' && (
-                 <div className="flex items-center gap-4">
-                   <label htmlFor={`${id}-file-upload`} className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-3 rounded-lg transition-colors cursor-pointer text-sm">Subir Excel</label>
-                   <input id={`${id}-file-upload`} type="file" className="hidden" accept=".xlsx,.xls,.csv" onChange={handleFileChange} />
-                   <span className="text-text-secondary text-sm">{renderData.filter(r=>r&&Object.values(r).some(v=>String(v).trim()!=='')).length || 0} fila(s)</span>
-                 </div>
-              )}
-              <div className="table-container max-h-60 overflow-auto border border-border-color rounded-lg bg-background/20">
-                <table className="w-full text-xs text-left text-text-secondary table-fixed border-collapse">
-                  <thead className="text-xs text-text-primary uppercase bg-header sticky top-0 z-10">
+              <h2 className="text-2xl font-bold text-primary border-b border-border-color pb-2">{title}</h2>
+              <div className="table-container max-h-72 overflow-auto border border-border-color rounded-lg">
+                <table className="w-full text-sm text-left text-text-secondary">
+                  <thead className="text-xs text-text-primary uppercase bg-header sticky top-0">
                     <tr>
-                      {headers.map(header => (<th key={header} scope="col" className="px-3 py-2 whitespace-nowrap overflow-hidden text-ellipsis w-32 font-semibold border-r border-border-color/30 last:border-r-0">{header.replace(/_/g, ' ')}</th>))}
+                      {headers.map(header => (
+                        <th key={header} scope="col" className="px-4 py-3 whitespace-nowrap">{header}</th>
+                      ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-border-color/30" onPaste={inputType === 'paste' ? handlePaste : undefined}>
-                    {renderData.map((row, rowIndex) => (
-                      <tr key={rowIndex} className="group hover:bg-highlight">
-                        {headers.map(header => (<td key={`${rowIndex}-${header}`} className="px-3 py-1 border-r border-border-color/30 last:border-r-0 outline-none whitespace-nowrap overflow-hidden text-ellipsis w-32 focus-within:bg-primary/20 focus-within:text-white group-hover:whitespace-normal group-focus-within:whitespace-normal" contentEditable={inputType === 'paste'} onBlur={inputType === 'paste' ? (e) => handleCellChange(rowIndex, header, e.currentTarget.innerText) : undefined} suppressContentEditableWarning={true}>{(row && row[header] != null) ? String(row[header]) : ''}</td>))}
+                  <tbody onPaste={handlePaste}>
+                    {data.map((row, rowIndex) => (
+                      <tr key={rowIndex} className="border-b border-border-color hover:bg-highlight">
+                        {headers.map(header => (
+                          <td
+                            key={`${rowIndex}-${header}`}
+                            className="px-4 py-2 border-r border-border-color focus:bg-primary focus:text-black outline-none"
+                            contentEditable
+                            onBlur={(e) => handleCellChange(rowIndex, header, e.currentTarget.innerText)}
+                            suppressContentEditableWarning={true}
+                          >
+                            {row[header] || ''}
+                          </td>
+                        ))}
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-              <div className="flex gap-3">
-                <button onClick={onProcess} disabled={renderData.length === 0 || renderData.every(r => !r || !Object.values(r).some(v => String(v).trim() !== ''))} className="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm">{processButtonText}</button>
-                <button onClick={clearTable} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-3 rounded-lg transition-colors text-sm">Limpiar</button>
+              <div className="flex gap-4">
+                <button onClick={onProcess} className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                  {processButtonText}
+                </button>
+                <button onClick={clearTable} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                  Limpiar Tabla
+                </button>
               </div>
             </section>
           );
-        } // End of DataInputArea function
-
+        }
 
         // =================================================================================
         // INLINED: components/ReviewArea.tsx
         // =================================================================================
-        const ReviewArea = React.memo(({ data, templates, updateRow, incrementEdits, onSendToTracking, onPreview, onExportForMailMerge, onClearReviewData, sortConfig, setSortConfig }) => {
-            // ... (ReviewArea logic remains the same) ...
-             console.log("Rendering ReviewArea");
-             const [selectedRows, setSelectedRows] = useState(new Set());
-             const [filter, setFilter] = useState('');
-             const REVIEW_HEADERS = useMemo(() => [ { key: 'Fecha_Neg', label: 'Fecha Neg.', width: 'w-24' }, { key: 'No_Orden', label: 'No. Orden', width: 'w-24' }, { key: 'No_Cedula', label: 'No. Cédula', width: 'w-28' }, { key: 'Nombre', label: 'Nombre', width: 'w-48 flex-1 min-w-[12rem]' }, { key: 'EPS', label: 'EPS', width: 'w-32' }, { key: 'Programa', label: 'Prog.', width: 'w-28', compact: true }, { key: 'Motivo_Negacion', label: 'Motivo', width: 'w-40', compact: true }, { key: 'Descripcion_PDF', label: 'Desc.', width: 'w-40', compact: true }, { key: 'Justificacion_PDF', label: 'Just.', width: 'w-40', compact: true }, { key: 'Fundamento_Legal_PDF', label: 'Fund.', width: 'w-36', compact: true }, ], []);
-             const currentData = useMemo(() => Array.isArray(data) ? data : [], [data]);
-             const filteredData = useMemo(() => { if (!filter) return currentData; const lcf = filter.toLowerCase(); try { return currentData.filter(r => r && typeof r === 'object' && Object.values(r).some(v => String(v).toLowerCase().includes(lcf))); } catch (e) { console.error("Filter error:", e); return currentData; } }, [currentData, filter]);
-             useEffect(() => { const keys = new Set(filteredData.map(r => r ? String(r.No_Orden) : null).filter(Boolean)); setSelectedRows(prev => { const n = new Set(); for (const k of prev) { if (keys.has(k)) n.add(k); } return (n.size !== prev.size || ![...n].every(k => prev.has(k))) ? n : prev; }); }, [filteredData]);
-             const handleSelectRow = useCallback((noOrden) => { const k = String(noOrden); setSelectedRows(p => { const n = new Set(p); if (n.has(k)) n.delete(k); else n.add(k); return n; }); }, []);
-             const handleSelectAll = useCallback((e) => { setSelectedRows(e.target.checked ? new Set(filteredData.map(r => r ? String(r.No_Orden) : null).filter(Boolean)) : new Set()); }, [filteredData]);
-             const handleCellBlur = useCallback((noOrden, key, rawValue) => { const v = String(rawValue || '').trim(); const oRow = currentData.find(r => r && String(r.No_Orden) === String(noOrden)); if (oRow && v !== String(oRow[key] || '').trim()) { console.log(`Blur Update: ${noOrden}, ${key}, "${v}"`); updateRow(noOrden, { [key]: v }); } }, [currentData, updateRow]);
-             const handleSelectChange = useCallback((noOrden, value) => { const changes = { Tipo_Carta: value }; const safeT = Array.isArray(templates) ? templates : []; const tmpl = safeT.find(t => t.id === value); const oRow = currentData.find(r => r && String(r.No_Orden) === String(noOrden)); const curRad = oRow?.Radicado_Comp || ''; if (!tmpl || !tmpl.name.toUpperCase().includes('COMPLEMENTARIEDAD')) { if (curRad !== '') changes.Radicado_Comp = ''; } if (oRow && oRow.Tipo_Carta !== value) updateRow(noOrden, changes); else if (changes.Radicado_Comp === '' && curRad !== '') updateRow(noOrden, changes); }, [templates, currentData, updateRow]);
-             const requestSort = useCallback((key) => { setSortConfig(cs => ({ key, direction: (cs.key === key && cs.direction === 'ascending') ? 'descending' : 'ascending' })); }, [setSortConfig]);
-             const getSortIndicator = useCallback((key) => (sortConfig.key !== key ? ' ' : (sortConfig.direction === 'ascending' ? '▲' : '▼')), [sortConfig]);
-             const handleExport = useCallback(() => { onExportForMailMerge(currentData); }, [onExportForMailMerge, currentData]);
+        const ReviewArea = ({
+          data,
+          templates,
+          updateRow,
+          incrementEdits,
+          onSendToTracking,
+          onPreview,
+          onExportForMailMerge,
+          onClearReviewData,
+          sortConfig,
+          setSortConfig,
+        }) => {
+          const [selectedRows, setSelectedRows] = useState(new Set());
+          const [filter, setFilter] = useState('');
+          
+          const REVIEW_HEADERS = [
+              { key: 'Fecha_Neg', label: 'Fecha Neg.' },
+              { key: 'No_Orden', label: 'No. Orden' },
+              { key: 'No_Cedula', label: 'No. Cédula' },
+              { key: 'Nombre', label: 'Nombre' },
+              { key: 'EPS', label: 'EPS' },
+              { key: 'Programa', label: 'Programa', compact: true },
+              { key: 'Motivo_Negacion', label: 'Motivo Neg.', compact: true },
+              { key: 'Descripcion_PDF', label: 'Descripción', compact: true },
+              { key: 'Justificacion_PDF', label: 'Justificación', compact: true },
+              { key: 'Fundamento_Legal_PDF', label: 'Fund. Legal', compact: true },
+          ];
 
-            return ( // JSX for ReviewArea
-              <section id="area3" className="space-y-4">
-                <h2 className="text-xl font-bold text-primary border-b border-border-color pb-2">Área 3: Revisión Final y Exportación</h2>
-                <div className="action-bar bg-highlight p-3 rounded-lg flex flex-wrap items-center gap-4 justify-between text-sm"> <input type="text" placeholder="Buscar..." className="bg-surface border border-border-color rounded-md px-3 py-1 text-text-primary placeholder-text-secondary w-full sm:w-auto text-sm" value={filter} onChange={(e) => setFilter(e.target.value)} aria-label="Buscar revisión" /> <span className="text-text-primary whitespace-nowrap">{selectedRows.size} sel. / {currentData.length} total</span> </div>
-                <div className="table-container max-h-[65vh] overflow-auto border border-border-color rounded-lg bg-background/20">
-                  <table className="w-full text-xs text-left text-text-secondary table-fixed border-collapse">
-                    <thead className="text-xs text-text-primary uppercase bg-header sticky top-0 z-10">
-                      <tr>
-                        <th className="px-2 py-2 w-8"><input type="checkbox" onChange={handleSelectAll} checked={filteredData.length > 0 && selectedRows.size === filteredData.length} disabled={filteredData.length === 0} title="Sel. Visibles" /></th>
-                        <th className="px-2 py-2 w-8">👁️</th>
-                        {REVIEW_HEADERS.map(({ key, label, width }) => (<th key={key} onClick={() => requestSort(key)} className={`px-2 py-2 cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis ${width} font-semibold border-l border-border-color/30`} title={`Ordenar ${label}`}>{label}<span className="ml-1">{getSortIndicator(key)}</span></th>))}
-                        <th className="px-2 py-2 w-48 font-semibold border-l border-border-color/30">Tipo Carta</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border-color/30">
-                      {filteredData.length > 0 ? filteredData.map((row) => { const noKey = String(row.No_Orden); const safeT = Array.isArray(templates)?templates:[]; const tmpl=safeT.find(t=>t.id===row.Tipo_Carta); const isComp=tmpl&&tmpl.name.toUpperCase().includes('COMPLE'); const reqRad=isComp; const isSel=selectedRows.has(noKey); return (<tr key={noKey} className={`group ${isComp?'bg-indigo-900/10':''} ${isSel?'bg-primary/20 hover:bg-primary/30':'hover:bg-highlight/50'}`}>
-                          <td className="px-2 py-1 text-center"><input type="checkbox" checked={isSel} onChange={()=>handleSelectRow(noKey)} /></td>
-                          <td className="px-2 py-1 text-base cursor-pointer text-center" onClick={()=>onPreview(row)} title="Vista Previa">👁️</td>
-                          {REVIEW_HEADERS.map(({ key, width }) => (<td key={key} className={`px-2 py-1 border-l border-border-color/30 outline-none whitespace-nowrap overflow-hidden text-ellipsis focus-within:bg-primary/20 focus-within:text-white group-hover:whitespace-normal group-focus-within:whitespace-normal ${width}`} contentEditable onBlur={(e)=>handleCellBlur(row.No_Orden,key,e.currentTarget.innerText)} suppressContentEditableWarning={true} title={String(row[key]??'')}>{String(row[key]??'')}</td>))}
-                          <td className="px-2 py-1 w-48 border-l border-border-color/30"><div className="flex flex-col gap-1"><select value={row.Tipo_Carta||''} onChange={e=>handleSelectChange(row.No_Orden,e.target.value)} className="bg-surface border border-border-color rounded px-1 py-0.5 text-text-primary w-full text-xs"><option value="">-- Sel --</option>{safeT.map(t=><option key={t.id} value={t.id} title={t.name}>{t.name}</option>)}</select>{reqRad && (<input type="text" placeholder="Radicado..." value={row.Radicado_Comp||''} onChange={e=>updateRow(row.No_Orden,{Radicado_Comp:e.target.value.trim()})} className="bg-surface border border-border-color rounded px-1 py-0.5 text-text-primary w-full mt-1 text-xs" />)}</div></td>
-                        </tr>);
-                      }) : (<tr><td colSpan={REVIEW_HEADERS.length + 3} className="text-center py-4 text-text-secondary italic">No hay casos{filter?' que coincidan.':'.'}</td></tr>)}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="flex flex-wrap gap-3 text-sm"><button onClick={()=>onSendToTracking(Array.from(selectedRows))} disabled={selectedRows.size===0} className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Enviar Seg. ({selectedRows.size})</button><button onClick={handleExport} disabled={currentData.length===0} className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Exportar Mail ({currentData.length})</button><button onClick={onClearReviewData} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-3 rounded-lg transition-colors">Limpiar</button></div>
-              </section>
+          const filteredData = useMemo(() => {
+            if (!filter) return data;
+            const lowercasedFilter = filter.toLowerCase();
+            return data.filter(row =>
+              Object.values(row).some(value =>
+                String(value).toLowerCase().includes(lowercasedFilter)
+              )
             );
-        });
+          }, [data, filter]);
+
+          const handleSelectRow = (noOrden) => {
+            const newSelection = new Set(selectedRows);
+            if (newSelection.has(noOrden)) {
+              newSelection.delete(noOrden);
+            } else {
+              newSelection.add(noOrden);
+            }
+            setSelectedRows(newSelection);
+          };
+
+          const handleSelectAll = (e) => {
+            if (e.target.checked) {
+              const allOrderNumbers = filteredData.map(row => row.No_Orden);
+              setSelectedRows(new Set(allOrderNumbers));
+            } else {
+              setSelectedRows(new Set());
+            }
+          };
+
+          const handleCellBlur = (noOrden, key, value) => {
+            const originalRow = data.find(r => r.No_Orden === noOrden);
+            if (originalRow && originalRow[key] !== value) {
+              updateRow(noOrden, { [key]: value });
+              incrementEdits();
+            }
+          };
+          
+          const handleSelectChange = (noOrden, value) => {
+            const changes = { Tipo_Carta: value };
+            const template = templates.find(t => t.id === value);
+            if (!template || !template.name.toUpperCase().includes('COMPLEMENTARIEDAD')) {
+                changes.Radicado_Comp = '';
+            }
+            updateRow(noOrden, changes);
+          };
+
+          const requestSort = (key) => {
+            let direction = 'ascending';
+            if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+                direction = 'descending';
+            }
+            setSortConfig({ key, direction });
+          };
+          
+          const getSortIndicator = (key) => {
+            if (sortConfig.key !== key) return null;
+            return sortConfig.direction === 'ascending' ? ' ▲' : ' ▼';
+          };
+
+          return (
+            <section id="area3" className="space-y-4">
+              <h2 className="text-2xl font-bold text-primary border-b border-border-color pb-2">Área 3: Revisión Final y Exportación</h2>
+              <div className="action-bar bg-highlight p-4 rounded-lg flex flex-wrap items-center gap-4">
+                <input
+                  type="text"
+                  placeholder="Buscar en tabla de revisión..."
+                  className="bg-surface border border-border-color rounded-md px-3 py-2 text-text-primary placeholder-text-secondary w-full sm:w-auto"
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                />
+                <span className="text-text-primary">{selectedRows.size} fila(s) seleccionada(s)</span>
+              </div>
+
+              <div className="table-container max-h-[700px] overflow-auto border border-border-color rounded-lg">
+                <table className="w-full text-sm text-left text-text-secondary table-auto">
+                  <thead className="text-xs text-text-primary uppercase bg-header sticky top-0">
+                    <tr>
+                      <th className="px-4 py-3"><input type="checkbox" onChange={handleSelectAll} checked={selectedRows.size === filteredData.length && filteredData.length > 0} /></th>
+                      <th className="px-4 py-3">👁️</th>
+                        {REVIEW_HEADERS.map(({ key, label, compact }) => (
+                          <th key={key} onClick={() => requestSort(key)} className={`px-4 py-3 cursor-pointer ${compact ? 'max-w-[150px]' : ''}`}>
+                              {label}{getSortIndicator(key)}
+                          </th>
+                        ))}
+                      <th className="px-4 py-3">Tipo de Carta</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredData.map((row) => {
+                      const template = templates.find(t => t.id === row.Tipo_Carta);
+                      const isComplementariedad = template && template.name.toUpperCase().includes('COMPLEMENTARIEDAD');
+                      const requiresRadicado = isComplementariedad;
+                      
+                      return (
+                        <tr key={row.No_Orden} className={`border-b border-border-color hover:bg-highlight ${isComplementariedad ? 'bg-indigo-900/50' : ''}`}>
+                          <td className="px-4 py-2"><input type="checkbox" checked={selectedRows.has(row.No_Orden)} onChange={() => handleSelectRow(row.No_Orden)} /></td>
+                          <td className="px-4 py-2 text-lg cursor-pointer" onClick={() => onPreview(row)}>👁️</td>
+                          {REVIEW_HEADERS.map(({ key, compact }) => (
+                            <td key={key} 
+                                className={`px-4 py-2 border-r border-border-color focus:bg-primary focus:text-black outline-none ${compact ? 'max-w-[150px] overflow-hidden text-ellipsis whitespace-nowrap' : ''}`}
+                                contentEditable
+                                onBlur={(e) => handleCellBlur(row.No_Orden, key, e.currentTarget.innerText)}
+                                suppressContentEditableWarning={true}
+                            >
+                                {row[key]}
+                            </td>
+                          ))}
+                          <td className="px-4 py-2">
+                            <div className="flex flex-col gap-1">
+                              <select 
+                                value={row.Tipo_Carta || ''}
+                                onChange={(e) => handleSelectChange(row.No_Orden, e.target.value)}
+                                className="bg-surface border border-border-color rounded-md px-2 py-1 text-text-primary w-full"
+                              >
+                                <option value="">-- Seleccionar --</option>
+                                {templates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                              </select>
+                              {requiresRadicado && (
+                                <input
+                                  type="text"
+                                  placeholder="Radicado..."
+                                  value={row.Radicado_Comp || ''}
+                                  onChange={(e) => updateRow(row.No_Orden, { Radicado_Comp: e.target.value })}
+                                  className="bg-surface border border-border-color rounded-md px-2 py-1 text-text-primary w-full mt-1"
+                                />
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <div className="flex flex-wrap gap-4">
+                <button 
+                    onClick={() => onSendToTracking(Array.from(selectedRows))}
+                    className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                >
+                    Enviar a Seguimiento
+                </button>
+                 <button 
+                    onClick={() => onExportForMailMerge(data)}
+                    className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                >
+                    Exportar para Envío Masivo
+                </button>
+                <button 
+                    onClick={onClearReviewData}
+                    className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                >
+                    Limpiar Tabla de Revisión
+                </button>
+              </div>
+            </section>
+          );
+        };
+        
 
         // =================================================================================
         // INLINED: components/TrackingArea.tsx
         // =================================================================================
-        const TrackingTable = React.memo(({ data, isArchived, onUpdate, onArchive, filter }) => {
-            // ... (TrackingTable logic remains the same) ...
-             console.log(`Rendering TT (Archived: ${isArchived})`);
-             const [selRows, setSelRows] = useState(new Set());
-             const sClasses = useMemo(() => ({ 'Pendiente': 'bg-yellow-900/30', 'En Gestión': 'bg-blue-900/30', 'Finalizado': 'bg-green-900/30' }), []);
-             const curData = useMemo(() => Array.isArray(data)?data:[], [data]);
-             const filtData = useMemo(() => { if (!filter) return curData; const lcf = filter.toLowerCase(); try { return curData.filter(r => r && typeof r === 'object' && Object.values(r).some(v => String(v).toLowerCase().includes(lcf))); } catch (e) { console.error("Filter TT err:", e); return curData; } }, [curData, filter]);
-             useEffect(() => { const idxs = new Set(filtData.map(r => curData.indexOf(r)).filter(i => i !== -1)); setSelRows(p => { const n = new Set(); for (const i of p) { if (idxs.has(i)) n.add(i); } return (n.size !== p.size || ![...n].every(i => p.has(i))) ? n : p; }); }, [filtData, curData]);
-             const handleSelRow = useCallback((idx) => { setSelRows(p => { const n = new Set(p); if (n.has(idx)) n.delete(idx); else n.add(idx); return n; }); }, []);
-             const handleSelAll = useCallback((e) => { setSelRows(e.target.checked ? new Set(filtData.map(r => curData.indexOf(r)).filter(i => i !== -1)) : new Set()); }, [filtData, curData]);
-             const handleBulkArc = useCallback(() => { if (selRows.size > 0) { onArchive(Array.from(selRows)); setSelRows(new Set()); } }, [selRows, onArchive]);
-             const handleCellUpd = useCallback((idx, fld, val) => { const row = curData[idx]; const pVal = fld === 'Notas' ? String(val || '').trim() : val; if (row && String(row[fld] || '') !== pVal) { onUpdate(idx, { ...row, [fld]: pVal }, isArchived); } }, [curData, onUpdate, isArchived]);
-            return ( // JSX for TrackingTable
-              <div className="space-y-3">
-                <div className="flex justify-between items-center text-sm"><span className="text-text-secondary">{filtData.length} fila(s){selRows.size > 0 ? `, ${selRows.size} sel.` : ''}</span>{selRows.size > 0 && (<button onClick={handleBulkArc} className={`font-bold py-1 px-3 rounded transition-colors text-white text-xs ${isArchived ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-600 hover:bg-gray-700'}`}>{isArchived ? `♻️ Restaurar (${selRows.size})` : `🗄️ Archivar (${selRows.size})`}</button>)}</div>
-                <div className="table-container max-h-[40vh] overflow-auto border border-border-color rounded-lg bg-background/20">
-                  <table className="w-full text-xs text-left text-text-secondary table-fixed border-collapse">
-                    <thead className="text-xs text-text-primary uppercase bg-header sticky top-0 z-10"><tr><th className="px-2 py-2 w-8"><input type="checkbox" onChange={handleSelAll} checked={filtData.length > 0 && selRows.size === filtData.length} disabled={filtData.length === 0} title="Sel. Visibles" /></th><th className="px-2 py-2 w-24 font-semibold border-l border-border-color/30">F. Ing.</th><th className="px-2 py-2 w-24 font-semibold border-l border-border-color/30">N. Orden</th><th className="px-2 py-2 w-40 font-semibold border-l border-border-color/30">Nombre</th><th className="px-2 py-2 w-28 font-semibold border-l border-border-color/30">EPS</th><th className="px-2 py-2 w-28 font-semibold border-l border-border-color/30">Radicado</th><th className="px-2 py-2 w-28 font-semibold border-l border-border-color/30">Estado</th><th className="px-2 py-2 flex-1 min-w-[150px] font-semibold border-l border-border-color/30">Notas</th><th className="px-2 py-2 w-12 font-semibold border-l border-border-color/30">Acción</th></tr></thead>
-                    <tbody className="divide-y divide-border-color/30">
-                      {filtData.length > 0 ? filtData.map((row) => { const idx=curData.indexOf(row); if(!row||idx===-1) return null; const isSel=selRows.has(idx); const rCls=`group ${isArchived?'bg-black/10 text-text-secondary italic':sClasses[row.Estado]||''} ${isSel?'!bg-primary/30 hover:!bg-primary/40':'hover:bg-highlight/50'}`; return (<tr key={idx} className={rCls}><td className="px-2 py-1 text-center"><input type="checkbox" checked={isSel} onChange={()=>handleSelRow(idx)}/></td><td className="px-2 py-1 w-24 whitespace-nowrap">{row.Fecha_Ing||''}</td><td className="px-2 py-1 w-24 whitespace-nowrap">{row.No_Orden||''}</td><td className="px-2 py-1 w-40 whitespace-nowrap overflow-hidden text-ellipsis" title={row.Nombre}>{row.Nombre||''}</td><td className="px-2 py-1 w-28 whitespace-nowrap overflow-hidden text-ellipsis" title={row.EPS}>{row.EPS||''}</td><td className="px-2 py-1 w-28 whitespace-nowrap overflow-hidden text-ellipsis" title={row.Radicado}>{row.Radicado||''}</td><td className="px-2 py-1 w-28"><select value={row.Estado||TRACKING_STATUSES[0]} onChange={e=>handleCellUpd(idx,'Estado',e.target.value)} className={`bg-surface/50 border border-border-color/50 rounded px-1 py-0.5 w-full text-xs ${isArchived?'text-gray-400':'text-text-primary'}`} disabled={isArchived}>{TRACKING_STATUSES.map(s=><option key={s} value={s}>{s}</option>)}</select></td><td className={`px-2 py-1 outline-none min-w-[150px] focus-within:bg-primary/20 focus-within:text-white group-hover:whitespace-normal group-focus-within:whitespace-normal ${isArchived?'':'hover:bg-black/20'}`} contentEditable={!isArchived} onBlur={e=>handleCellUpd(idx,'Notas',e.currentTarget.innerText)} suppressContentEditableWarning={true} title={row.Notas}>{row.Notas||''}</td><td className="px-2 py-1 text-base cursor-pointer w-12 text-center" onClick={()=>onArchive([idx])} title={isArchived?'Restaurar':'Archivar'}>{isArchived?'♻️':'🗄️'}</td></tr>);}) : (<tr><td colSpan={9} className="text-center py-4 text-text-secondary italic">{isArchived?'No hay archivados':'No hay activos'}{filter?' que coincidan.':'.'}</td></tr>)}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+        const TrackingTable = ({ data, isArchived, onUpdate, onArchive, filter }) => {
+            
+          const [selectedRows, setSelectedRows] = useState(new Set());
+          
+          const statusClasses = {
+            'Pendiente': 'bg-yellow-600/20',
+            'En Gestión': 'bg-blue-600/20',
+            'Finalizado': 'bg-green-600/20',
+          };
+
+          const filteredData = useMemo(() => {
+            if (!filter) return data;
+            const lowercasedFilter = filter.toLowerCase();
+            return data.filter(row =>
+              Object.values(row).some(value =>
+                String(value).toLowerCase().includes(lowercasedFilter)
+              )
             );
-        });
-        const TrackingArea = React.memo(({ trackingData, archivedData, updateTrackingData, archiveItems }) => {
-          console.log("Rendering TrackingArea"); const [showArc, setShowArc] = useState(false); const [filt, setFilt] = useState(''); const ctd=useMemo(()=>Array.isArray(trackingData)?trackingData:[],[trackingData]); const cad=useMemo(()=>Array.isArray(archivedData)?archivedData:[],[archivedData]);
-          return ( /* ... TrackingArea JSX ... */
+          }, [data, filter]);
+
+          const handleSelectRow = (index) => {
+            const newSelection = new Set(selectedRows);
+            if (newSelection.has(index)) {
+              newSelection.delete(index);
+            } else {
+              newSelection.add(index);
+            }
+            setSelectedRows(newSelection);
+          };
+          
+          const handleSelectAll = (e) => {
+            if (e.target.checked) {
+              setSelectedRows(new Set(filteredData.map((_, index) => index)));
+            } else {
+              setSelectedRows(new Set());
+            }
+          };
+          
+          const handleBulkArchive = () => {
+            if (selectedRows.size > 0) {
+              onArchive(Array.from(selectedRows));
+              setSelectedRows(new Set());
+            }
+          };
+
+          return (
+            <div className="space-y-4">
+              <div className="flex justify-end">
+                   {selectedRows.size > 0 && (
+                       <button
+                           onClick={handleBulkArchive}
+                           className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                       >
+                           {isArchived ? `Restaurar ${selectedRows.size} Seleccionados` : `Archivar ${selectedRows.size} Seleccionados`}
+                       </button>
+                   )}
+              </div>
+              <div className="table-container max-h-[400px] overflow-auto border border-border-color rounded-lg">
+                <table className="w-full text-sm text-left text-text-secondary">
+                  <thead className="text-xs text-text-primary uppercase bg-header sticky top-0">
+                    <tr>
+                      <th className="px-4 py-3"><input type="checkbox" onChange={handleSelectAll} checked={selectedRows.size === filteredData.length && filteredData.length > 0}/></th>
+                      <th className="px-4 py-3">Fecha Ing.</th>
+                      <th className="px-4 py-3">No. Orden</th>
+                      <th className="px-4 py-3">Nombre</th>
+                      <th className="px-4 py-3">EPS</th>
+                      <th className="px-4 py-3">Radicado</th>
+                      <th className="px-4 py-3">Estado</th>
+                      <th className="px-4 py-3">Notas</th>
+                      <th className="px-4 py-3">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredData.map((row, index) => {
+                      const originalIndex = data.indexOf(row);
+                      return (
+                        <tr key={originalIndex} className={`border-b border-border-color hover:bg-highlight transition-colors ${isArchived ? 'bg-archive/50 text-text-secondary' : statusClasses[row.Estado] || ''}`}>
+                          <td className="px-4 py-2"><input type="checkbox" checked={selectedRows.has(originalIndex)} onChange={() => handleSelectRow(originalIndex)} /></td>
+                          <td className="px-4 py-2">{row.Fecha_Ing}</td>
+                          <td className="px-4 py-2">{row.No_Orden}</td>
+                          <td className="px-4 py-2">{row.Nombre}</td>
+                          <td className="px-4 py-2">{row.EPS}</td>
+                          <td className="px-4 py-2">{row.Radicado}</td>
+                          <td className="px-4 py-2">
+                            <select
+                              value={row.Estado}
+                              onChange={e => onUpdate(originalIndex, { ...row, Estado: e.target.value })}
+                              className="bg-surface border border-border-color rounded-md px-2 py-1 text-text-primary"
+                            >
+                              {TRACKING_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                          </td>
+                          <td className="px-4 py-2 outline-none focus:bg-primary focus:text-black" contentEditable onBlur={e => onUpdate(originalIndex, { ...row, Notas: e.currentTarget.innerText })} suppressContentEditableWarning={true}>{row.Notas}</td>
+                          <td className="px-4 py-2 text-lg cursor-pointer" onClick={() => onArchive([originalIndex])}>{isArchived ? '♻️' : '🗄️'}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          );
+        };
+
+        // --- MODIFICACIÓN 4: Área de Seguimiento actualizada ---
+        const TrackingArea = ({ trackingData, archivedData, updateTrackingData, archiveItems, onExportComplementariedades }) => {
+          const [showArchived, setShowArchived] = useState(false);
+          const [filter, setFilter] = useState('');
+
+          return (
             <section id="area4" className="space-y-4">
-              <h2 className="text-xl font-bold text-primary border-b border-border-color pb-2">Área 4: Seguimiento</h2>
-              <div className="action-bar bg-highlight p-3 rounded-lg flex flex-wrap items-center gap-4 justify-between text-sm"><input type="text" placeholder="Buscar..." className="bg-surface border border-border-color rounded-md px-3 py-1 text-text-primary placeholder-text-secondary w-full sm:w-1/2 lg:w-1/3 text-sm" value={filt} onChange={e=>setFilt(e.target.value)} aria-label="Buscar seguimiento" /><button onClick={()=>setShowArc(!showArc)} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-1 px-3 rounded-lg text-xs sm:text-sm">{showArc?'Ocultar':'Mostrar'} Archivados ({cad.length})</button></div>
-              <h3 className="text-lg font-semibold text-white">Activos ({ctd.length})</h3><TrackingTable data={ctd} isArchived={false} onUpdate={updateTrackingData} onArchive={archiveItems} filter={filt} />
-              {showArc && (<div className="mt-6"><h3 className="text-lg font-semibold text-text-secondary">Archivados ({cad.length})</h3><TrackingTable data={cad} isArchived={true} onUpdate={updateTrackingData} onArchive={archiveItems} filter={filt} /></div>)}
+              <h2 className="text-2xl font-bold text-primary border-b border-border-color pb-2">Área 4: Seguimiento</h2>
+              <div className="action-bar bg-highlight p-4 rounded-lg flex flex-wrap items-center gap-4">
+                <input
+                  type="text"
+                  placeholder="Buscar en seguimiento..."
+                  className="bg-surface border border-border-color rounded-md px-3 py-2 text-text-primary placeholder-text-secondary w-full sm:w-auto"
+                  value={filter}
+                  onChange={e => setFilter(e.target.value)}
+                />
+                <button onClick={() => setShowArchived(!showArchived)} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg">
+                  {showArchived ? 'Ocultar' : 'Mostrar'} Archivados ({archivedData.length})
+                </button>
+                {/* --- NUEVO BOTÓN AÑADIDO --- */}
+                <button 
+                  onClick={onExportComplementariedades} 
+                  className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                >
+                  Exportar Complementariedades
+                </button>
+              </div>
+
+              <h3 className="text-xl font-semibold text-white">Casos Activos ({trackingData.length})</h3>
+              <TrackingTable
+                data={trackingData}
+                isArchived={false}
+                onUpdate={(index, row) => updateTrackingData(index, row, false)}
+                onArchive={(indices) => archiveItems(indices, false)}
+                filter={filter}
+              />
+
+              {showArchived && (
+                <div className="mt-8">
+                  <h3 className="text-xl font-semibold text-white">Casos Archivados ({archivedData.length})</h3>
+                  <TrackingTable
+                    data={archivedData}
+                    isArchived={true}
+                    onUpdate={(index, row) => updateTrackingData(index, row, true)}
+                    onArchive={(indices) => archiveItems(indices, true)}
+                    filter={filter}
+                  />
+                </div>
+              )}
             </section>
           );
-        });
+        };
 
         // =================================================================================
-        // INLINED: components/SetupModal.tsx - No changes needed
+        // INLINED: components/SetupModal.tsx
         // =================================================================================
-        const SetupModal = ({ onSave, onClose, initialUrl = '' }) => { /* ... */ };
-         // Function definition from previous step...
-         const SetupModal = ({ onSave, onClose, initialUrl = '' }) => {
-             const [url, setUrl] = useState(initialUrl); const [isVerifying, setIsVerifying] = useState(false); const [errorMsg, setErrorMsg] = useState('');
-             const handleSave = async () => { setErrorMsg(''); if (!url || !url.startsWith('https://script.google.com/macros/s/')) { setErrorMsg("URL inválida (https://...)."); return; } setIsVerifying(true); try { await onSave(url); } catch (e) { console.error("Verify failed:", e); setErrorMsg(`Falló: ${e.message}.`); } finally { setIsVerifying(false); } };
-             return ( /* ... SetupModal JSX ... */ <div className="fixed inset-0 bg-background bg-opacity-90 flex justify-center items-center z-[200] p-4"><div className="bg-surface rounded-lg shadow-xl w-full max-w-lg border border-border-color p-8 space-y-6"><div className="text-center"><h2 className="text-2xl font-bold text-primary">Configuración Conexión</h2><p className="text-text-secondary mt-2">URL Google Apps Script.</p></div><div><label htmlFor="script-url" className="block text-sm font-medium text-text-primary mb-1">URL Script</label><input id="script-url" type="url" value={url} onChange={(e)=>{setUrl(e.target.value);setErrorMsg('')}} placeholder="https://script.google.com/macros/s/..." className={`w-full bg-background border rounded-md px-3 py-2 text-text-primary placeholder-text-secondary focus:ring-primary focus:border-primary ${errorMsg?'border-danger':'border-border-color'}`} aria-invalid={!!errorMsg} aria-describedby="url-error"/>{errorMsg&&<p id="url-error" className="text-danger text-sm mt-1">{errorMsg}</p>}</div><div className="flex justify-end gap-4"><button onClick={onClose} disabled={isVerifying} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50">Cancelar</button><button onClick={handleSave} disabled={isVerifying||!url} className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50 min-w-[150px] flex justify-center items-center">{isVerifying?<Spinner/>:'Guardar y Verificar'}</button></div></div></div> );
-         };
+        const SetupModal = ({ onSave, onClose, initialUrl = '' }) => {
+          const [url, setUrl] = useState(initialUrl);
+          const [isVerifying, setIsVerifying] = useState(false);
+
+          const handleSave = async () => {
+            if (!url.startsWith('https://script.google.com/macros/s/')) {
+              alert("Por favor, introduce una URL válida de Google Apps Script.");
+              return;
+            }
+            setIsVerifying(true);
+            await onSave(url);
+            setIsVerifying(false);
+          };
+
+          return (
+            <div className="fixed inset-0 bg-background bg-opacity-90 flex justify-center items-center z-50 p-4">
+              <div className="bg-surface rounded-lg shadow-xl w-full max-w-lg border border-border-color p-8 space-y-6">
+                <div className="text-center">
+                  <h2 className="text-2xl font-bold text-primary">Configuración de Conexión</h2>
+                  <p className="text-text-secondary mt-2">
+                      Proporciona la URL de Google Apps Script para conectar a tu base de datos.
+                  </p>
+                </div>
+                <div>
+                  <label htmlFor="script-url" className="block text-sm font-medium text-text-primary mb-1">
+                      URL del Script
+                  </label>
+                  <input
+                    id="script-url"
+                    type="url"
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    placeholder="https://script.google.com/macros/s/..."
+                    className="w-full bg-background border border-border-color rounded-md px-3 py-2 text-text-primary placeholder-text-secondary focus:ring-primary focus:border-primary"
+                  />
+                </div>
+                <div className="flex justify-end gap-4">
+                  <button
+                    onClick={onClose}
+                    className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    disabled={isVerifying || !url}
+                    className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
+                  >
+                    {isVerifying ? 'Verificando...' : 'Guardar y Verificar'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        };
 
         // =================================================================================
-        // INLINED: components/TemplateManagerModal.tsx - No changes needed
+        // INLINED: components/TemplateManagerModal.tsx
         // =================================================================================
-        const TemplateManagerModal = ({ templates, onClose, onSave, onReset }) => { /* ... */ };
-         // Function definition from previous step...
-         const TemplateManagerModal = ({ templates, onClose, onSave, onReset }) => {
-             const [curTmpl, setCurTmpl] = useState(() => structuredClone(Array.isArray(templates)?templates:[])); const [editTmpl, setEditTmpl] = useState(null);
-             const saveLocal = useCallback(() => { onSave(curTmpl); }, [curTmpl, onSave]);
-             const addNew = useCallback(() => { setEditTmpl({ id: `custom_${Date.now()}_${Math.random().toString(36).substring(2,7)}`, name: '', body: '' }); }, []);
-             const edit = useCallback((t) => { setEditTmpl({...t}); }, []);
-             const del = useCallback((id) => { if (window.confirm('¿Eliminar plantilla?')) { setCurTmpl(c => c.filter(t => t.id !== id)); } }, []);
-             const saveEdit = useCallback(() => { if (!editTmpl || !editTmpl.name.trim() || !editTmpl.body.trim()) { alert('Nombre/cuerpo vacío.'); return; } setCurTmpl(c => { const u = Array.isArray(c)?[...c]:[]; const idx = u.findIndex(t => t.id === editTmpl.id); if (idx > -1) u[idx] = {...editTmpl}; else u.push({...editTmpl}); return u; }); setEditTmpl(null); }, [editTmpl]);
-             const editChange = useCallback((f, v) => { setEditTmpl(p => p ? ({ ...p, [f]: v }) : null); }, []);
-             return ( /* ... TemplateManagerModal JSX ... */ <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-[250] p-4"><div className="bg-surface rounded-lg shadow-xl w-full max-w-4xl border border-border-color flex flex-col max-h-[90vh]"><div className="p-6 border-b border-border-color flex justify-between items-center shrink-0"><h3 className="text-xl font-bold text-primary">Gestionar Plantillas</h3><button onClick={onClose} className="text-text-secondary text-2xl hover:text-text-primary">&times;</button></div><div className="p-6 overflow-y-auto grow space-y-6"><div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full"><div className="flex flex-col h-full"><div className="flex justify-between items-center mb-2"><h4 className="text-lg font-semibold">Plantillas</h4><button onClick={addNew} className="bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-1 px-2 rounded disabled:opacity-50" disabled={!!editTmpl}>+ Nueva</button></div><ul className="space-y-1 border border-border-color rounded-lg p-2 overflow-y-auto grow bg-background/30">{curTmpl.map(t => (<li key={t.id} className={`flex justify-between items-center p-2 rounded transition-colors text-sm ${editTmpl?.id===t.id?'bg-primary/30 ring-1 ring-primary':'bg-highlight hover:bg-highlight/70'}`}><span className="text-text-primary truncate grow mr-2" title={t.name}>{t.name}</span><div className="space-x-1 shrink-0"><button onClick={()=>edit(t)} className="text-xs bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded disabled:opacity-50" disabled={!!editTmpl}>Editar</button><button onClick={()=>del(t.id)} className="text-xs bg-danger hover:bg-danger-hover px-2 py-1 rounded disabled:opacity-50" disabled={!!editTmpl}>Borrar</button></div></li>))}{curTmpl.length===0 && <li className="text-text-secondary text-center p-4 italic">No hay plantillas.</li>}</ul></div><div className="flex flex-col h-full"><h4 className="text-lg font-semibold mb-2">{editTmpl?(curTmpl.some(t=>t.id===editTmpl.id)?'Editar':'Nueva'):'Editor'}</h4>{editTmpl?(<div className="space-y-3 p-4 border border-border-color rounded-lg bg-highlight flex flex-col grow"><input type="text" placeholder="Nombre" value={editTmpl.name} onChange={e=>editChange('name',e.target.value)} className="w-full bg-background border border-border-color rounded-md px-3 py-2 text-sm shrink-0"/><textarea placeholder="Cuerpo (HTML)..." value={editTmpl.body} onChange={e=>editChange('body',e.target.value)} className="w-full bg-background border border-border-color rounded-md px-3 py-2 resize-y grow text-sm min-h-[200px]"/><p className="text-xs text-text-secondary shrink-0">Marcadores: {`{{Columna}}`}</p><div className="flex gap-2 shrink-0 justify-end"><button onClick={()=>setEditTmpl(null)} className="bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm">Cancelar</button><button onClick={saveEdit} className="bg-success hover:bg-green-700 px-3 py-1 rounded text-sm">Guardar</button></div></div>):(<div className="flex items-center justify-center h-full border border-dashed border-border-color rounded-lg bg-background/30 text-text-secondary italic p-4 text-center">Selecciona o crea plantilla.</div>)}</div></div></div><div className="p-4 bg-header flex justify-between items-center rounded-b-lg shrink-0"><button onClick={onReset} className="bg-danger hover:bg-danger-hover text-white font-bold py-2 px-4 rounded-lg text-sm disabled:opacity-50" disabled={!!editTmpl}>Restaurar</button><div className="flex gap-4"><button onClick={onClose} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg text-sm" disabled={!!editTmpl}>Cancelar</button><button onClick={saveLocal} className="bg-success hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg text-sm" disabled={!!editTmpl}>Guardar y Cerrar</button></div></div></div></div>);
-         };
+        const TemplateManagerModal = ({ templates, onClose, onSave, onReset }) => {
+          const [currentTemplates, setCurrentTemplates] = useState(templates);
+          const [editingTemplate, setEditingTemplate] = useState(null);
+
+          const handleSave = () => {
+            onSave(currentTemplates);
+            onClose();
+          };
+
+          const handleAddNew = () => {
+            setEditingTemplate({ id: `tpl_${Date.now()}`, name: '', body: '' });
+          };
+          
+          const handleEdit = (template) => {
+            setEditingTemplate({ ...template });
+          };
+
+          const handleDelete = (id) => {
+            if (window.confirm('¿Estás seguro de que quieres eliminar esta plantilla?')) {
+              setCurrentTemplates(currentTemplates.filter(t => t.id !== id));
+            }
+          };
+          
+          const handleSaveTemplateEdit = () => {
+            if (!editingTemplate || !editingTemplate.name || !editingTemplate.body) {
+              alert('El nombre y el cuerpo de la plantilla no pueden estar vacíos.');
+              return;
+            }
+
+            const existing = currentTemplates.find(t => t.id === editingTemplate.id);
+            if (existing) {
+              setCurrentTemplates(currentTemplates.map(t => t.id === editingTemplate.id ? editingTemplate : t));
+            } else {
+              setCurrentTemplates([...currentTemplates, editingTemplate]);
+            }
+            setEditingTemplate(null);
+          };
+
+          return (
+            <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-40 p-4">
+              <div className="bg-surface rounded-lg shadow-xl w-full max-w-4xl border border-border-color flex flex-col max-h-[90vh]">
+                <div className="p-6 border-b border-border-color flex justify-between items-center">
+                  <h3 className="text-xl font-bold text-primary">Gestionar Plantillas de Correo</h3>
+                  <button onClick={onClose} className="text-text-secondary text-2xl">&times;</button>
+                </div>
+                
+                <div className="p-6 overflow-y-auto space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className="text-lg font-semibold mb-2">Plantillas Actuales</h4>
+                      <ul className="space-y-2 border border-border-color rounded-lg p-2 max-h-96 overflow-y-auto">
+                        {currentTemplates.map(template => (
+                          <li key={template.id} className="flex justify-between items-center p-2 bg-highlight rounded">
+                            <span className="text-text-primary">{template.name}</span>
+                            <div className="space-x-2">
+                              <button onClick={() => handleEdit(template)} className="text-sm bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded">Editar</button>
+                              <button onClick={() => handleDelete(template.id)} className="text-sm bg-danger hover:bg-danger-hover px-2 py-1 rounded">Borrar</button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-lg font-semibold mb-2">{editingTemplate ? 'Editar Plantilla' : 'Crear Nueva Plantilla'}</h4>
+                      {editingTemplate ? (
+                        <div className="space-y-4 p-4 border border-border-color rounded-lg bg-highlight">
+                            <input
+                            type="text"
+                            placeholder="Nombre de la Plantilla"
+                            value={editingTemplate.name || ''}
+                            onChange={(e) => setEditingTemplate({ ...editingTemplate, name: e.target.value })}
+                            className="w-full bg-background border border-border-color rounded-md px-3 py-2"
+                          />
+                          <textarea
+                            placeholder="Cuerpo de la Plantilla..."
+                            value={editingTemplate.body || ''}
+                            onChange={(e) => setEditingTemplate({ ...editingTemplate, body: e.target.value })}
+                            className="w-full bg-background border border-border-color rounded-md px-3 py-2 h-40 resize-y"
+                          />
+                            <p className="text-xs text-text-secondary">Marcadores: {`{{Nombre}}`}, {`{{No_Orden}}`}, etc.</p>
+                          <div className="flex gap-2">
+                            <button onClick={handleSaveTemplateEdit} className="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm">Guardar Cambios</button>
+                            <button onClick={() => setEditingTemplate(null)} className="bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm">Cancelar</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button onClick={handleAddNew} className="w-full bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg">
+                          Añadir Nueva Plantilla
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-header flex justify-between items-center rounded-b-lg">
+                   <button onClick={onReset} className="bg-danger hover:bg-danger-hover text-white font-bold py-2 px-4 rounded-lg">
+                    Restaurar Predeterminadas
+                  </button>
+                  <div className="flex gap-4">
+                    <button onClick={onClose} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg">
+                        Cancelar
+                    </button>
+                    <button onClick={handleSave} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">
+                        Guardar y Cerrar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        };
 
         // =================================================================================
-        // INLINED: components/PreviewModal.tsx - No changes needed
+        // INLINED: components/PreviewModal.tsx
         // =================================================================================
-        const PreviewModal = ({ data, template, onClose }) => { /* ... */ };
-         // Function definition from previous step...
-         const PreviewModal = ({ data, template, onClose }) => {
-             if (!data || typeof data !== 'object') { console.error("Invalid preview data:", data); return ( <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-[250] p-4"><div className="bg-surface rounded-lg shadow-xl w-full max-w-lg border border-border-color p-8 text-center"><h3 className="text-xl font-bold text-danger mb-4">Error</h3><p className="text-text-secondary mb-6">Datos inválidos.</p><button onClick={onClose} className="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg">Cerrar</button></div></div> ); }
-             const body = template?.body ? replacePlaceholders(template.body, data) : '<p class="italic text-gray-500">[Selecciona tipo carta]</p>';
-             const full = `<div style="font-family:Arial,sans-serif;font-size:14px;color:#333;line-height:1.6;">${body}${COMMON_EMAIL_BODY}${SIGNATURE}</div>`;
-             const copyTxt = useCallback(() => { const d=document.createElement('div');d.innerHTML=full;navigator.clipboard.writeText(d.textContent||d.innerText||"").then(()=>alert('Texto copiado!')).catch(e=>{console.error('Copy txt fail:',e);alert('Error al copiar texto.');}); }, [full]);
-             const copyHtml = useCallback(() => { try { if (navigator.clipboard?.write) { const b=new Blob([full],{type:'text/html'}); const i=new ClipboardItem({'text/html':b}); navigator.clipboard.write([i]).then(()=>alert('HTML copiado!')).catch(e=>{console.error('Copy HTML fail:',e);alert('Error al copiar HTML.');}); } else { copyTxt(); alert("Texto copiado (HTML no soportado)."); } } catch (e) { console.error('Copy HTML err:', e); alert('Error inesperado al copiar HTML.'); } }, [full, copyTxt]);
-             return ( /* ... PreviewModal JSX ... */ <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-[250] p-4"><div className="bg-white rounded-lg shadow-xl w-full max-w-3xl border border-gray-300 flex flex-col max-h-[90vh]"><div className="p-4 border-b border-gray-300 flex justify-between items-center shrink-0 bg-gray-100 rounded-t-lg"><h3 className="text-lg font-bold text-gray-800 truncate">Vista Previa: {data.No_Orden||'N/A'}</h3><button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-2xl ml-4">&times;</button></div><iframe srcDoc={full} className="grow border-none w-full bg-white p-4" sandbox="allow-same-origin" title={`Preview ${data.No_Orden||'N/A'}`}/> B<div className="p-4 bg-gray-100 flex justify-end gap-3 rounded-b-lg shrink-0 border-t border-gray-300"><button onClick={copyHtml} className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded text-sm">Copiar HTML</button><button onClick={copyTxt} className="bg-blue-800 hover:bg-blue-900 text-white py-2 px-3 rounded text-sm">Copiar Texto</button><button onClick={onClose} className="bg-gray-500 hover:bg-gray-600 text-white py-2 px-3 rounded text-sm">Cerrar</button></div></div></div> );
-         };
+        const PreviewModal = ({ data, template, onClose }) => {
+          const bodyContent = template ? replacePlaceholders(template.body, data) : '<b>Error:</b> Plantilla no seleccionada o no encontrada.';
+          const fullBody = bodyContent + COMMON_EMAIL_BODY + SIGNATURE;
+
+          const copyToClipboard = () => {
+            const tempEl = document.createElement('div');
+            tempEl.innerHTML = fullBody;
+            const textContent = tempEl.innerText || "";
+            navigator.clipboard.writeText(textContent)
+              .then(() => alert('¡Contenido copiado al portapapeles!'))
+              .catch(err => alert('Falló al copiar el contenido.'));
+          };
+
+          return (
+            <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-40 p-4">
+              <div className="bg-surface rounded-lg shadow-xl w-full max-w-3xl border border-border-color flex flex-col">
+                <div className="p-6 border-b border-border-color">
+                  <h3 className="text-xl font-bold text-primary">Vista Previa del Correo</h3>
+                </div>
+                <div 
+                  className="p-6 overflow-y-auto max-h-[60vh] bg-white text-black font-serif"
+                  dangerouslySetInnerHTML={{ __html: fullBody }}
+                />
+                <div className="p-4 bg-header flex justify-end gap-4 rounded-b-lg">
+                  <button onClick={copyToClipboard} className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                    Copiar Contenido
+                  </button>
+                  <button onClick={onClose} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                    Cerrar
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        };
+        
 
         // =================================================================================
         // INLINED: App.tsx (The main application component)
         // =================================================================================
         const App = () => {
-          // ... (App state and logic remains the same) ...
-           console.log("Rendering App");
-           const [state, setState] = useState({ finalData: [], trackingData: [], archivedData: [], portalData: [], pdfData: Array(5).fill({}), templates: [], scriptUrl: null, isSetupNeeded: false, isReconfiguring: false, isLoading: true, isSaving: false, isTemplateManagerOpen: false, previewData: null, notification: null, editsCount: 0, onlineStatus: true, masterTrackingOrders: new Set(), });
-           const [sortConfig, setSortConfig] = useState({ key: 'Fecha_Neg', direction: 'descending' });
-           const notificationTimeoutIdRef = useRef(null);
-           const hideNotification = useCallback(() => { if (notificationTimeoutIdRef.current) clearTimeout(notificationTimeoutIdRef.current); setState(prev => ({ ...prev, notification: null })); }, []);
-           const showNotification = useCallback((message, type = 'info', duration = 5000) => { if (notificationTimeoutIdRef.current) clearTimeout(notificationTimeoutIdRef.current); setState(prev => ({ ...prev, notification: { message, type } })); notificationTimeoutIdRef.current = setTimeout(hideNotification, duration); }, [hideNotification]);
-           const handleSetScriptUrl = useCallback(async (url) => { console.log("Setting URL & fetching..."); setState(p => ({ ...p, isLoading: true, isReconfiguring: false })); try { const d = await fetchData(url); localStorage.setItem('sigweb_scriptUrl', url); setState(p => ({ ...p, finalData: d.finalData, trackingData: d.trackingData, archivedData: d.archivedData, masterTrackingOrders: new Set(d.masterTrackingOrders.map(String)), scriptUrl: url, isSetupNeeded: false, isLoading: false, editsCount: 0 })); showNotification('Conexión OK!', 'success'); console.log("Fetch OK."); } catch (e) { console.error("Set URL/Fetch Error:", e); showNotification(`Falló: ${e.message}`, 'error', 15000); setState(p => ({ ...p, isLoading: false, isSetupNeeded: true, scriptUrl: null })); localStorage.removeItem('sigweb_scriptUrl'); throw e; } }, [showNotification]);
-           useEffect(() => { console.log("App mounted."); const url = localStorage.getItem('sigweb_scriptUrl'); const tmpls = loadTemplates(); setState(p => ({ ...p, templates: tmpls })); if (url) { console.log("Found URL:", url); handleSetScriptUrl(url).catch(e => console.error("Initial load failed:", e)); } else { console.log("No URL. Setup needed."); setState(p => ({ ...p, isSetupNeeded: true, isLoading: false })); } const updateOnline = () => { const isOnline = navigator.onLine; setState(p => { if (p.onlineStatus === isOnline) return p; console.log("Network:", isOnline ? "Online" : "Offline"); if (!isOnline) showNotification("Desconectado.", "warning", 10000); else if (p.onlineStatus === false) showNotification("Conectado.", "success", 3000); return { ...p, onlineStatus: isOnline }; }); }; window.addEventListener('online', updateOnline); window.addEventListener('offline', updateOnline); updateOnline(); return () => { console.log("App unmounting."); window.removeEventListener('online', updateOnline); window.removeEventListener('offline', updateOnline); if (notificationTimeoutIdRef.current) clearTimeout(notificationTimeoutIdRef.current); }; }, [handleSetScriptUrl, showNotification]);
-           const incrementEdits = useCallback((count = 1) => { console.log(`Incr edits by ${count}`); setState(prev => ({ ...prev, editsCount: prev.editsCount + count })); },[]);
-           const handleSave = useCallback(async () => { /* ... same handleSave ... */ console.log("Save clicked."); if (!state.scriptUrl) { showNotification('No URL.', 'error'); return; } if (!state.onlineStatus) { showNotification('Offline.', 'error'); return; } const safeFD=Array.isArray(state.finalData)?state.finalData:[]; const safeTD=Array.isArray(state.trackingData)?state.trackingData:[]; const safeAD=Array.isArray(state.archivedData)?state.archivedData:[]; if(safeFD.length===0&&state.editsCount===0){showNotification('Nada que guardar.','info');return;} setState(p=>({...p,isSaving:true})); console.log("Saving..."); try { const payload={action:'saveData',payload:{finalData:safeFD,trackingData:safeTD,archivedData:safeAD}}; await saveData(state.scriptUrl,payload); const newOrders=new Set(state.masterTrackingOrders); [...safeFD,...safeTD,...safeAD].forEach(r=>{if(r&&r.No_Orden)newOrders.add(String(r.No_Orden).trim())}); showNotification('Enviado.','success'); console.log("Save sent."); setState(p=>({...p,editsCount:0,masterTrackingOrders:newOrders,finalData:[]})); } catch(e){console.error("Save Error:",e);showNotification(`Falló guardado: ${e.message}`,'error',10000)} finally {setState(p=>({...p,isSaving:false}));console.log("Save finished.")}}, [state.scriptUrl, state.onlineStatus, state.finalData, state.trackingData, state.archivedData, state.masterTrackingOrders, state.editsCount, showNotification]);
-           const processPortalData = useCallback(() => { /* ... same processPortalData ... */ console.log("Processing portal..."); const data=Array.isArray(state.portalData)?state.portalData.filter(r=>r&&Object.values(r).some(v=>String(v).trim()!=='')): []; if(data.length===0){showNotification("No hay datos válidos.","warning");setState(p=>({...p,portalData:[]}));return;} const newRows=data.filter(r=>{const k=r&&r.No_Orden?String(r.No_Orden).trim():null;return k&&!state.masterTrackingOrders.has(k)}); const dups=data.length-newRows.length; console.log(`${newRows.length} new, ${dups} dups.`); const proc=newRows.map(r=>({...r,Nombre:capitalizeWords(r.Nombre||''),EPS:(r.EPS||'').toUpperCase(),Descripcion_PDF:r.Descripcion_PDF||'(p)',Justificacion_PDF:r.Justificacion_PDF||'(p)',Fundamento_Legal_PDF:r.Fundamento_Legal_PDF||'(p)',Tipo_Carta:r.Tipo_Carta||'',Radicado_Comp:r.Radicado_Comp||''})); setState(p=>({...p,finalData:[...(Array.isArray(p.finalData)?p.finalData:[]),...proc],portalData:[]})); let msg=`${proc.length} filas añadidas.`; if(dups>0)msg+=` ${dups} omitidas.`; showNotification(msg,proc.length>0?'success':'info'); }, [state.portalData, state.masterTrackingOrders, state.finalData, showNotification]);
-           const mergePdfData = useCallback(() => { /* ... same mergePdfData ... */ console.log("Merging PDF..."); const pdfData=Array.isArray(state.pdfData)?state.pdfData.filter(r=>r&&Object.values(r).some(v=>String(v).trim()!=='')): []; if(pdfData.length===0){showNotification("No hay datos PDF.","warning");setState(p=>({...p,pdfData:Array(5).fill({})}));return;} const pdfMap=new Map();pdfData.filter(r=>r&&r['Archivo (No. Orden)']&&String(r['Archivo (No. Orden)']).trim()).forEach(r=>{const k=String(r['Archivo (No. Orden)']).trim();if(k)pdfMap.set(k,{Descripcion_PDF:String(r['Descripción']||'').trim(),Justificacion_PDF:String(r['Justificación']||'').trim(),Fundamento_Legal_PDF:String(r['Fundamento Legal']||'').trim()})}); console.log(`PDF map: ${pdfMap.size}`); const finalData=Array.isArray(state.finalData)?state.finalData:[];let merges=0; const merged=finalData.map(fRow=>{const k=fRow&&fRow.No_Orden?String(fRow.No_Orden).trim():null;if(k){const pMatch=pdfMap.get(k);if(pMatch){let u=false;const nRow={...fRow};if(pMatch.Descripcion_PDF&&pMatch.Descripcion_PDF!=='(p)'&&pMatch.Descripcion_PDF!==fRow.Descripcion_PDF){nRow.Descripcion_PDF=pMatch.Descripcion_PDF;u=true} if(pMatch.Justificacion_PDF&&pMatch.Justificacion_PDF!=='(p)'&&pMatch.Justificacion_PDF!==fRow.Justificacion_PDF){nRow.Justificacion_PDF=pMatch.Justificacion_PDF;u=true} if(pMatch.Fundamento_Legal_PDF&&pMatch.Fundamento_Legal_PDF!=='(p)'&&pMatch.Fundamento_Legal_PDF!==fRow.Fundamento_Legal_PDF){nRow.Fundamento_Legal_PDF=pMatch.Fundamento_Legal_PDF;u=true} if(u){merges++;return nRow}}} return fRow}); if(merges>0){setState(p=>({...p,finalData:merged,pdfData:Array(5).fill({}),editsCount:p.editsCount+merges}));showNotification(`${merges} fila(s) PDF actualizadas.`,'success');console.log(`Merged ${merges}.`)} else {setState(p=>({...p,pdfData:Array(5).fill({})}));showNotification('No se combinaron datos PDF.','info');console.log('No PDF merges.')}}, [state.pdfData, state.finalData, showNotification]);
-           const updateFinalDataRow = useCallback((noOrden, partialUpdate) => { /* ... same updateFinalDataRow ... */ const key=String(noOrden);setState(p=>{const d=Array.isArray(p.finalData)?p.finalData:[];let u=false;const nD=d.map(r=>{if(r&&String(r.No_Orden)===key){const c=Object.keys(partialUpdate).some(k=>String(r[k]??'')!==String(partialUpdate[k]??''));if(c){u=true;return{...r,...partialUpdate}}}return r});if(u){console.log(`Upd final row ${key}`);return{...p,finalData:nD,editsCount:p.editsCount+1}}return p})}, []);
-           const handleClearReviewData = useCallback(() => { /* ... same handleClearReviewData ... */ const d=Array.isArray(state.finalData)?state.finalData:[];if(d.length===0){showNotification("Revisión vacía.", "info");return;} if(window.confirm("¿Limpiar tabla Revisión?")){setState(p=>({...p,finalData:[]}));showNotification("Tabla limpiada.","info");}}, [showNotification, state.finalData]);
-           const handleSendToTracking = useCallback((selectedKeys) => { /* ... same handleSendToTracking ... */ console.log("Sending to track:",selectedKeys);const fData=Array.isArray(state.finalData)?state.finalData:[];const tpls=Array.isArray(state.templates)?state.templates:[];let skipNR=0;const items=fData.filter(r=>r&&selectedKeys.includes(String(r.No_Orden))).filter(r=>{const t=tpls.find(t=>t.id===r.Tipo_Carta);const hc=t&&t.name.toUpperCase().includes('COMPLE');const hr=r.Radicado_Comp&&String(r.Radicado_Comp).trim()!=='';if(hc&&!hr)skipNR++;return hc&&hr});if(skipNR>0)showNotification(`${skipNR} omitido(s) por falta Radicado.`,'warning',7000);if(items.length===0){showNotification(skipNR>0?"Ningún otro cumplió criterios.":"Ningún ítem cumple (Compl.+Radicado).",'warning');return;} console.log(`${items.length} meet criteria.`); setState(p=>{const tData=Array.isArray(p.trackingData)?p.trackingData:[];let nTD=[...tData];let nFD=Array.isArray(p.finalData)?[...p.finalData]:[];let add=0,upd=0,skip=0;const moved=new Set();items.forEach(i=>{const k=String(i.No_Orden);const idx=nTD.findIndex(t=>t&&String(t.No_Orden)===k);if(idx!==-1){if(nTD[idx].Radicado!==i.Radicado_Comp){if(window.confirm(`Caso ${k} existe con Rad. "${nTD[idx].Radicado}".\n¿Actualizar a "${i.Radicado_Comp}"?`)){nTD[idx]={...nTD[idx],Radicado:i.Radicado_Comp};upd++;moved.add(k)}else skip++}else skip++}else{nTD.push({Fecha_Ing:i.Fecha_Neg||new Date().toISOString().slice(0,10),No_Orden:i.No_Orden,Nombre:i.Nombre||'',EPS:i.EPS||'',Radicado:i.Radicado_Comp,Estado:TRACKING_STATUSES[0],Notas:''});add++;moved.add(k)}});nFD=nFD.filter(f=>!(f&&moved.has(String(f.No_Orden))));let msg="";if(add>0)msg+=`${add} nuevo(s). `;if(upd>0)msg+=`${upd} act. `;if(skip>0)msg+=`${skip} omit.`;if(add>0||upd>0){showNotification(msg.trim(),'success');return{...p,trackingData:nTD,finalData:nFD,editsCount:p.editsCount+add+upd}}else{showNotification(msg.trim()||"No cambios.",'info');return{...p,finalData:nFD}}})}, [state.templates, state.finalData, state.trackingData, showNotification]);
-           const exportForMailMerge = useCallback((data) => { /* ... same exportForMailMerge ... */ const cData=Array.isArray(data)?data:[];if(cData.length===0){showNotification("No hay datos.", "warning");return;} console.log(`Export mail ${cData.length}`);try{const safeT=Array.isArray(state.templates)?state.templates:[];const exp=cData.map(r=>{const tName=safeT.find(t=>t.id===r?.Tipo_Carta)?.name||"NO_SEL.";return{"Fecha":r?.Fecha_Neg||'',"Orden":r?.No_Orden||'',"Cedula":r?.No_Cedula||'',"Nombre":r?.Nombre||'',"EPS":r?.EPS||'',"Programa":r?.Programa||'',"Email":r?.Email||'',"Motivo":r?.Motivo_Negacion||'',"Desc_PDF":r?.Descripcion_PDF||'',"Just_PDF":r?.Justificacion_PDF||'',"Fund_PDF":r?.Fundamento_Legal_PDF||'',"Tipo_Carta":tName,"Radicado_Comp":r?.Radicado_Comp||''}});const ws=XLSX.utils.json_to_sheet(exp);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"DatosMail");XLSX.writeFile(wb,`Sigweb_MailMerge_${new Date().toISOString().slice(0,10)}.xlsx`);showNotification("Archivo Mail generado.", "success")}catch(e){console.error("Export mail err:",e);showNotification("Error exportar.","error")}}, [state.templates, showNotification]);
-           const updateTrackingData = useCallback((index, updatedRow, isArchived) => { /* ... same updateTrackingData ... */ if(typeof index!=='number'||index<0){console.error("Invalid idx updateTrack:",index);return} const key=isArchived?'archivedData':'trackingData';setState(p=>{const d=Array.isArray(p[key])?p[key]:[];if(index<d.length){const nD=[...d];nD[index]=updatedRow;console.log(`Updated ${key} idx ${index}`);const nE=p.isSaving?p.editsCount:p.editsCount+1;return{...p,[key]:nD,editsCount:nE}}else{console.error(`Index ${index} out of bounds for ${key}`);return p}})}, []);
-           const archiveItems = useCallback((indices, fromArchived) => { /* ... same archiveItems ... */ if(!Array.isArray(indices)||indices.some(isNaN)||indices.length===0){console.warn("Invalid indices archive:",indices);return} console.log(`${fromArchived?'Unarchiving':'Archiving'} indices:`,indices); const srcK=fromArchived?'archivedData':'trackingData'; const tgtK=fromArchived?'trackingData':'archivedData'; setState(p=>{const srcD=Array.isArray(p[srcK])?p[srcK]:[]; const tgtD=Array.isArray(p[tgtK])?[...p[tgtK]]:[]; const toMove=[]; const remainIdx=new Set(srcD.map((_,i)=>i)); indices.forEach(idx=>{if(idx>=0&&idx<srcD.length&&srcD[idx]){toMove.push(srcD[idx]);remainIdx.delete(idx)}}); if(toMove.length===0){console.warn("No valid items move.");return p} const newSrc=Array.from(remainIdx).map(i=>srcD[i]); const newTgt=[...tgtD,...toMove]; console.log(`Moving ${toMove.length}.`); return{...p,[srcK]:newSrc,[tgtK]:newTgt,editsCount:p.isSaving?p.editsCount:p.editsCount+toMove.length}})}, []);
-           const handleSaveTemplates = useCallback((newTemplates) => { /* ... same handleSaveTemplates ... */ const t=Array.isArray(newTemplates)?newTemplates:defaultTemplates;setState(p=>({...p,templates:t}));saveTemplates(t);showNotification('Plantillas guardadas.','success')}, [showNotification]);
-           const handleResetTemplates = useCallback(() => { /* ... same handleResetTemplates ... */ if(window.confirm('¿Restaurar plantillas?')){handleSaveTemplates([...defaultTemplates])}}, [handleSaveTemplates]);
-           const sortedFinalData = useMemo(() => { /* ... same sortedFinalData ... */ let items=Array.isArray(state.finalData)?[...state.finalData]:[];if(sortConfig.key){items.sort((a,b)=>{if(!a||!b)return 0;const aV=a[sortConfig.key]??'';const bV=b[sortConfig.key]??'';let comp;if(sortConfig.key==='No_Orden'){const nA=parseInt(aV,10),nB=parseInt(bV,10);if(!isNaN(nA)&&!isNaN(nB))comp=nA-nB} if(comp===undefined)comp=String(aV).localeCompare(String(bV),undefined,{numeric:true,sensitivity:'base'});return sortConfig.direction==='ascending'?comp:-comp})} return items}, [state.finalData, sortConfig]);
-           const handleCloseSetupModal = useCallback(() => { /* ... same handleCloseSetupModal ... */ if(!state.isSetupNeeded||state.scriptUrl){setState(p=>({...p,isReconfiguring:false}))}else{alert("Debes configurar URL.")}}, [state.isSetupNeeded, state.scriptUrl]);
+          const [state, setState] = useState({
+            finalData: [],
+            trackingData: [],
+            archivedData: [],
+            portalData: Array(5).fill({}),
+            pdfData: Array(5).fill({}),
+            templates: [],
+            scriptUrl: null,
+            isSetupNeeded: false,
+            isReconfiguring: false,
+            isLoading: true,
+            isSaving: false,
+            isTemplateManagerOpen: false,
+            previewData: null,
+            notification: null,
+            editsCount: 0,
+            onlineStatus: true,
+          });
 
-          // ================== Render Logic ==================
-          if (state.isLoading && !state.isSetupNeeded) { return <div className="fixed inset-0 bg-background/90 flex items-center justify-center z-[300]"><Spinner /> <span className="ml-4 text-xl">Cargando...</span></div>; }
-          if (state.isSetupNeeded || state.isReconfiguring) { return <SetupModal onSave={handleSetScriptUrl} onClose={handleCloseSetupModal} initialUrl={state.scriptUrl || ''} />; }
+          const [sortConfig, setSortConfig] = useState({
+            key: 'No_Orden',
+            direction: 'ascending',
+          });
 
-          return ( // App JSX
-             <div className="p-3 sm:p-6 bg-background min-h-screen text-sm">
-                {state.notification && <Notification message={state.notification.message} type={state.notification.type} onClose={hideNotification} />}
-                {!state.onlineStatus && <div className="bg-yellow-500 text-black text-center p-2 fixed top-0 left-0 w-full z-[100] shadow font-semibold">⚠ Desconectado.</div>}
-                <main className={`max-w-screen-2xl mx-auto bg-surface p-4 sm:p-5 rounded-xl border border-border-color space-y-6 ${!state.onlineStatus ? 'pt-12 sm:pt-14' : ''}`}>
-                    <Header onSave={handleSave} onManageTemplates={() => setState(p => ({ ...p, isTemplateManagerOpen: true }))} onReconfigure={() => setState(p => ({ ...p, isReconfiguring: true }))} />
-                    <Dashboard reviewCount={state.finalData.length} trackingCount={state.trackingData.length} archivedCount={state.archivedData.length} editsCount={state.editsCount} />
-                    <div className="text-right"><button onClick={() => exportDetailedReport(state.finalData, state.trackingData, state.archivedData)} className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-3 rounded-lg transition-colors text-xs sm:text-sm">Descargar Reporte</button></div>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <DataInputArea id="portal-area" title="Área 1: Cargar Excel Portal" headers={PORTAL_HEADERS} data={state.portalData} onDataChange={d=>setState(p=>({...p,portalData:d}))} onProcess={processPortalData} processButtonText="Procesar y Añadir" inputType="file" />
-                        <DataInputArea id="pdf-area" title="Área 2: Pegar Datos PDF" headers={PDF_HEADERS} data={state.pdfData} onDataChange={d=>setState(p=>({...p,pdfData:d}))} onProcess={mergePdfData} processButtonText="Combinar" inputType="paste" />
-                    </div>
-                    <ReviewArea data={sortedFinalData} templates={state.templates} updateRow={updateFinalDataRow} incrementEdits={incrementEdits} onSendToTracking={handleSendToTracking} onPreview={row=>setState(p=>({...p,previewData:row}))} onExportForMailMerge={exportForMailMerge} onClearReviewData={handleClearReviewData} sortConfig={sortConfig} setSortConfig={setSortConfig} />
-                    <TrackingArea trackingData={state.trackingData} archivedData={state.archivedData} updateTrackingData={updateTrackingData} archiveItems={archiveItems} />
-                    {state.isSaving && <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-[300]"><Spinner /> <span className="ml-4 text-lg">Guardando...</span></div>}
-                </main>
-                {state.isTemplateManagerOpen && <TemplateManagerModal templates={state.templates} onClose={()=>setState(p=>({...p,isTemplateManagerOpen:false}))} onSave={handleSaveTemplates} onReset={handleResetTemplates} />}
-                {state.previewData && <PreviewModal data={state.previewData} template={Array.isArray(state.templates)?state.templates.find(t=>t.id===state.previewData?.Tipo_Carta):null} onClose={()=>setState(p=>({...p,previewData:null}))} />}
-             </div>
-           );
-        }; // End of App Component
+          const hideNotification = () =>
+            setState((prev) => ({ ...prev, notification: null }));
+
+          const showNotification = (message, type, duration = 5000) => {
+            setState((prev) => ({ ...prev, notification: { message, type } }));
+            setTimeout(hideNotification, duration);
+          };
+
+          const handleSetScriptUrl = async (url) => {
+            setState((prev) => ({ ...prev, isLoading: true }));
+            try {
+              const data = await fetchData(url);
+              localStorage.setItem('sigweb_scriptUrl', url);
+              setState((prev) => ({
+                ...prev,
+                ...data,
+                scriptUrl: url,
+                isSetupNeeded: false,
+                isReconfiguring: false,
+                isLoading: false,
+              }));
+              showNotification('¡Conexión exitosa y datos cargados!', 'success');
+            } catch (error) {
+              console.error(error);
+              showNotification(
+                `Falló la conexión. Por favor, revisa la URL y los permisos del script.`,
+                'error'
+              );
+              setState((prev) => ({ ...prev, isLoading: false }));
+            }
+          };
+
+          useEffect(() => {
+            const url = localStorage.getItem('sigweb_scriptUrl');
+            const loadedTemplates = loadTemplates();
+            setState((prev) => ({ ...prev, templates: loadedTemplates }));
+
+            if (url) {
+              handleSetScriptUrl(url);
+            } else {
+              setState((prev) => ({ ...prev, isSetupNeeded: true, isLoading: false }));
+            }
+
+            const updateOnlineStatus = () => {
+                setState(prev => ({ ...prev, onlineStatus: navigator.onLine }));
+                if (!navigator.onLine) {
+                    showNotification("Estás desconectado. El guardado de datos está deshabilitado.", "warning", 10000);
+                }
+            };
+
+            window.addEventListener('online', updateOnlineStatus);
+            window.addEventListener('offline', updateOnlineStatus);
+            updateOnlineStatus();
+
+            return () => {
+                window.removeEventListener('online', updateOnlineStatus);
+                window.removeEventListener('offline', updateOnlineStatus);
+            };
+          }, []);
+
+          const incrementEdits = () =>
+            setState((prev) => ({ ...prev, editsCount: prev.editsCount + 1 }));
+
+          const handleSave = async () => {
+            if (!state.scriptUrl) {
+              showNotification('No se puede guardar. La URL del script no está configurada.', 'error');
+              return;
+            }
+            if (!state.onlineStatus) {
+                showNotification('No se puede guardar mientras estás desconectado.', 'error');
+                return;
+            }
+            setState((prev) => ({ ...prev, isSaving: true }));
+            try {
+              // El backend ahora tiene una protección para no borrar la hoja de 'Revisión'
+              // si se envía un array vacío, así que es seguro enviar el estado actual.
+              await saveData(state.scriptUrl, {
+                finalData: state.finalData,
+                trackingData: state.trackingData,
+                archivedData: state.archivedData,
+              });
+              showNotification('¡Datos sincronizados con la nube con éxito!', 'success');
+              setState((prev) => ({ ...prev, editsCount: 0 })); // Reset edits on successful save
+            } catch (error) {
+              console.error(error);
+              showNotification('Falló el guardado de datos. Por favor, inténtalo de nuevo.', 'error');
+            } finally {
+              setState((prev) => ({ ...prev, isSaving: false }));
+            }
+          };
+
+          // --- MODIFICACIÓN 1: Lógica de procesamiento actualizada ---
+          const processPortalData = useCallback(() => {
+            const processedData = state.portalData
+              .filter((row) => row['NÚMERO OR'] && String(row['NÚMERO OR']).trim())
+              .map((row) => ({
+                // Mapeo de campos nuevos a la estructura interna
+                Fecha_Neg: row['FECHA NEGA'] || '',
+                No_Orden: row['NÚMERO OR'] || '',
+                No_Cedula: row['TIPO IDENTIFICAC'] || '',
+                Nombre: capitalizeWords(row['NOMBRE AFI'] || ''),
+                Motivo_Negacion: row['MOTIVO NEG'] || '',
+                Programa: row.PROGRAMA || '',
+                Plan: row.PLAN || '',
+                EPS: (row.EPS || '').toUpperCase(),
+                Email: row.Email || '',
+                Celular: row.CELULAR || '',
+                Edad: row.EDAD || '',
+                Regional: row.REGIONAL || '',
+                
+                // Campos nuevos que se guardan pero no se usan activamente
+                Fecha_Asignacion: row.Fecha_Asignacion || '',
+                EJECUTIVO: row.EJECUTIVO || '',
+                PROCEDIMIE: row.PROCEDIMIE || '',
+                Fecha_Ingres: row.Fecha_Ingres || '',
+                ESTADO_PORTAL: row.ESTADO || '', // Renombrado para no chocar
+
+                // Campos viejos que ya no vienen (se inicializan vacíos)
+                Sucursal: '',
+                Auditor: '',
+                Antiguedad: '',
+                Telefono: '',
+                Direccion: '',
+                Tipo_Usuario: '',
+                Usuario_Emitio: '',
+                Gestion_Negacion: '',
+                
+                // Campos por defecto para Área 3
+                Descripcion_PDF: '(pendiente)',
+                Justificacion_PDF: '(pendiente)',
+                Fundamento_Legal_PDF: '(pendiente)',
+                Tipo_Carta: '',
+                Radicado_Comp: '',
+              }));
+
+            setState((prev) => ({ ...prev, finalData: processedData }));
+            showNotification(
+              `${processedData.length} filas procesadas desde los datos del Portal.`,
+              'success'
+            );
+          }, [state.portalData]);
+
+          const mergePdfData = useCallback(() => {
+            const pdfMap = new Map();
+            state.pdfData
+              .filter((row) => row['Archivo (No. Orden)']?.trim())
+              .forEach((row) => {
+                pdfMap.set(row['Archivo (No. Orden)'].trim(), {
+                  Descripcion_PDF: row.Descripción || '',
+                  Justificacion_PDF: row.Justificación || '',
+                  Fundamento_Legal_PDF: row['Fundamento Legal'] || '',
+                });
+              });
+
+            const mergedData = state.finalData.map((finalRow) => {
+              const pdfMatch = pdfMap.get(finalRow.No_Orden.trim());
+              return pdfMatch ? { ...finalRow, ...pdfMatch } : finalRow;
+            });
+
+            setState((prev) => ({ ...prev, finalData: mergedData }));
+            showNotification(`Datos del PDF combinados en el Área de Revisión.`, 'success');
+          }, [state.pdfData, state.finalData]);
+
+          const updateFinalDataRow = (noOrden, partialUpdate) => {
+            const newData = state.finalData.map(row => 
+                row.No_Orden === noOrden ? { ...row, ...partialUpdate } : row
+            );
+            setState((prev) => ({ ...prev, finalData: newData }));
+          };
+          
+          const handleClearReviewData = () => {
+            if (window.confirm("¿Estás seguro de que quieres limpiar la tabla de revisión?\n\nEsta acción solo afectará tu vista actual y no borrará ningún dato guardado en la nube.")) {
+                setState(prev => ({ ...prev, finalData: [] }));
+                showNotification("La tabla de revisión ha sido limpiada.", "info");
+            }
+          };
+
+          // --- MODIFICACIÓN 5: Se añade "No_Cedula" al enviar a seguimiento ---
+          const handleSendToTracking = (selectedOrderNumbers) => {
+            const itemsToSend = state.finalData.filter(row => selectedOrderNumbers.includes(row.No_Orden))
+              .filter((row) => {
+                const template = state.templates.find((t) => t.id === row.Tipo_Carta);
+                return (
+                  template &&
+                  template.name.toUpperCase().includes('COMPLEMENTARIEDAD') &&
+                  row.Radicado_Comp &&
+                  row.Radicado_Comp.trim() !== ''
+                );
+              });
+
+            if (itemsToSend.length === 0) {
+              showNotification(
+                "No hay ítems para enviar. Asegúrate de que sean del tipo 'COMPLEMENTARIEDAD' y tengan un 'Radicado'.",
+                'warning'
+              );
+              return;
+            }
+
+            let newTrackingData = [...state.trackingData];
+            let newFinalData = [...state.finalData];
+            let addedCount = 0;
+            let updatedCount = 0;
+
+            itemsToSend.forEach((item) => {
+              const existingIndex = newTrackingData.findIndex((t) => t.No_Orden === item.No_Orden);
+              if (existingIndex !== -1) {
+                  if(window.confirm(`El caso ${item.No_Orden} ya está en seguimiento. ¿Quieres actualizarlo?`)) {
+                    newTrackingData[existingIndex].Radicado = item.Radicado_Comp;
+                    updatedCount++;
+                  }
+              } else {
+                  newTrackingData.push({
+                      Fecha_Ing: item.Fecha_Neg,
+                      No_Orden: item.No_Orden,
+                      No_Cedula: item.No_Cedula, // <-- AÑADIDO
+                      Nombre: item.Nombre,
+                      EPS: item.EPS,
+                      Radicado: item.Radicado_Comp,
+                      Estado: 'Pendiente',
+                      Notas: '',
+                  });
+                  addedCount++;
+              }
+            });
+            
+            const itemsSentOrderNumbers = itemsToSend.map(i => i.No_Orden);
+            newFinalData = newFinalData.filter(f => !itemsSentOrderNumbers.includes(f.No_Orden));
+
+
+            setState((prev) => ({
+              ...prev,
+              trackingData: newTrackingData,
+              finalData: newFinalData,
+            }));
+            showNotification(`${addedCount} nuevos ítems enviados, ${updatedCount} ítems actualizados en seguimiento.`, 'success');
+          };
+          
+          const exportForMailMerge = (data) => {
+               if (!data || data.length === 0) {
+                   showNotification("No hay datos en revisión para exportar.", "warning");
+                   return;
+               }
+               const dataToExport = data.map(row => ({
+                   "Fecha": row.Fecha_Neg, // Nombre de columna corregido para VBA
+                   "Orden": row.No_Orden,
+                   "Cedula": row.No_Cedula,
+                   "Nombre": row.Nombre,
+                   "EPS": row.EPS,
+                   "Programa": row.Programa,
+                   "Email": row.Email,
+                   "Motivo": row.Motivo_Negacion,
+                   "Desc": row.Descripcion_PDF,
+                   "Just": row.Justificacion_PDF,
+                   "Fund": row.Fundamento_Legal_PDF,
+                   "Carta": state.templates.find(t => t.id === row.Tipo_Carta)?.name || "NO_SELECCIONADA",
+                   "Radicado": row.Radicado_Comp
+               }));
+               const ws = XLSX.utils.json_to_sheet(dataToExport);
+               const wb = XLSX.utils.book_new();
+               XLSX.utils.book_append_sheet(wb, ws, "DatosParaEnvio");
+               XLSX.writeFile(wb, "Sigweb_Procesado.xlsx");
+           };
+
+          // --- MODIFICACIÓN 5: Nueva función de exportación ---
+          const exportComplementaridadReport = () => {
+            const dataToExport = [...state.trackingData, ...state.archivedData];
+            if (dataToExport.length === 0) {
+              showNotification("No hay datos de seguimiento (activos o archivados) para exportar.", "warning");
+              return;
+            }
+            // Formateo para que coincida con la imagen de columnas
+            const formattedData = dataToExport.map(row => ({
+              "Fecha_Neg": row.Fecha_Ing,
+              "No_Orden": row.No_Orden,
+              "No_Cedula": row.No_Cedula,
+              "Nombre": row.Nombre,
+              "EPS": row.EPS,
+              "Radicado": row.Radicado,
+              "Estado": row.Estado
+            }));
+            
+            const ws = XLSX.utils.json_to_sheet(formattedData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Complementariedades");
+            XLSX.writeFile(wb, `Sigweb_Reporte_Complementariedades_${new Date().toISOString().slice(0, 10)}.xlsx`);
+            showNotification("Reporte de complementariedades generado.", "success");
+          };
+
+
+          const updateTrackingData = (index, updatedRow, isArchived) => {
+            const dataKey = isArchived ? 'archivedData' : 'trackingData';
+            const currentData = [...state[dataKey]];
+            currentData[index] = updatedRow;
+            setState((prev) => ({ ...prev, [dataKey]: currentData }));
+          };
+
+          const archiveItems = (indices, fromArchived) => {
+            if (fromArchived) { // Unarchive
+              const itemsToMove = indices.map(i => state.archivedData[i]).filter(Boolean);
+              const remainingArchived = state.archivedData.filter((_, i) => !indices.includes(i));
+              setState(prev => ({
+                ...prev,
+                trackingData: [...prev.trackingData, ...itemsToMove],
+                archivedData: remainingArchived,
+              }));
+            } else { // Archive
+              const itemsToMove = indices.map(i => state.trackingData[i]).filter(Boolean);
+              const remainingTracking = state.trackingData.filter((_, i) => !indices.includes(i));
+              setState(prev => ({
+                ...prev,
+                archivedData: [...prev.archivedData, ...itemsToMove],
+                trackingData: remainingTracking,
+              }));
+            }
+          };
+
+          const handleSaveTemplates = (newTemplates) => {
+            setState((prev) => ({ ...prev, templates: newTemplates }));
+            saveTemplates(newTemplates);
+            showNotification('Plantillas de correo guardadas.', 'success');
+          };
+
+          const handleResetTemplates = () => {
+            if (window.confirm('¿Estás seguro de que quieres restaurar las plantillas predeterminadas? Se perderán las plantillas personalizadas.')) {
+              handleSaveTemplates(defaultTemplates);
+            }
+          };
+
+          const sortedFinalData = React.useMemo(() => {
+            let sortableItems = [...state.finalData];
+            if (sortConfig.key) {
+                sortableItems.sort((a, b) => {
+                    const aVal = a[sortConfig.key] || '';
+                    const bVal = b[sortConfig.key] || '';
+                    if (aVal < bVal) {
+                        return sortConfig.direction === 'ascending' ? -1 : 1;
+                    }
+                    if (aVal > bVal) {
+                        return sortConfig.direction === 'ascending' ? 1 : -1;
+                    }
+                    return 0;
+                });
+            }
+            return sortableItems;
+          }, [state.finalData, sortConfig]);
+
+          if (state.isLoading) {
+            return <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50"><Spinner /> <span className="ml-4 text-xl">Cargando Datos...</span></div>;
+          }
+
+          if (state.isSetupNeeded || state.isReconfiguring) {
+            return <SetupModal onSave={handleSetScriptUrl} onClose={() => setState(prev => ({ ...prev, isReconfiguring: false }))} initialUrl={state.scriptUrl || ''} />;
+          }
+
+          return (
+            <div className="p-4 sm:p-8 bg-background min-h-screen">
+              {state.notification && (
+                <Notification
+                  message={state.notification.message}
+                  type={state.notification.type}
+                  onClose={hideNotification}
+                />
+              )}
+              {!state.onlineStatus && (
+                   <div className="bg-yellow-600 text-white text-center p-2 fixed top-0 left-0 w-full z-50">
+                     Actualmente estás desconectado. La sincronización de datos está en pausa.
+                   </div>
+               )}
+
+              {/* --- MODIFICACIÓN 3: Se quita 'max-w-screen-2xl' para hacerla más ancha --- */}
+              <main className="mx-auto bg-surface p-4 sm:p-6 rounded-xl border border-border-color space-y-8">
+                <Header 
+                    onSave={handleSave} 
+                    onManageTemplates={() => setState(prev => ({ ...prev, isTemplateManagerOpen: true }))}
+                    onReconfigure={() => setState(prev => ({ ...prev, isReconfiguring: true }))}
+                />
+                <Dashboard
+                  reviewCount={state.finalData.length}
+                  trackingCount={state.trackingData.length}
+                  archivedCount={state.archivedData.length}
+                  editsCount={state.editsCount}
+                />
+                <div className="text-right">
+                       <button
+                           onClick={() => exportDetailedReport(state.finalData, state.trackingData, state.archivedData)}
+                           className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                       >
+                           Descargar Reporte Detallado
+                       </button>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <DataInputArea
+                    id="portal-area"
+                    title="Área 1: Datos del Portal"
+                    headers={PORTAL_HEADERS}
+                    data={state.portalData}
+                    onDataChange={(newData) => setState(prev => ({ ...prev, portalData: newData }))}
+                    onProcess={processPortalData}
+                  />
+                  <DataInputArea
+                    id="pdf-area"
+                    title="Área 2: Datos del Extractor PDF"
+                    headers={PDF_HEADERS}
+                    data={state.pdfData}
+                    onDataChange={(newData) => setState(prev => ({ ...prev, pdfData: newData }))}
+                    onProcess={mergePdfData}
+                    processButtonText="Combinar con Datos del PDF"
+                  />
+                </div>
+
+                <ReviewArea
+                  data={sortedFinalData}
+                  templates={state.templates}
+                  updateRow={updateFinalDataRow}
+                  incrementEdits={incrementEdits}
+                  onSendToTracking={handleSendToTracking}
+                  onPreview={(row) => setState(prev => ({ ...prev, previewData: row }))}
+                  onExportForMailMerge={exportForMailMerge}
+                  onClearReviewData={handleClearReviewData}
+                  sortConfig={sortConfig}
+                  setSortConfig={setSortConfig}
+                />
+
+                <TrackingArea
+                  trackingData={state.trackingData}
+                  archivedData={state.archivedData}
+                  updateTrackingData={updateTrackingData}
+                  archiveItems={archiveItems}
+                  onExportComplementariedades={exportComplementaridadReport}
+                />
+                
+                {state.isSaving && <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50"><Spinner /> <span className="ml-4 text-xl">Guardando Datos...</span></div>}
+              </main>
+
+              {state.isTemplateManagerOpen && (
+                <TemplateManagerModal
+                  templates={state.templates}
+                  onClose={() => setState(prev => ({...prev, isTemplateManagerOpen: false}))}
+                  onSave={handleSaveTemplates}
+                  onReset={handleResetTemplates}
+                />
+              )}
+
+              {state.previewData && (
+                <PreviewModal
+                  data={state.previewData}
+                  template={state.templates.find(t => t.id === state.previewData?.Tipo_Carta)}
+                  onClose={() => setState(prev => ({...prev, previewData: null}))}
+                />
+              )}
+            </div>
+          );
+        };
 
         // =================================================================================
         // INLINED: index.tsx (Render the application)
         // =================================================================================
         const rootElement = document.getElementById('root');
         if (!rootElement) {
-          console.error("Fatal Error: #root not found.");
-          document.body.innerHTML = '<div style="color:red;padding:20px;font-family:sans-serif;background:#333;text-align:center;"><h1>Error Crítico</h1><p>#root no encontrado.</p></div>';
-        } else {
-            try {
-               const root = ReactDOM.createRoot(rootElement);
-               root.render(<App />); // Use normal render
-            } catch(error) {
-                console.error("React render error:", error);
-                 rootElement.innerHTML = `<div style="color:orange;padding:20px;font-family:sans-serif;background:#333;"><h1>Error React</h1><pre style="white-space:pre-wrap;">${error.stack||error.message}</pre></div>`;
-            }
+          throw new Error("Could not find root element to mount to");
         }
+        const root = ReactDOM.createRoot(rootElement);
+        root.render(<App />);
 
     </script>
 </body>
