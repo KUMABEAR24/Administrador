@@ -65,11 +65,12 @@
         // =================================================================================
         
         // --- CORRECCIÓN 1: Cabeceras del Portal (Área 1) ---
-        // Columnas exactas que se pegan
+        // Tus 18 columnas, en el orden exacto.
         const PORTAL_HEADERS = [
-          "Fecha_Asignacion", "EJECUTIVO", "FECHA NEGA", "REGIONAL", "NÚMERO OR", 
-          "TIPO IDENTIFICAC", "NOMBRE AFI", "EDAD", "PROCEDIMIE", "MOTIVO NEG", 
-          "PLAN", "PROGRAMA", "EPS", "Fecha_Ingres", "Email", "CELULAR", "ESTADO"
+          "Fecha_Asignacion", "EJECUTIVO", "FECHA NEGACIÓN", "REGIONAL", "NÚMERO ORDEN", 
+          "TIPO DOCUMENTO", "IDENTIFICACIÓN AFILIADO", "NOMBRE AFILIADO", "EDAD", 
+          "PROCEDIMIENTO", "MOTIVO NEGACIÓN", "PLAN", "PROGRAMA", "EPS", 
+          "Fecha_Ingreso", "EMAIL", "CELULAR", "ESTADO"
         ];
 
         const PDF_HEADERS = [
@@ -421,7 +422,7 @@
         // =================================================================================
         // INLINED: components/ReviewArea.tsx
         // =================================================================================
-        // --- CORRECCIÓN 3: Columnas de Área 3 actualizadas ---
+        // Columnas de Área 3 (como en la versión anterior)
         const ReviewArea = ({
           data,
           templates,
@@ -545,7 +546,6 @@
                       const isComplementariedad = template && template.name.toUpperCase().includes('COMPLEMENTARIEDAD');
                       const requiresRadicado = isComplementariedad;
                       
-                      // Clave única para la fila
                       const rowKey = `${row.No_Orden || 'new'}-${rowIndex}`;
 
                       return (
@@ -622,7 +622,7 @@
         // =================================================================================
         // INLINED: components/TrackingArea.tsx
         // =================================================================================
-        // --- CORRECCIÓN 4: Columnas de Área 4 actualizadas ---
+        // Columnas de Área 4 (como en la versión anterior)
         const TrackingTable = ({ data, isArchived, onUpdate, onArchive, filter }) => {
             
           const [selectedRows, setSelectedRows] = useState(new Set());
@@ -683,7 +683,6 @@
               <div className="table-container max-h-[400px] overflow-auto border border-border-color rounded-lg">
                 <table className="w-full text-sm text-left text-text-secondary">
                   <thead className="text-xs text-text-primary uppercase bg-header sticky top-0">
-                    {/* Columnas actualizadas según la imagen del usuario */}
                     <tr>
                       <th className="px-4 py-3"><input type="checkbox" onChange={handleSelectAll} checked={selectedRows.size === filteredData.length && filteredData.length > 0}/></th>
                       <th className="px-4 py-3">Fecha_Neg</th>
@@ -1111,59 +1110,44 @@
             }
           };
 
-          // --- CORRECCIÓN 1: Lógica de procesamiento de datos (Área 1) ---
+          // --- CORRECCIÓN 1 Y 2: Lógica de procesamiento de datos (Área 1) ---
           const processPortalData = useCallback(() => {
             const processedData = state.portalData
-              .filter((row) => row['NÚMERO OR'] && String(row['NÚMERO OR']).trim())
+              // 1. Filtra filas vacías Y la fila de header
+              .filter((row) => {
+                const numOrden = String(row['NÚMERO ORDEN'] || '').trim();
+                if (numOrden === '') return false; // Elimina vacías
+                if (numOrden.toUpperCase() === 'NÚMERO ORDEN') return false; // Elimina header
+                return true;
+              })
               .map((row) => {
                 
-                // Lógica para dividir la Cédula y el Nombre
-                const nombreAfi = row['NOMBRE AFI'] || '';
-                const cedulaMatch = nombreAfi.match(/^([\d\.]+)\s/); // Busca números (y puntos) al inicio
-                let cedula = '';
-                let nombre = '';
-
-                if (cedulaMatch && cedulaMatch[1]) {
-                  cedula = cedulaMatch[1]; // El número (ej. "1088334764")
-                  nombre = nombreAfi.replace(cedulaMatch[0], '').trim(); // El resto (ej. "LAURA LILIANA...")
-                } else {
-                  // Si no encuentra número, pasa el dato tal cual
-                  cedula = 'ErrorVerificar';
-                  nombre = nombreAfi; 
-                }
-
+                // 2. Mapeo directo de las 18 columnas a la estructura interna
                 const newRow = {
-                  // Mapeo 1:1 de los nuevos datos a la estructura interna
-                  Fecha_Neg: row['FECHA NEGA'] || '',
-                  No_Orden: row['NÚMERO OR'] || '',
-                  No_Cedula: cedula, // <-- DATO CORREGIDO
-                  Nombre: capitalizeWords(nombre), // <-- DATO CORREGIDO
-                  Tipo_Identificacion: row['TIPO IDENTIFICAC'] || '', // Se guarda por si acaso
-                  Motivo_Negacion: row['MOTIVO NEG'] || '',
+                  Fecha_Neg: row['FECHA NEGACIÓN'] || '',
+                  No_Orden: row['NÚMERO ORDEN'] || '',
+                  No_Cedula: row['IDENTIFICACIÓN AFILIADO'] || '', // <-- Corregido
+                  Nombre: capitalizeWords(row['NOMBRE AFILIADO'] || ''), // <-- Corregido
+                  Tipo_Identificacion: row['TIPO DOCUMENTO'] || '',
+                  Motivo_Negacion: row['MOTIVO NEGACIÓN'] || '',
                   Programa: row.PROGRAMA || '',
                   Plan: row.PLAN || '',
                   EPS: (row.EPS || '').toUpperCase(),
-                  Email: row.Email || '',
+                  Email: row.EMAIL || '',
                   Celular: row.CELULAR || '',
                   Edad: row.EDAD || '',
                   Regional: row.REGIONAL || '',
                   
-                  // Nuevos campos que solo se guardan como referencia
+                  // Campos extra que se guardan
                   Fecha_Asignacion: row.Fecha_Asignacion || '',
                   EJECUTIVO: row.EJECUTIVO || '',
-                  PROCEDIMIE: row.PROCEDIMIE || '',
-                  Fecha_Ingres: row.Fecha_Ingres || '',
+                  PROCEDIMIE: row.PROCEDIMIENTO || '',
+                  Fecha_Ingres: row.Fecha_Ingreso || '',
                   ESTADO_PORTAL: row.ESTADO || '',
 
                   // Campos viejos que ya no vienen (se inicializan vacíos)
-                  Sucursal: '',
-                  Auditor: '',
-                  Antiguedad: '',
-                  Telefono: '',
-                  Direccion: '',
-                  Tipo_Usuario: '',
-                  Usuario_Emitio: '',
-                  Gestion_Negacion: '',
+                  Sucursal: '', Auditor: '', Antiguedad: '', Telefono: '',
+                  Direccion: '', Tipo_Usuario: '', Usuario_Emitio: '', Gestion_Negacion: '',
                   
                   // Campos por defecto para el Área 3
                   Descripcion_PDF: '(pendiente)',
@@ -1254,7 +1238,7 @@
                     updatedCount++;
                   }
               } else {
-                  // Ahora 'item.No_Cedula' y 'item.Nombre' son correctos gracias al nuevo processPortalData
+                  // Los datos (item.No_Cedula) ya son correctos
                   newTrackingData.push({
                       Fecha_Ing: item.Fecha_Neg,
                       No_Orden: item.No_Orden,
@@ -1263,7 +1247,7 @@
                       EPS: item.EPS,
                       Radicado: item.Radicado_Comp,
                       Estado: 'Pendiente',
-                      Notas: '', // 'Notas' ya no se muestra, pero se mantiene internamente
+                      Notas: '', 
                   });
                   addedCount++;
               }
@@ -1286,7 +1270,6 @@
                    showNotification("No hay datos en revisión para exportar.", "warning");
                    return;
                }
-               // Los datos ahora son correctos
                const dataToExport = data.map(row => ({
                    "Fecha": row.Fecha_Neg,
                    "Orden": row.No_Orden,
@@ -1314,7 +1297,6 @@
               showNotification("No hay datos de seguimiento (activos o archivados) para exportar.", "warning");
               return;
             }
-            // Los datos ahora son correctos
             const formattedData = dataToExport.map(row => ({
               "Fecha_Neg": row.Fecha_Ing,
               "No_Orden": row.No_Orden,
