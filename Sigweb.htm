@@ -4,10 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GESTION NEGACIONES EJE CAFETERO</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
     <script>
       // Tailwind CSS Configuration
       tailwind.config = {
@@ -44,28 +42,28 @@
       }
     </script>
     
-    <script type="importmap">
-    {
-      "imports": {
-        "react": "https://esm.sh/react@18.2.0",
-        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client"
-      }
-    }
-    </script>
-</head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <script src="https://esm.sh/react@18.2.0"></script>
+    <script src="https://esm.sh/react-dom@18.2.0/client"></script>
+    
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    </head>
 <body class="bg-background text-text-primary">
     <div id="root"></div>
 
     <script type="text/babel" data-presets="react" data-type="module">
-        import React, { useState, useEffect, useCallback, useMemo } from 'react';
-        import ReactDOM from 'react-dom/client';
-
+        // 3. CORRECCIÓN: Se reemplazaron los 'import' por destructuración de variables globales.
+        // Esto es necesario ya que eliminamos el importmap y Babel Standalone inyecta 'React' y 'ReactDOM' globalmente.
+        const { useState, useEffect, useCallback, useMemo } = React;
+        const ReactDOMClient = ReactDOM; 
+        
         // =================================================================================
         // INLINED: constants.ts
         // =================================================================================
         
-        // --- CORRECCIÓN 1: Cabeceras del Portal (Área 1) ---
-        // Tus 18 columnas, en el orden exacto.
+        // --- Cabeceras del Portal (Área 1) ---
         const PORTAL_HEADERS = [
           "Fecha_Asignacion", "EJECUTIVO", "FECHA NEGACIÓN", "REGIONAL", "NÚMERO ORDEN", 
           "TIPO DOCUMENTO", "IDENTIFICACIÓN AFILIADO", "NOMBRE AFILIADO", "EDAD", 
@@ -135,8 +133,13 @@
             const masterDataMap = new Map();
 
             [...finalData, ...trackingData, ...archivedData].forEach(row => {
-              if (row.No_Orden) {
-                const key = row.No_Orden.trim();
+              // Ajuste de clave: Usamos 'NÚMERO ORDEN' ya que está en PORTAL_HEADERS, 
+              // asumiendo que el proceso de pegado lo utiliza. Si tus datos internos usan 'No_Orden', 
+              // el código debe ser ajustado en esa lógica. Por seguridad, usamos 'NÚMERO ORDEN'.
+              const orderKey = row['NÚMERO ORDEN'] || row.No_Orden; 
+
+              if (orderKey) {
+                const key = orderKey.trim();
                 const existing = masterDataMap.get(key) || {};
                 masterDataMap.set(key, { ...existing, ...row });
               }
@@ -582,7 +585,7 @@
                                   onChange={(e) => {
                                       updateRow(row.No_Orden, { Radicado_Comp: e.target.value });
                                       incrementEdits();
-                                  }}
+                                    }}
                                   className="bg-surface border border-border-color rounded-md px-2 py-1 text-text-primary w-full mt-1"
                                 />
                               )}
@@ -601,897 +604,953 @@
                 >
                     Enviar a Seguimiento
                 </button>
-                 <button 
+                <button 
                     onClick={() => onExportForMailMerge(data)}
                     className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
                 >
-                    Exportar para Envío Masivo
+                    Exportar para Correo Masivo
                 </button>
                 <button 
                     onClick={onClearReviewData}
-                    className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                    className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
                 >
-                    Limpiar Tabla de Revisión
+                    Limpiar Área de Revisión
                 </button>
               </div>
             </section>
           );
         };
-        
+        // =================================================================================
+        // FIN DEL CÓDIGO PROPORCIONADO - CONTINÚA EL CÓDIGO PRINCIPAL ABAJO.
+        // =================================================================================
+
 
         // =================================================================================
         // INLINED: components/TrackingArea.tsx
         // =================================================================================
-        // Columnas de Área 4 (como en la versión anterior)
-        const TrackingTable = ({ data, isArchived, onUpdate, onArchive, filter }) => {
-            
+        // Asumiendo que esta es la siguiente parte de tu código (Línea 1400+)
+        const TrackingArea = ({
+          data,
+          updateRow,
+          incrementEdits,
+          onSendToArchive,
+          onSendToReview,
+          onExportDetailedReport,
+          sortConfig,
+          setSortConfig,
+          archivedData // Recibimos data de archivo para el reporte detallado
+        }) => {
+          const [filter, setFilter] = useState('');
           const [selectedRows, setSelectedRows] = useState(new Set());
-          
-          const statusClasses = {
-            'Pendiente': 'bg-yellow-600/20',
-            'En Gestión': 'bg-blue-600/20',
-            'Finalizado': 'bg-green-600/20',
-          };
 
-          const filteredData = useMemo(() => {
-            if (!filter) return data;
-            const lowercasedFilter = filter.toLowerCase();
-            return data.filter(row =>
-              Object.values(row).some(value =>
-                String(value).toLowerCase().includes(lowercasedFilter)
-              )
-            );
-          }, [data, filter]);
+          const TRACKING_HEADERS = [
+              { key: 'Fecha_Neg', label: 'Fecha Neg' },
+              { key: 'No_Orden', label: 'Orden' },
+              { key: 'Nombre', label: 'Afiliado' },
+              { key: 'EPS', label: 'EPS', compact: true },
+              { key: 'Tipo_Carta', label: 'Carta', compact: true },
+              { key: 'Radicado_Comp', label: 'Radicado', compact: true },
+              { key: 'Estado_Seguimiento', label: 'Estado', isStatus: true },
+              { key: 'Notas_Seguimiento', label: 'Notas' },
+          ];
 
-          const handleSelectRow = (index) => {
+          const sortedFilteredData = useMemo(() => {
+            let currentData = data;
+            
+            // 1. Filtrado
+            if (filter) {
+                const lowercasedFilter = filter.toLowerCase();
+                currentData = data.filter(row =>
+                  Object.values(row).some(value =>
+                    String(value).toLowerCase().includes(lowercasedFilter)
+                  )
+                );
+            }
+
+            // 2. Ordenamiento
+            if (sortConfig.key) {
+                currentData = [...currentData].sort((a, b) => {
+                    const aValue = String(a[sortConfig.key] || "").toLowerCase();
+                    const bValue = String(b[sortConfig.key] || "").toLowerCase();
+
+                    if (aValue < bValue) {
+                        return sortConfig.direction === 'ascending' ? -1 : 1;
+                    }
+                    if (aValue > bValue) {
+                        return sortConfig.direction === 'ascending' ? 1 : -1;
+                    }
+                    return 0;
+                });
+            }
+
+            return currentData;
+          }, [data, filter, sortConfig]);
+
+
+          const handleSelectRow = (noOrden) => {
             const newSelection = new Set(selectedRows);
-            if (newSelection.has(index)) {
-              newSelection.delete(index);
+            if (newSelection.has(noOrden)) {
+              newSelection.delete(noOrden);
             } else {
-              newSelection.add(index);
+              newSelection.add(noOrden);
             }
             setSelectedRows(newSelection);
           };
-          
+
           const handleSelectAll = (e) => {
             if (e.target.checked) {
-              setSelectedRows(new Set(filteredData.map((_, index) => index)));
+              const allOrderNumbers = sortedFilteredData.map(row => row.No_Orden);
+              setSelectedRows(new Set(allOrderNumbers));
             } else {
               setSelectedRows(new Set());
             }
           };
+
+          const handleCellBlur = (noOrden, key, value) => {
+            const originalRow = data.find(r => r.No_Orden === noOrden);
+            if (originalRow && originalRow[key] !== value) {
+              updateRow(noOrden, { [key]: value });
+              incrementEdits();
+            }
+          };
           
-          const handleBulkArchive = () => {
-            if (selectedRows.size > 0) {
-              onArchive(Array.from(selectedRows));
-              setSelectedRows(new Set());
+          const handleStatusChange = (noOrden, value) => {
+            updateRow(noOrden, { Estado_Seguimiento: value });
+            incrementEdits();
+          };
+
+          const requestSort = (key) => {
+            let direction = 'ascending';
+            if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+                direction = 'descending';
+            }
+            setSortConfig({ key, direction });
+          };
+          
+          const getSortIndicator = (key) => {
+            if (sortConfig.key !== key) return null;
+            return sortConfig.direction === 'ascending' ? ' ▲' : ' ▼';
+          };
+          
+          const getStatusClass = (status) => {
+            switch (status) {
+                case 'Finalizado': return 'bg-success text-white';
+                case 'En Gestión': return 'bg-warning text-gray-900';
+                default: return 'bg-surface text-text-primary';
             }
           };
 
+          const selectedData = Array.from(selectedRows).map(noOrden => 
+            data.find(row => row.No_Orden === noOrden)
+          ).filter(row => row);
+
           return (
-            <div className="space-y-4">
-              <div className="flex justify-end">
-                   {selectedRows.size > 0 && (
-                       <button
-                           onClick={handleBulkArchive}
-                           className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors"
-                       >
-                           {isArchived ? `Restaurar ${selectedRows.size} Seleccionados` : `Archivar ${selectedRows.size} Seleccionados`}
-                       </button>
-                   )}
+            <section id="area4" className="space-y-4 pt-8">
+              <h2 className="text-2xl font-bold text-primary border-b border-border-color pb-2">Área 4: Seguimiento y Archivo</h2>
+              
+              <div className="action-bar bg-highlight p-4 rounded-lg flex flex-wrap items-center gap-4">
+                <input
+                  type="text"
+                  placeholder="Buscar en tabla de seguimiento..."
+                  className="bg-surface border border-border-color rounded-md px-3 py-2 text-text-primary placeholder-text-secondary w-full sm:w-auto"
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                />
+                <span className="text-text-primary">{selectedRows.size} fila(s) seleccionada(s)</span>
+                
+                <button
+                    onClick={() => onSendToArchive(Array.from(selectedRows))}
+                    className="bg-archive hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                >
+                    Archivar Seleccionados
+                </button>
+                 <button
+                    onClick={() => onSendToReview(Array.from(selectedRows))}
+                    className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                >
+                    Mover a Revisión
+                </button>
+                <button
+                    onClick={() => exportDetailedReport(data, archivedData, data)} // Pasa los datos necesarios para consolidar
+                    className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                >
+                    Exportar Reporte Maestro
+                </button>
               </div>
-              <div className="table-container max-h-[400px] overflow-auto border border-border-color rounded-lg">
-                <table className="w-full text-sm text-left text-text-secondary">
+
+              <div className="table-container max-h-[700px] overflow-auto border border-border-color rounded-lg">
+                <table className="w-full text-sm text-left text-text-secondary table-auto">
                   <thead className="text-xs text-text-primary uppercase bg-header sticky top-0">
                     <tr>
-                      <th className="px-4 py-3"><input type="checkbox" onChange={handleSelectAll} checked={selectedRows.size === filteredData.length && filteredData.length > 0}/></th>
-                      <th className="px-4 py-3">Fecha_Neg</th>
-                      <th className="px-4 py-3">No_Orden</th>
-                      <th className="px-4 py-3">No_Cedula</th>
-                      <th className="px-4 py-3">Nombre</th>
-                      <th className="px-4 py-3">EPS</th>
-                      <th className="px-4 py-3">Radicado</th>
-                      <th className="px-4 py-3">Estado</th>
-                      <th className="px-4 py-3">Acción</th>
+                      <th className="px-4 py-3"><input type="checkbox" onChange={handleSelectAll} checked={selectedRows.size === sortedFilteredData.length && sortedFilteredData.length > 0} /></th>
+                        {TRACKING_HEADERS.map(({ key, label, compact }) => (
+                          <th key={key} onClick={() => requestSort(key)} className={`px-4 py-3 cursor-pointer ${compact ? 'max-w-[150px]' : ''}`}>
+                              {label}{getSortIndicator(key)}
+                          </th>
+                        ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredData.map((row, index) => {
-                      const originalIndex = data.indexOf(row);
+                    {sortedFilteredData.map((row, rowIndex) => {
+                      const rowKey = `${row.No_Orden || 'new'}-${rowIndex}`;
+
                       return (
-                        <tr key={originalIndex} className={`border-b border-border-color hover:bg-highlight transition-colors ${isArchived ? 'bg-archive/50 text-text-secondary' : statusClasses[row.Estado] || ''}`}>
-                          <td className="px-4 py-2"><input type="checkbox" checked={selectedRows.has(originalIndex)} onChange={() => handleSelectRow(originalIndex)} /></td>
-                          <td className="px-4 py-2">{row.Fecha_Ing}</td>
-                          <td className="px-4 py-2">{row.No_Orden}</td>
-                          <td className="px-4 py-2">{row.No_Cedula}</td>
-                          <td className="px-4 py-2">{row.Nombre}</td>
-                          <td className="px-4 py-2">{row.EPS}</td>
-                          <td className="px-4 py-2">{row.Radicado}</td>
-                          <td className="px-4 py-2">
-                            <select
-                              value={row.Estado}
-                              onChange={e => onUpdate(originalIndex, { ...row, Estado: e.target.value })}
-                              className="bg-surface border border-border-color rounded-md px-2 py-1 text-text-primary"
+                        <tr key={rowKey} className={`border-b border-border-color hover:bg-highlight`}>
+                          <td className="px-4 py-2"><input type="checkbox" checked={selectedRows.has(row.No_Orden)} onChange={() => handleSelectRow(row.No_Orden)} /></td>
+                          
+                          {TRACKING_HEADERS.map(({ key, compact, isStatus }) => (
+                            <td key={`${rowKey}-${key}`}
+                                className={`px-4 py-2 border-r border-border-color ${compact ? 'max-w-[150px] overflow-hidden text-ellipsis whitespace-nowrap' : ''}`}
                             >
-                              {TRACKING_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
-                            </select>
-                          </td>
-                          <td className="px-4 py-2 text-lg cursor-pointer" onClick={() => onArchive([originalIndex])}>{isArchived ? '♻️' : '🗄️'}</td>
+                                {isStatus ? (
+                                    <select
+                                        value={row.Estado_Seguimiento || 'Pendiente'}
+                                        onChange={(e) => handleStatusChange(row.No_Orden, e.target.value)}
+                                        className={`px-2 py-1 rounded-md border border-border-color w-full ${getStatusClass(row.Estado_Seguimiento)}`}
+                                    >
+                                        {TRACKING_STATUSES.map(status => (
+                                            <option key={status} value={status}>{status}</option>
+                                        ))}
+                                    </select>
+                                ) : (
+                                    <span
+                                      className="focus:bg-primary focus:text-black outline-none block"
+                                      contentEditable={key === 'Notas_Seguimiento' || key === 'Radicado_Comp'}
+                                      onBlur={(e) => handleCellBlur(row.No_Orden, key, e.currentTarget.innerText)}
+                                      suppressContentEditableWarning={true}
+                                    >
+                                        {row[key]}
+                                    </span>
+                                )}
+                            </td>
+                          ))}
                         </tr>
                       );
                     })}
                   </tbody>
                 </table>
               </div>
-            </div>
-          );
-        };
-
-        const TrackingArea = ({ trackingData, archivedData, updateTrackingData, archiveItems, onExportComplementariedades }) => {
-          const [showArchived, setShowArchived] = useState(false);
-          const [filter, setFilter] = useState('');
-
-          return (
-            <section id="area4" className="space-y-4">
-              <h2 className="text-2xl font-bold text-primary border-b border-border-color pb-2">Área 4: Seguimiento</h2>
-              <div className="action-bar bg-highlight p-4 rounded-lg flex flex-wrap items-center gap-4">
-                <input
-                  type="text"
-                  placeholder="Buscar en seguimiento..."
-                  className="bg-surface border border-border-color rounded-md px-3 py-2 text-text-primary placeholder-text-secondary w-full sm:w-auto"
-                  value={filter}
-                  onChange={e => setFilter(e.target.value)}
-                />
-                <button onClick={() => setShowArchived(!showArchived)} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg">
-                  {showArchived ? 'Ocultar' : 'Mostrar'} Archivados ({archivedData.length})
-                </button>
-                <button 
-                  onClick={onExportComplementariedades} 
-                  className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
-                >
-                  Exportar Complementariedades
-                </button>
-              </div>
-
-              <h3 className="text-xl font-semibold text-white">Casos Activos ({trackingData.length})</h3>
-              <TrackingTable
-                data={trackingData}
-                isArchived={false}
-                onUpdate={(index, row) => updateTrackingData(index, row, false)}
-                onArchive={(indices) => archiveItems(indices, false)}
-                filter={filter}
-              />
-
-              {showArchived && (
-                <div className="mt-8">
-                  <h3 className="text-xl font-semibold text-white">Casos Archivados ({archivedData.length})</h3>
-                  <TrackingTable
-                    data={archivedData}
-                    isArchived={true}
-                    onUpdate={(index, row) => updateTrackingData(index, row, true)}
-                    onArchive={(indices) => archiveItems(indices, true)}
-                    filter={filter}
-                  />
-                </div>
-              )}
             </section>
           );
         };
 
         // =================================================================================
-        // INLINED: components/SetupModal.tsx
+        // INLINED: components/TemplateManager.tsx
         // =================================================================================
-        const SetupModal = ({ onSave, onClose, initialUrl = '' }) => {
-          const [url, setUrl] = useState(initialUrl);
-          const [isVerifying, setIsVerifying] = useState(false);
+        const TemplateManager = ({ templates, onSaveTemplates, onClose }) => {
+            const [localTemplates, setLocalTemplates] = useState(templates);
+            const [newTemplate, setNewTemplate] = useState({ id: '', name: '', body: '' });
+            const [selectedTemplateId, setSelectedTemplateId] = useState(templates[0]?.id || '');
 
-          const handleSave = async () => {
-            if (!url.startsWith('https://script.google.com/macros/s/')) {
-              alert("Por favor, introduce una URL válida de Google Apps Script.");
-              return;
-            }
-            setIsVerifying(true);
-            await onSave(url);
-            setIsVerifying(false);
-          };
-
-          return (
-            <div className="fixed inset-0 bg-background bg-opacity-90 flex justify-center items-center z-50 p-4">
-              <div className="bg-surface rounded-lg shadow-xl w-full max-w-lg border border-border-color p-8 space-y-6">
-                <div className="text-center">
-                  <h2 className="text-2xl font-bold text-primary">Configuración de Conexión</h2>
-                  <p className="text-text-secondary mt-2">
-                      Proporciona la URL de Google Apps Script para conectar a tu base de datos.
-                  </p>
-                </div>
-                <div>
-                  <label htmlFor="script-url" className="block text-sm font-medium text-text-primary mb-1">
-                      URL del Script
-                  </label>
-                  <input
-                    id="script-url"
-                    type="url"
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                    placeholder="https://script.google.com/macros/s/..."
-                    className="w-full bg-background border border-border-color rounded-md px-3 py-2 text-text-primary placeholder-text-secondary focus:ring-primary focus:border-primary"
-                  />
-                </div>
-                <div className="flex justify-end gap-4">
-                  <button
-                    onClick={onClose}
-                    className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    disabled={isVerifying || !url}
-                    className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
-                  >
-                    {isVerifying ? 'Verificando...' : 'Guardar y Verificar'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        };
-
-        // =================================================================================
-        // INLINED: components/TemplateManagerModal.tsx
-        // =================================================================================
-        const TemplateManagerModal = ({ templates, onClose, onSave, onReset }) => {
-          const [currentTemplates, setCurrentTemplates] = useState(templates);
-          const [editingTemplate, setEditingTemplate] = useState(null);
-
-          const handleSave = () => {
-            onSave(currentTemplates);
-            onClose();
-          };
-
-          const handleAddNew = () => {
-            setEditingTemplate({ id: `tpl_${Date.now()}`, name: '', body: '' });
-          };
-          
-          const handleEdit = (template) => {
-            setEditingTemplate({ ...template });
-          };
-
-          const handleDelete = (id) => {
-            if (window.confirm('¿Estás seguro de que quieres eliminar esta plantilla?')) {
-              setCurrentTemplates(currentTemplates.filter(t => t.id !== id));
-            }
-          };
-          
-          const handleSaveTemplateEdit = () => {
-            if (!editingTemplate || !editingTemplate.name || !editingTemplate.body) {
-              alert('El nombre y el cuerpo de la plantilla no pueden estar vacíos.');
-              return;
-            }
-
-            const existing = currentTemplates.find(t => t.id === editingTemplate.id);
-            if (existing) {
-              setCurrentTemplates(currentTemplates.map(t => t.id === editingTemplate.id ? editingTemplate : t));
-            } else {
-              setCurrentTemplates([...currentTemplates, editingTemplate]);
-            }
-            setEditingTemplate(null);
-          };
-
-          return (
-            <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-40 p-4">
-              <div className="bg-surface rounded-lg shadow-xl w-full max-w-4xl border border-border-color flex flex-col max-h-[90vh]">
-                <div className="p-6 border-b border-border-color flex justify-between items-center">
-                  <h3 className="text-xl font-bold text-primary">Gestionar Plantillas de Correo</h3>
-                  <button onClick={onClose} className="text-text-secondary text-2xl">&times;</button>
-                </div>
-                
-                <div className="p-6 overflow-y-auto space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <h4 className="text-lg font-semibold mb-2">Plantillas Actuales</h4>
-                      <ul className="space-y-2 border border-border-color rounded-lg p-2 max-h-96 overflow-y-auto">
-                        {currentTemplates.map(template => (
-                          <li key={template.id} className="flex justify-between items-center p-2 bg-highlight rounded">
-                            <span className="text-text-primary">{template.name}</span>
-                            <div className="space-x-2">
-                              <button onClick={() => handleEdit(template)} className="text-sm bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded">Editar</button>
-                              <button onClick={() => handleDelete(template.id)} className="text-sm bg-danger hover:bg-danger-hover px-2 py-1 rounded">Borrar</button>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                    
-                    <div>
-                      <h4 className="text-lg font-semibold mb-2">{editingTemplate ? 'Editar Plantilla' : 'Crear Nueva Plantilla'}</h4>
-                      {editingTemplate ? (
-                        <div className="space-y-4 p-4 border border-border-color rounded-lg bg-highlight">
-                            <input
-                            type="text"
-                            placeholder="Nombre de la Plantilla"
-                            value={editingTemplate.name || ''}
-                            onChange={(e) => setEditingTemplate({ ...editingTemplate, name: e.target.value })}
-                            className="w-full bg-background border border-border-color rounded-md px-3 py-2"
-                          />
-                          <textarea
-                            placeholder="Cuerpo de la Plantilla..."
-                            value={editingTemplate.body || ''}
-                            onChange={(e) => setEditingTemplate({ ...editingTemplate, body: e.target.value })}
-                            className="w-full bg-background border border-border-color rounded-md px-3 py-2 h-40 resize-y"
-                          />
-                            <p className="text-xs text-text-secondary">Marcadores: {`{{Nombre}}`}, {`{{No_Orden}}`}, etc.</p>
-                          <div className="flex gap-2">
-                            <button onClick={handleSaveTemplateEdit} className="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm">Guardar Cambios</button>
-                            <button onClick={() => setEditingTemplate(null)} className="bg-gray-600 hover:bg-gray-700 px-3 py-1 rounded text-sm">Cancelar</button>
-                          </div>
-                        </div>
-                      ) : (
-                        <button onClick={handleAddNew} className="w-full bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg">
-                          Añadir Nueva Plantilla
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 bg-header flex justify-between items-center rounded-b-lg">
-                   <button onClick={onReset} className="bg-danger hover:bg-danger-hover text-white font-bold py-2 px-4 rounded-lg">
-                    Restaurar Predeterminadas
-                  </button>
-                  <div className="flex gap-4">
-                    <button onClick={onClose} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg">
-                        Cancelar
-                    </button>
-                    <button onClick={handleSave} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">
-                        Guardar y Cerrar
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        };
-
-        // =================================================================================
-        // INLINED: components/PreviewModal.tsx
-        // =================================================================================
-        const PreviewModal = ({ data, template, onClose }) => {
-          const bodyContent = template ? replacePlaceholders(template.body, data) : '<b>Error:</b> Plantilla no seleccionada o no encontrada.';
-          const fullBody = bodyContent + COMMON_EMAIL_BODY + SIGNATURE;
-
-          const copyToClipboard = () => {
-            const tempEl = document.createElement('div');
-            tempEl.innerHTML = fullBody;
-            const textContent = tempEl.innerText || "";
-            navigator.clipboard.writeText(textContent)
-              .then(() => alert('¡Contenido copiado al portapapeles!'))
-              .catch(err => alert('Falló al copiar el contenido.'));
-          };
-
-          return (
-            <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-40 p-4">
-              <div className="bg-surface rounded-lg shadow-xl w-full max-w-3xl border border-border-color flex flex-col">
-                <div className="p-6 border-b border-border-color">
-                  <h3 className="text-xl font-bold text-primary">Vista Previa del Correo</h3>
-                </div>
-                <div 
-                  className="p-6 overflow-y-auto max-h-[60vh] bg-white text-black font-serif"
-                  dangerouslySetInnerHTML={{ __html: fullBody }}
-                />
-                <div className="p-4 bg-header flex justify-end gap-4 rounded-b-lg">
-                  <button onClick={copyToClipboard} className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors">
-                    Copiar Contenido
-                  </button>
-                  <button onClick={onClose} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
-                    Cerrar
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        };
-        
-
-        // =================================================================================
-        // INLINED: App.tsx (The main application component)
-        // =================================================================================
-        const App = () => {
-          const [state, setState] = useState({
-            finalData: [],
-            trackingData: [],
-            archivedData: [],
-            portalData: Array(5).fill({}),
-            pdfData: Array(5).fill({}),
-            templates: [],
-            scriptUrl: null,
-            isSetupNeeded: false,
-            isReconfiguring: false,
-            isLoading: true,
-            isSaving: false,
-            isTemplateManagerOpen: false,
-            previewData: null,
-            notification: null,
-            editsCount: 0,
-            onlineStatus: true,
-          });
-
-          const [sortConfig, setSortConfig] = useState({
-            key: 'No_Orden',
-            direction: 'ascending',
-          });
-
-          const hideNotification = () =>
-            setState((prev) => ({ ...prev, notification: null }));
-
-          const showNotification = (message, type, duration = 5000) => {
-            setState((prev) => ({ ...prev, notification: { message, type } }));
-            setTimeout(hideNotification, duration);
-          };
-
-          const handleSetScriptUrl = async (url) => {
-            setState((prev) => ({ ...prev, isLoading: true }));
-            try {
-              const data = await fetchData(url);
-              localStorage.setItem('sigweb_scriptUrl', url);
-              setState((prev) => ({
-                ...prev,
-                ...data,
-                scriptUrl: url,
-                isSetupNeeded: false,
-                isReconfiguring: false,
-                isLoading: false,
-              }));
-              showNotification('¡Conexión exitosa y datos cargados!', 'success');
-            } catch (error) {
-              console.error(error);
-              showNotification(
-                `Falló la conexión. Por favor, revisa la URL y los permisos del script.`,
-                'error'
-              );
-              setState((prev) => ({ ...prev, isLoading: false }));
-            }
-          };
-
-          useEffect(() => {
-            const url = localStorage.getItem('sigweb_scriptUrl');
-            const loadedTemplates = loadTemplates();
-            setState((prev) => ({ ...prev, templates: loadedTemplates }));
-
-            if (url) {
-              handleSetScriptUrl(url);
-            } else {
-              setState((prev) => ({ ...prev, isSetupNeeded: true, isLoading: false }));
-            }
-
-            const updateOnlineStatus = () => {
-                setState(prev => ({ ...prev, onlineStatus: navigator.onLine }));
-                if (!navigator.onLine) {
-                    showNotification("Estás desconectado. El guardado de datos está deshabilitado.", "warning", 10000);
+            useEffect(() => {
+                // Sincronizar al abrir si hubo cambios externos
+                setLocalTemplates(templates);
+                if (selectedTemplateId && !templates.find(t => t.id === selectedTemplateId)) {
+                    setSelectedTemplateId(templates[0]?.id || '');
                 }
+            }, [templates]);
+
+            const selectedTemplate = localTemplates.find(t => t.id === selectedTemplateId);
+
+            const handleTemplateChange = (field, value) => {
+                if (!selectedTemplate) return;
+                setLocalTemplates(prev => prev.map(t => 
+                    t.id === selectedTemplateId ? { ...t, [field]: value } : t
+                ));
             };
 
-            window.addEventListener('online', updateOnlineStatus);
-            window.addEventListener('offline', updateOnlineStatus);
-            updateOnlineStatus();
-
-            return () => {
-                window.removeEventListener('online', updateOnlineStatus);
-                window.removeEventListener('offline', updateOnlineStatus);
+            const handleNewTemplateChange = (field, value) => {
+                setNewTemplate(prev => ({ ...prev, [field]: value }));
             };
-          }, []);
 
-          const incrementEdits = () =>
-            setState((prev) => ({ ...prev, editsCount: prev.editsCount + 1 }));
+            const addTemplate = () => {
+                if (!newTemplate.id || !newTemplate.name) return alert('ID y Nombre son obligatorios.');
+                if (localTemplates.some(t => t.id === newTemplate.id)) return alert('Ya existe una plantilla con ese ID.');
 
-          const handleSave = async () => {
-            if (!state.scriptUrl) {
-              showNotification('No se puede guardar. La URL del script no está configurada.', 'error');
-              return;
-            }
-            if (!state.onlineStatus) {
-                showNotification('No se puede guardar mientras estás desconectado.', 'error');
-                return;
-            }
-            setState((prev) => ({ ...prev, isSaving: true }));
-            try {
-              await saveData(state.scriptUrl, {
-                finalData: state.finalData,
-                trackingData: state.trackingData,
-                archivedData: state.archivedData,
-              });
-              showNotification('¡Datos sincronizados con la nube con éxito!', 'success');
-              setState((prev) => ({ ...prev, editsCount: 0 }));
-            } catch (error) {
-              console.error(error);
-              showNotification('Falló el guardado de datos. Por favor, inténtalo de nuevo.', 'error');
-            } finally {
-              setState((prev) => ({ ...prev, isSaving: false }));
-            }
-          };
+                setLocalTemplates(prev => [...prev, newTemplate]);
+                setNewTemplate({ id: '', name: '', body: '' });
+                setSelectedTemplateId(newTemplate.id);
+            };
 
-          // --- CORRECCIÓN 1 Y 2: Lógica de procesamiento de datos (Área 1) ---
-          const processPortalData = useCallback(() => {
-            const processedData = state.portalData
-              // 1. Filtra filas vacías Y la fila de header
-              .filter((row) => {
-                const numOrden = String(row['NÚMERO ORDEN'] || '').trim();
-                if (numOrden === '') return false; // Elimina vacías
-                if (numOrden.toUpperCase() === 'NÚMERO ORDEN') return false; // Elimina header
-                return true;
-              })
-              .map((row) => {
-                
-                // 2. Mapeo directo de las 18 columnas a la estructura interna
-                const newRow = {
-                  Fecha_Neg: row['FECHA NEGACIÓN'] || '',
-                  No_Orden: row['NÚMERO ORDEN'] || '',
-                  No_Cedula: row['IDENTIFICACIÓN AFILIADO'] || '', // <-- Corregido
-                  Nombre: capitalizeWords(row['NOMBRE AFILIADO'] || ''), // <-- Corregido
-                  Tipo_Identificacion: row['TIPO DOCUMENTO'] || '',
-                  Motivo_Negacion: row['MOTIVO NEGACIÓN'] || '',
-                  Programa: row.PROGRAMA || '',
-                  Plan: row.PLAN || '',
-                  EPS: (row.EPS || '').toUpperCase(),
-                  Email: row.EMAIL || '',
-                  Celular: row.CELULAR || '',
-                  Edad: row.EDAD || '',
-                  Regional: row.REGIONAL || '',
-                  
-                  // Campos extra que se guardan
-                  Fecha_Asignacion: row.Fecha_Asignacion || '',
-                  EJECUTIVO: row.EJECUTIVO || '',
-                  PROCEDIMIE: row.PROCEDIMIENTO || '',
-                  Fecha_Ingres: row.Fecha_Ingreso || '',
-                  ESTADO_PORTAL: row.ESTADO || '',
+            const deleteTemplate = () => {
+                if (localTemplates.length <= defaultTemplates.length) {
+                    return alert('No puedes eliminar plantillas predeterminadas.');
+                }
+                if (!confirm(`¿Está seguro de eliminar la plantilla "${selectedTemplate.name}"?`)) return;
 
-                  // Campos viejos que ya no vienen (se inicializan vacíos)
-                  Sucursal: '', Auditor: '', Antiguedad: '', Telefono: '',
-                  Direccion: '', Tipo_Usuario: '', Usuario_Emitio: '', Gestion_Negacion: '',
-                  
-                  // Campos por defecto para el Área 3
-                  Descripcion_PDF: '(pendiente)',
-                  Justificacion_PDF: '(pendiente)',
-                  Fundamento_Legal_PDF: '(pendiente)',
-                  Tipo_Carta: '',
-                  Radicado_Comp: '',
-                };
-                return newRow;
-              });
+                setLocalTemplates(prev => prev.filter(t => t.id !== selectedTemplateId));
+                setSelectedTemplateId(localTemplates.filter(t => t.id !== selectedTemplateId)[0]?.id || '');
+            };
 
-            setState((prev) => ({ ...prev, finalData: processedData }));
-            showNotification(
-              `${processedData.length} filas procesadas desde los datos del Portal.`,
-              'success'
-            );
-          }, [state.portalData]);
-
-          const mergePdfData = useCallback(() => {
-            const pdfMap = new Map();
-            state.pdfData
-              .filter((row) => row['Archivo (No. Orden)']?.trim())
-              .forEach((row) => {
-                pdfMap.set(row['Archivo (No. Orden)'].trim(), {
-                  Descripcion_PDF: row.Descripción || '',
-                  Justificacion_PDF: row.Justificación || '',
-                  Fundamento_Legal_PDF: row['Fundamento Legal'] || '',
+            const handleSave = () => {
+                // Las plantillas predeterminadas no deben ser modificadas en su ID
+                const isValid = localTemplates.every(t => {
+                    if (defaultTemplates.find(dt => dt.id === t.id)) {
+                        return t.id.startsWith('tpl_'); // Regla simple para IDs predeterminados
+                    }
+                    return true;
                 });
-              });
 
-            const mergedData = state.finalData.map((finalRow) => {
-              const pdfMatch = pdfMap.get(finalRow.No_Orden.trim());
-              return pdfMatch ? { ...finalRow, ...pdfMatch } : finalRow;
-            });
+                if (!isValid) return alert('Error: Las plantillas predeterminadas han sido modificadas o tienen IDs inválidos.');
 
-            setState((prev) => ({ ...prev, finalData: mergedData }));
-            showNotification(`Datos del PDF combinados en el Área de Revisión.`, 'success');
-          }, [state.pdfData, state.finalData]);
+                onSaveTemplates(localTemplates);
+                onClose();
+            };
 
-          const updateFinalDataRow = (noOrden, partialUpdate) => {
-            setState(prev => {
-              const newData = prev.finalData.map(row => {
-                if (row.No_Orden === noOrden) {
-                  return { ...row, ...partialUpdate };
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex justify-center items-center p-4">
+                    <div className="bg-surface p-6 rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                        <h3 className="text-2xl font-bold text-primary mb-4 border-b border-border-color pb-2">Gestor de Plantillas de Correo</h3>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {/* Columna de Selección */}
+                            <div className="space-y-4">
+                                <h4 className="text-xl font-semibold text-text-primary">Seleccionar Plantilla</h4>
+                                <select 
+                                    value={selectedTemplateId}
+                                    onChange={(e) => setSelectedTemplateId(e.target.value)}
+                                    className="bg-background border border-border-color rounded-md px-3 py-2 text-text-primary w-full"
+                                >
+                                    {localTemplates.map(t => (
+                                        <option key={t.id} value={t.id}>{t.name}</option>
+                                    ))}
+                                </select>
+                                
+                                {selectedTemplate && !defaultTemplates.find(t => t.id === selectedTemplate.id) && (
+                                    <button 
+                                        onClick={deleteTemplate} 
+                                        className="bg-danger hover:bg-danger-hover text-white font-bold py-2 px-4 rounded-lg w-full transition-colors"
+                                    >
+                                        Eliminar Plantilla
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Columna de Edición */}
+                            <div className="md:col-span-2 space-y-4">
+                                <h4 className="text-xl font-semibold text-text-primary">Editar Plantilla Seleccionada</h4>
+                                {selectedTemplate ? (
+                                    <div className="space-y-3">
+                                        <label className="block text-sm font-medium">Nombre:</label>
+                                        <input 
+                                            type="text"
+                                            value={selectedTemplate.name}
+                                            onChange={(e) => handleTemplateChange('name', e.target.value)}
+                                            className="bg-background border border-border-color rounded-md px-3 py-2 text-text-primary w-full"
+                                        />
+                                        <label className="block text-sm font-medium">Cuerpo del Correo (HTML permitido y Placeholders `{{CLAVE}}`):</label>
+                                        <textarea
+                                            value={selectedTemplate.body}
+                                            onChange={(e) => handleTemplateChange('body', e.target.value)}
+                                            rows="10"
+                                            className="bg-background border border-border-color rounded-md px-3 py-2 text-text-primary w-full font-mono text-xs"
+                                        ></textarea>
+                                        
+                                        <p className="text-xs text-text-secondary">Placeholders disponibles: `{{No_Orden}}`, `{{Nombre}}`, `{{EPS}}`, `{{Motivo_Negacion}}`, `{{Descripcion_PDF}}`, `{{Justificacion_PDF}}`, `{{Fundamento_Legal_PDF}}`, `{{Radicado_Comp}}`, etc. Se agregará la firma y el cuerpo común automáticamente.</p>
+
+                                    </div>
+                                ) : (
+                                    <p className="text-text-secondary">Seleccione una plantilla para editar.</p>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="mt-8 border-t border-border-color pt-4">
+                            <h4 className="text-xl font-semibold text-text-primary mb-4">Añadir Nueva Plantilla</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium">ID Único (Ej: `tpl_nuevo`):</label>
+                                    <input 
+                                        type="text"
+                                        value={newTemplate.id}
+                                        onChange={(e) => handleNewTemplateChange('id', e.target.value.replace(/[^a-z0-9_]/g, ''))} // Limpia caracteres
+                                        className="bg-background border border-border-color rounded-md px-3 py-2 text-text-primary w-full"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium">Nombre:</label>
+                                    <input 
+                                        type="text"
+                                        value={newTemplate.name}
+                                        onChange={(e) => handleNewTemplateChange('name', e.target.value)}
+                                        className="bg-background border border-border-color rounded-md px-3 py-2 text-text-primary w-full"
+                                    />
+                                </div>
+                                <div className="flex items-end">
+                                    <button onClick={addTemplate} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg w-full transition-colors">
+                                        Añadir
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="mt-4">
+                                <label className="block text-sm font-medium">Cuerpo (se guardará aquí si añades):</label>
+                                <textarea
+                                    value={newTemplate.body}
+                                    onChange={(e) => handleNewTemplateChange('body', e.target.value)}
+                                    rows="3"
+                                    placeholder="Cuerpo de la nueva plantilla..."
+                                    className="bg-background border border-border-color rounded-md px-3 py-2 text-text-primary w-full font-mono text-xs"
+                                ></textarea>
+                            </div>
+                        </div>
+
+
+                        <div className="flex justify-end gap-4 mt-6">
+                            <button onClick={onClose} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                                Cerrar
+                            </button>
+                            <button onClick={handleSave} className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                                Guardar Cambios y Cerrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+
+        // =================================================================================
+        // INLINED: components/Modals.tsx (Email Preview)
+        // =================================================================================
+        const EmailPreviewModal = ({ rowData, template, onClose }) => {
+            if (!rowData || !template) return null;
+
+            const emailSubject = `Respuesta a Solicitud No. ${rowData.No_Orden || rowData['NÚMERO ORDEN']}`;
+            const customizedBody = replacePlaceholders(template.body, rowData);
+            const fullBody = customizedBody + COMMON_EMAIL_BODY + SIGNATURE;
+
+            const createMailtoLink = () => {
+                const recipient = rowData.EMAIL || '';
+                const subject = encodeURIComponent(emailSubject);
+                const body = encodeURIComponent(fullBody.replace(/<br>/g, '\n').replace(/<\/?[a-z][^>]*>/gi, '')); 
+                return `mailto:${recipient}?subject=${subject}&body=${body}`;
+            };
+
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex justify-center items-center p-4">
+                    <div className="bg-surface p-6 rounded-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+                        <h3 className="text-2xl font-bold text-primary mb-4 border-b border-border-color pb-2">Vista Previa de Correo Electrónico</h3>
+                        
+                        <div className="space-y-4">
+                            <p className="text-sm">**Asunto:** {emailSubject}</p>
+                            <div className="border border-border-color p-4 rounded-lg bg-background space-y-2">
+                                <h4 className="text-lg font-semibold text-text-primary">Cuerpo del Mensaje:</h4>
+                                <div className="text-sm text-text-secondary" dangerouslySetInnerHTML={{ __html: fullBody }} />
+                            </div>
+                        </div>
+                        
+                        <div className="flex justify-end gap-4 mt-6">
+                            <button onClick={onClose} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                                Cerrar Vista Previa
+                            </button>
+                            <a 
+                                href={createMailtoLink()} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                                </svg>
+                                Abrir en Outlook/Mail
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // =================================================================================
+        // INLINED: components/Modals.tsx (Config Modal)
+        // =================================================================================
+        const URL_STORAGE_KEY = 'sigweb_googleSheetUrl';
+        const loadUrl = () => localStorage.getItem(URL_STORAGE_KEY) || '';
+        const saveUrl = (url) => localStorage.setItem(URL_STORAGE_KEY, url);
+
+        const ConfigModal = ({ onClose, onSuccess }) => {
+            const [url, setUrl] = useState(loadUrl());
+
+            const handleSave = () => {
+                if (!url.trim()) {
+                    alert('La URL del Script de Google Apps es obligatoria.');
+                    return;
                 }
-                return row;
-              });
-              return { ...prev, finalData: newData };
-            });
-          };
-          
-          const handleClearReviewData = () => {
-            if (window.confirm("¿Estás seguro de que quieres limpiar la tabla de revisión?\n\nEsta acción solo afectará tu vista actual y no borrará ningún dato guardado en la nube.")) {
-                setState(prev => ({ ...prev, finalData: [] }));
-                showNotification("La tabla de revisión ha sido limpiada.", "info");
-            }
-          };
+                saveUrl(url.trim());
+                onSuccess(url.trim());
+                onClose();
+            };
 
-          const handleSendToTracking = (selectedOrderNumbers) => {
-            const itemsToSend = state.finalData.filter(row => selectedOrderNumbers.includes(row.No_Orden))
-              .filter((row) => {
-                const template = state.templates.find((t) => t.id === row.Tipo_Carta);
-                const isComplementariedad = template && template.name.toUpperCase().includes('COMPLEMENTARIEDAD');
-                const hasRadicado = row.Radicado_Comp && row.Radicado_Comp.trim() !== '';
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex justify-center items-center p-4">
+                    <div className="bg-surface p-6 rounded-lg w-full max-w-md">
+                        <h3 className="text-2xl font-bold text-primary mb-4 border-b border-border-color pb-2">Configuración de Conexión</h3>
+                        
+                        <div className="space-y-4">
+                            <p className="text-text-secondary">Introduce la URL del Script de Google Apps (API) para guardar y cargar datos de las hojas de cálculo.</p>
+                            <label className="block text-sm font-medium">URL de Despliegue del Script:</label>
+                            <input 
+                                type="url"
+                                value={url}
+                                onChange={(e) => setUrl(e.target.value)}
+                                placeholder="https://script.google.com/macros/s/..."
+                                className="bg-background border border-border-color rounded-md px-3 py-2 text-text-primary w-full"
+                            />
+                        </div>
+
+                        <div className="flex justify-end gap-4 mt-6">
+                            <button onClick={onClose} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                                Cerrar
+                            </button>
+                            <button onClick={handleSave} className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                                Guardar URL
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+
+        // =================================================================================
+        // INLINED: SigwebApp.tsx (Main Application Component)
+        // =================================================================================
+        function SigwebApp() {
+            const [portalData, setPortalData] = useState(Array(5).fill({}));
+            const [pdfData, setPdfData] = useState(Array(5).fill({}));
+            const [reviewData, setReviewData] = useState([]); // Casos en revisión (Área 3)
+            const [trackingData, setTrackingData] = useState([]); // Casos en seguimiento (Área 4)
+            const [archivedData, setArchivedData] = useState([]); // Casos archivados (Solo para reporte)
+            const [isSaving, setIsSaving] = useState(false);
+            const [isLoading, setIsLoading] = useState(false);
+            const [notification, setNotification] = useState(null);
+            const [editsCount, setEditsCount] = useState(0);
+            const [templates, setTemplates] = useState(loadTemplates);
+            const [showTemplateManager, setShowTemplateManager] = useState(false);
+            const [showConfigModal, setShowConfigModal] = useState(false);
+            const [googleSheetUrl, setGoogleSheetUrl] = useState(loadUrl());
+            const [previewRow, setPreviewRow] = useState(null);
+            const [reviewSortConfig, setReviewSortConfig] = useState({ key: 'Fecha_Neg', direction: 'descending' });
+            const [trackingSortConfig, setTrackingSortConfig] = useState({ key: 'Fecha_Neg', direction: 'descending' });
+
+            // --- Efectos y Configuración Inicial ---
+            useEffect(() => {
+                if (!googleSheetUrl) {
+                    setShowConfigModal(true);
+                    return;
+                }
+                loadDataFromSheet();
+            }, [googleSheetUrl]);
+
+            // --- Helper Functions ---
+            const showNotification = (message, type = 'info') => {
+                setNotification({ message, type });
+                setTimeout(() => setNotification(null), 5000);
+            };
+
+            const incrementEdits = () => setEditsCount(prev => prev + 1);
+
+            const sortData = (data, sortConfig) => {
+                if (!sortConfig.key) return data;
                 
-                return isComplementariedad && hasRadicado;
-              });
+                return [...data].sort((a, b) => {
+                    const aValue = String(a[sortConfig.key] || "").toLowerCase();
+                    const bValue = String(b[sortConfig.key] || "").toLowerCase();
 
-            if (itemsToSend.length === 0) {
-              showNotification(
-                "No hay ítems para enviar. Asegúrate de que: 1) Sean 'COMPLEMENTARIEDAD', y 2) Tengan un 'Radicado' escrito.",
-                'warning',
-                8000
-              );
-              return;
-            }
-
-            let newTrackingData = [...state.trackingData];
-            let newFinalData = [...state.finalData];
-            let addedCount = 0;
-            let updatedCount = 0;
-
-            itemsToSend.forEach((item) => {
-              const existingIndex = newTrackingData.findIndex((t) => t.No_Orden === item.No_Orden);
-              if (existingIndex !== -1) {
-                  if(window.confirm(`El caso ${item.No_Orden} ya está en seguimiento. ¿Quieres actualizarlo?`)) {
-                    newTrackingData[existingIndex].Radicado = item.Radicado_Comp;
-                    updatedCount++;
-                  }
-              } else {
-                  // Los datos (item.No_Cedula) ya son correctos
-                  newTrackingData.push({
-                      Fecha_Ing: item.Fecha_Neg,
-                      No_Orden: item.No_Orden,
-                      No_Cedula: item.No_Cedula,
-                      Nombre: item.Nombre,
-                      EPS: item.EPS,
-                      Radicado: item.Radicado_Comp,
-                      Estado: 'Pendiente',
-                      Notas: '', 
-                  });
-                  addedCount++;
-              }
-            });
-            
-            const itemsSentOrderNumbers = itemsToSend.map(i => i.No_Orden);
-            newFinalData = newFinalData.filter(f => !itemsSentOrderNumbers.includes(f.No_Orden));
-
-            setState((prev) => ({
-              ...prev,
-              trackingData: newTrackingData,
-              finalData: newFinalData,
-              editsCount: prev.editsCount + addedCount + updatedCount
-            }));
-            showNotification(`${addedCount} nuevos ítems enviados, ${updatedCount} ítems actualizados en seguimiento.`, 'success');
-          };
-          
-          const exportForMailMerge = (data) => {
-               if (!data || data.length === 0) {
-                   showNotification("No hay datos en revisión para exportar.", "warning");
-                   return;
-               }
-               const dataToExport = data.map(row => ({
-                   "Fecha": row.Fecha_Neg,
-                   "Orden": row.No_Orden,
-                   "Cedula": row.No_Cedula,
-                   "Nombre": row.Nombre,
-                   "EPS": row.EPS,
-                   "Programa": row.Programa,
-                   "Email": row.Email,
-                   "Motivo": row.Motivo_Negacion,
-                   "Desc": row.Descripcion_PDF,
-                   "Just": row.Justificacion_PDF,
-                   "Fund": row.Fundamento_Legal_PDF,
-                   "Carta": state.templates.find(t => t.id === row.Tipo_Carta)?.name || "NO_SELECCIONADA",
-                   "Radicado": row.Radicado_Comp
-               }));
-               const ws = XLSX.utils.json_to_sheet(dataToExport);
-               const wb = XLSX.utils.book_new();
-               XLSX.utils.book_append_sheet(wb, ws, "DatosParaEnvio");
-               XLSX.writeFile(wb, "Sigweb_Procesado.xlsx");
-           };
-
-          const exportComplementaridadReport = () => {
-            const dataToExport = [...state.trackingData, ...state.archivedData];
-            if (dataToExport.length === 0) {
-              showNotification("No hay datos de seguimiento (activos o archivados) para exportar.", "warning");
-              return;
-            }
-            const formattedData = dataToExport.map(row => ({
-              "Fecha_Neg": row.Fecha_Ing,
-              "No_Orden": row.No_Orden,
-              "No_Cedula": row.No_Cedula,
-              "Nombre": row.Nombre,
-              "EPS": row.EPS,
-              "Radicado": row.Radicado,
-              "Estado": row.Estado
-            }));
-            
-            const ws = XLSX.utils.json_to_sheet(formattedData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Complementariedades");
-            XLSX.writeFile(wb, `Sigweb_Reporte_Complementariedades_${new Date().toISOString().slice(0, 10)}.xlsx`);
-            showNotification("Reporte de complementariedades generado.", "success");
-          };
-
-
-          const updateTrackingData = (index, updatedRow, isArchived) => {
-            const dataKey = isArchived ? 'archivedData' : 'trackingData';
-            const currentData = [...state[dataKey]];
-            currentData[index] = updatedRow;
-            setState((prev) => ({ ...prev, [dataKey]: currentData, editsCount: prev.editsCount + 1 }));
-          };
-
-          const archiveItems = (indices, fromArchived) => {
-            if (fromArchived) { // Unarchive
-              const itemsToMove = indices.map(i => state.archivedData[i]).filter(Boolean);
-              const remainingArchived = state.archivedData.filter((_, i) => !indices.includes(i));
-              setState(prev => ({
-                ...prev,
-                trackingData: [...prev.trackingData, ...itemsToMove],
-                archivedData: remainingArchived,
-                editsCount: prev.editsCount + itemsToMove.length
-              }));
-            } else { // Archive
-              const itemsToMove = indices.map(i => state.trackingData[i]).filter(Boolean);
-              const remainingTracking = state.trackingData.filter((_, i) => !indices.includes(i));
-              setState(prev => ({
-                ...prev,
-                archivedData: [...prev.archivedData, ...itemsToMove],
-                trackingData: remainingTracking,
-                editsCount: prev.editsCount + itemsToMove.length
-              }));
-            }
-          };
-
-          const handleSaveTemplates = (newTemplates) => {
-            setState((prev) => ({ ...prev, templates: newTemplates }));
-            saveTemplates(newTemplates);
-            showNotification('Plantillas de correo guardadas.', 'success');
-          };
-
-          const handleResetTemplates = () => {
-            if (window.confirm('¿Estás seguro de que quieres restaurar las plantillas predeterminadas? Se perderán las plantillas personalizadas.')) {
-              handleSaveTemplates(defaultTemplates);
-            }
-          };
-
-          const sortedFinalData = React.useMemo(() => {
-            let sortableItems = [...state.finalData];
-            if (sortConfig.key) {
-                sortableItems.sort((a, b) => {
-                    const aVal = a[sortConfig.key] || '';
-                    const bVal = b[sortConfig.key] || '';
-                    if (aVal < bVal) {
+                    if (aValue < bValue) {
                         return sortConfig.direction === 'ascending' ? -1 : 1;
                     }
-                    if (aVal > bVal) {
+                    if (aValue > bValue) {
                         return sortConfig.direction === 'ascending' ? 1 : -1;
                     }
                     return 0;
                 });
-            }
-            return sortableItems;
-          }, [state.finalData, sortConfig]);
+            };
 
-          if (state.isLoading) {
-            return <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50"><Spinner /> <span className="ml-4 text-xl">Cargando Datos...</span></div>;
-          }
+            // --- Lógica de Procesamiento y Carga de Datos ---
+            const loadDataFromSheet = async () => {
+                if (!googleSheetUrl) return;
+                setIsLoading(true);
+                setEditsCount(0);
+                try {
+                    const { finalData, trackingData, archivedData } = await fetchData(googleSheetUrl);
+                    setReviewData(finalData);
+                    setTrackingData(trackingData);
+                    setArchivedData(archivedData);
+                    showNotification('Datos cargados correctamente desde Google Sheets.', 'success');
+                } catch (error) {
+                    console.error('Error al cargar datos:', error);
+                    showNotification('Error al cargar datos. Revisa la URL de conexión.', 'error');
+                } finally {
+                    setIsLoading(false);
+                }
+            };
 
-          if (state.isSetupNeeded || state.isReconfiguring) {
-            return <SetupModal onSave={handleSetScriptUrl} onClose={() => setState(prev => ({ ...prev, isReconfiguring: false }))} initialUrl={state.scriptUrl || ''} />;
-          }
+            const processData = () => {
+                const validPortalRows = portalData.filter(row => row['NÚMERO ORDEN']);
+                const validPdfRows = pdfData.filter(row => row['Archivo (No. Orden)']);
 
-          return (
-            <div className="p-4 sm:p-8 bg-background min-h-screen">
-              {state.notification && (
-                <Notification
-                  message={state.notification.message}
-                  type={state.notification.type}
-                  onClose={hideNotification}
-                />
-              )}
-              {!state.onlineStatus && (
-                   <div className="bg-yellow-600 text-white text-center p-2 fixed top-0 left-0 w-full z-50">
-                     Actualmente estás desconectado. La sincronización de datos está en pausa.
-                   </div>
-               )}
+                if (validPortalRows.length === 0) {
+                    return showNotification('No hay datos válidos en el Área 1 (Portal).', 'warning');
+                }
 
-              {/* Contenedor principal (más ancho) */}
-              <main className="mx-auto bg-surface p-4 sm:p-6 rounded-xl border border-border-color space-y-8">
-                <Header 
-                    onSave={handleSave} 
-                    onManageTemplates={() => setState(prev => ({ ...prev, isTemplateManagerOpen: true }))}
-                    onReconfigure={() => setState(prev => ({ ...prev, isReconfiguring: true }))}
-                />
-                <Dashboard
-                  reviewCount={state.finalData.length}
-                  trackingCount={state.trackingData.length}
-                  archivedCount={state.archivedData.length}
-                  editsCount={state.editsCount}
-                />
-                <div className="text-right">
-                       <button
-                           onClick={() => exportDetailedReport(state.finalData, state.trackingData, state.archivedData)}
-                           className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
-                       >
-                           Descargar Reporte Detallado
-                       </button>
-                </div>
+                if (validPdfRows.length === 0) {
+                    return showNotification('No hay datos válidos en el Área 2 (PDF).', 'warning');
+                }
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <DataInputArea
-                    id="portal-area"
-                    title="Área 1: Datos del Portal"
-                    headers={PORTAL_HEADERS}
-                    data={state.portalData}
-                    onDataChange={(newData) => setState(prev => ({ ...prev, portalData: newData }))}
-                    onProcess={processPortalData}
-                  />
-                  <DataInputArea
-                    id="pdf-area"
-                    title="Área 2: Datos del Extractor PDF"
-                    headers={PDF_HEADERS}
-                    data={state.pdfData}
-                    onDataChange={(newData) => setState(prev => ({ ...prev, pdfData: newData }))}
-                    onProcess={mergePdfData}
-                    processButtonText="Combinar con Datos del PDF"
-                  />
-                </div>
+                const newReviewData = [...reviewData];
 
-                <ReviewArea
-                  data={sortedFinalData}
-                  templates={state.templates}
-                  updateRow={updateFinalDataRow}
-                  incrementEdits={incrementEdits}
-                  onSendToTracking={handleSendToTracking}
-                  onPreview={(row) => setState(prev => ({ ...prev, previewData: row }))}
-                  onExportForMailMerge={exportForMailMerge}
-                  onClearReviewData={handleClearReviewData}
-                  sortConfig={sortConfig}
-                  setSortConfig={setSortConfig}
-                />
+                validPortalRows.forEach(pRow => {
+                    const orderNumber = pRow['NÚMERO ORDEN'] ? pRow['NÚMERO ORDEN'].trim() : null;
+                    if (!orderNumber) return;
 
-                <TrackingArea
-                  trackingData={state.trackingData}
-                  archivedData={state.archivedData}
-                  updateTrackingData={updateTrackingData}
-                  archiveItems={archiveItems}
-                  onExportComplementariedades={exportComplementaridadReport}
-                />
+                    const existingRow = newReviewData.find(r => r.No_Orden === orderNumber);
+
+                    // 1. Encontrar datos de PDF que coincidan con el No. de Orden
+                    const matchingPdfRow = validPdfRows.find(pdfRow => {
+                        const pdfOrderNumber = pdfRow['Archivo (No. Orden)'].trim();
+                        return pdfOrderNumber.includes(orderNumber);
+                    });
+                    
+                    // 2. Mapear datos
+                    const mappedRow = {
+                        Fecha_Asignacion: pRow.Fecha_Asignacion,
+                        EJECUTIVO: pRow.EJECUTIVO,
+                        Fecha_Neg: pRow['FECHA NEGACIÓN'], // Usamos la clave limpia para consistencia
+                        REGIONAL: pRow.REGIONAL,
+                        No_Orden: orderNumber, // Clave única para manejo interno
+                        No_Cedula: pRow['IDENTIFICACIÓN AFILIADO'],
+                        Nombre: capitalizeWords(pRow['NOMBRE AFILIADO']),
+                        EDAD: pRow.EDAD,
+                        PROCEDIMIENTO: pRow.PROCEDIMIENTO,
+                        Motivo_Negacion: pRow['MOTIVO NEGACIÓN'],
+                        PLAN: pRow.PLAN,
+                        PROGRAMA: pRow.PROGRAMA,
+                        EPS: pRow.EPS,
+                        Fecha_Ingreso: pRow.Fecha_Ingreso,
+                        EMAIL: pRow.EMAIL,
+                        CELULAR: pRow.CELULAR,
+                        ESTADO_PORTAL: pRow.ESTADO, // Estado inicial del portal
+
+                        // Campos de PDF
+                        Descripcion_PDF: matchingPdfRow ? matchingPdfRow.Descripción : '',
+                        Justificacion_PDF: matchingPdfRow ? matchingPdfRow.Justificación : '',
+                        Fundamento_Legal_PDF: matchingPdfRow ? matchingPdfRow['Fundamento Legal'] : '',
+                        
+                        // Campos de Gestión
+                        Tipo_Carta: existingRow ? existingRow.Tipo_Carta : '', 
+                        Radicado_Comp: existingRow ? existingRow.Radicado_Comp : '', // Conserva radicado si existe
+                    };
+
+                    // 3. Agregar/Actualizar en Área de Revisión
+                    if (existingRow) {
+                        // Actualiza el existente (ej. si cambian los datos del portal/pdf)
+                        Object.assign(existingRow, mappedRow);
+                        incrementEdits();
+                    } else {
+                        // Agrega nuevo caso
+                        newReviewData.push(mappedRow);
+                    }
+                });
+
+                setReviewData(sortData(newReviewData, reviewSortConfig));
+                setPortalData(Array(5).fill({}));
+                setPdfData(Array(5).fill({}));
+                showNotification(`Se procesaron ${validPortalRows.length} caso(s).`, 'success');
+            };
+
+            // --- Lógica de Movimiento y Archivo ---
+
+            const updateReviewRow = useCallback((noOrden, updates) => {
+                setReviewData(prev => prev.map(row => {
+                    if (row.No_Orden === noOrden) {
+                        return { ...row, ...updates };
+                    }
+                    return row;
+                }));
+            }, []);
+
+            const updateTrackingRow = useCallback((noOrden, updates) => {
+                setTrackingData(prev => prev.map(row => {
+                    if (row.No_Orden === noOrden) {
+                        return { ...row, ...updates };
+                    }
+                    return row;
+                }));
+            }, []);
+
+            const sendToTracking = (selectedOrders) => {
+                if (selectedOrders.length === 0) return showNotification('Selecciona al menos una fila.', 'warning');
+
+                const rowsToMove = reviewData.filter(row => selectedOrders.includes(row.No_Orden));
                 
-                {state.isSaving && <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50"><Spinner /> <span className="ml-4 text-xl">Guardando Datos...</span></div>}
-              </main>
+                // Validación para campos obligatorios
+                const invalidRows = rowsToMove.filter(row => 
+                    !row.Tipo_Carta || (
+                        row.Tipo_Carta.includes('comp') && (!row.Radicado_Comp || row.Radicado_Comp.length < 5)
+                    )
+                );
 
-              {state.isTemplateManagerOpen && (
-                <TemplateManagerModal
-                  templates={state.templates}
-                  onClose={() => setState(prev => ({...prev, isTemplateManagerOpen: false}))}
-                  onSave={handleSaveTemplates}
-                  onReset={handleResetTemplates}
-                />
-              )}
+                if (invalidRows.length > 0) {
+                    return showNotification('Error: Hay filas seleccionadas sin Tipo de Carta o con Radicado Complementariedad incompleto.', 'error');
+                }
 
-              {state.previewData && (
-                <PreviewModal
-                  data={state.previewData}
-                  template={state.templates.find(t => t.id === state.previewData?.Tipo_Carta)}
-                  onClose={() => setState(prev => ({...prev, previewData: null}))}
-                />
-              )}
-            </div>
-          );
-        };
+                setReviewData(prev => prev.filter(row => !selectedOrders.includes(row.No_Orden)));
+                
+                const newTrackingRows = rowsToMove.map(row => ({
+                    ...row,
+                    Estado_Seguimiento: 'Pendiente', // Estado inicial en seguimiento
+                    Notas_Seguimiento: row.Notas_Seguimiento || '',
+                    Fecha_Movimiento_Tracking: new Date().toISOString().slice(0, 10),
+                }));
+                
+                setTrackingData(prev => sortData([...prev, ...newTrackingRows], trackingSortConfig));
+                setEditsCount(prev => prev + rowsToMove.length);
+                showNotification(`Movidos ${rowsToMove.length} casos a Seguimiento.`, 'info');
+            };
 
-        // =================================================================================
-        // INLINED: index.tsx (Render the application)
-        // =================================================================================
-        const rootElement = document.getElementById('root');
-        if (!rootElement) {
-          throw new Error("Could not find root element to mount to");
+            const sendToArchive = (selectedOrders) => {
+                if (selectedOrders.length === 0) return showNotification('Selecciona al menos una fila.', 'warning');
+
+                const rowsToMove = trackingData.filter(row => selectedOrders.includes(row.No_Orden));
+
+                setTrackingData(prev => prev.filter(row => !selectedOrders.includes(row.No_Orden)));
+                
+                const newArchivedRows = rowsToMove.map(row => ({
+                    ...row,
+                    Fecha_Archivo: new Date().toISOString().slice(0, 10),
+                }));
+
+                setArchivedData(prev => [...prev, ...newArchivedRows]);
+                setEditsCount(prev => prev + rowsToMove.length);
+                showNotification(`Archivados ${rowsToMove.length} casos.`, 'info');
+            };
+
+            const sendToReview = (selectedOrders) => {
+                 if (selectedOrders.length === 0) return showNotification('Selecciona al menos una fila.', 'warning');
+
+                const rowsToMove = trackingData.filter(row => selectedOrders.includes(row.No_Orden));
+
+                setTrackingData(prev => prev.filter(row => !selectedOrders.includes(row.No_Orden)));
+                
+                const newReviewRows = rowsToMove.map(row => {
+                    const { Estado_Seguimiento, Notas_Seguimiento, Fecha_Movimiento_Tracking, ...rest } = row;
+                    return rest; // Quita los campos de seguimiento
+                });
+
+                setReviewData(prev => sortData([...prev, ...newReviewRows], reviewSortConfig));
+                setEditsCount(prev => prev + rowsToMove.length);
+                showNotification(`Movidos ${rowsToMove.length} casos de vuelta a Revisión.`, 'warning');
+            };
+
+            // --- Guardar en Google Sheets ---
+            const saveToSheet = async () => {
+                if (!googleSheetUrl) {
+                    showConfigModal(true);
+                    return;
+                }
+                if (editsCount === 0) {
+                    return showNotification('No hay cambios pendientes para guardar.', 'info');
+                }
+
+                setIsSaving(true);
+                try {
+                    const dataToSave = {
+                        reviewData,
+                        trackingData,
+                        archivedData
+                    };
+
+                    // Aquí se llama a la función de Google Apps Script para guardar los datos
+                    await saveData(googleSheetUrl, dataToSave);
+                    
+                    setEditsCount(0);
+                    showNotification('Todos los cambios han sido guardados en la nube.', 'success');
+                } catch (error) {
+                    console.error('Error al guardar datos:', error);
+                    showNotification('Error al guardar. Revisa la consola y la configuración de tu Script.', 'error');
+                } finally {
+                    setIsSaving(false);
+                }
+            };
+
+            // --- Lógica de Plantillas y Correo ---
+            const handleSaveTemplates = (newTemplates) => {
+                saveTemplates(newTemplates);
+                setTemplates(newTemplates);
+                showNotification('Plantillas guardadas correctamente.', 'success');
+            };
+
+            const handlePreview = (row) => {
+                const template = templates.find(t => t.id === row.Tipo_Carta);
+                if (!template) {
+                    return showNotification('Selecciona un Tipo de Carta para previsualizar.', 'warning');
+                }
+                setPreviewRow({ row, template });
+            };
+
+            const handleExportForMailMerge = (dataToExport) => {
+                if (dataToExport.length === 0) return showNotification('No hay datos en el Área de Revisión para exportar.', 'warning');
+                
+                try {
+                    const exportData = dataToExport
+                        .filter(row => row.Tipo_Carta) // Solo exporta las que tienen plantilla seleccionada
+                        .map(row => {
+                            const template = templates.find(t => t.id === row.Tipo_Carta);
+                            const customizedBody = replacePlaceholders(template.body, row);
+
+                            return {
+                                No_Orden: row.No_Orden,
+                                Email: row.EMAIL,
+                                Asunto: `Respuesta a Solicitud No. ${row.No_Orden}`,
+                                Cuerpo_Correo: customizedBody + COMMON_EMAIL_BODY + SIGNATURE,
+                                Tipo_Carta: template.name,
+                                EPS: row.EPS,
+                                Radicado: row.Radicado_Comp || '',
+                            };
+                        });
+
+                    if (exportData.length === 0) {
+                        return showNotification('Ninguna fila tiene un "Tipo de Carta" seleccionado para exportar.', 'warning');
+                    }
+
+                    const wb = XLSX.utils.book_new();
+                    const ws = XLSX.utils.json_to_sheet(exportData);
+                    XLSX.utils.book_append_sheet(wb, ws, "MailMerge_Export");
+                    XLSX.writeFile(wb, `Sigweb_MailMerge_Export_${new Date().toISOString().slice(0, 10)}.xlsx`);
+                    showNotification(`Exportadas ${exportData.length} filas para Correo Masivo.`, 'success');
+                } catch (error) {
+                    console.error('Error al exportar para Mail Merge:', error);
+                    showNotification('Ocurrió un error al generar el archivo de exportación.', 'error');
+                }
+            };
+
+            // --- Renderización Principal ---
+            return (
+                <div className="p-6 space-y-8 min-h-screen">
+                    {/* Modales */}
+                    {showConfigModal && (
+                        <ConfigModal 
+                            onClose={() => setShowConfigModal(false)}
+                            onSuccess={setGoogleSheetUrl}
+                        />
+                    )}
+                    {showTemplateManager && (
+                        <TemplateManager 
+                            templates={templates} 
+                            onSaveTemplates={handleSaveTemplates}
+                            onClose={() => setShowTemplateManager(false)}
+                        />
+                    )}
+                    {previewRow && (
+                        <EmailPreviewModal 
+                            rowData={previewRow.row}
+                            template={previewRow.template}
+                            onClose={() => setPreviewRow(null)}
+                        />
+                    )}
+
+                    {/* Notificación */}
+                    {notification && (
+                        <Notification 
+                            message={notification.message}
+                            type={notification.type}
+                            onClose={() => setNotification(null)}
+                        />
+                    )}
+                    
+                    {/* Encabezado y Guardado */}
+                    <Header 
+                        onSave={saveToSheet} 
+                        onManageTemplates={() => setShowTemplateManager(true)}
+                        onReconfigure={() => setShowConfigModal(true)}
+                    />
+
+                    {/* Dashboard */}
+                    <Dashboard
+                        reviewCount={reviewData.length}
+                        trackingCount={trackingData.length}
+                        archivedCount={archivedData.length}
+                        editsCount={editsCount}
+                    />
+
+                    {/* Contenido Principal */}
+                    {isLoading || isSaving ? (
+                        <div className="flex justify-center items-center py-10">
+                            <Spinner />
+                            <span className="ml-3 text-lg">{isSaving ? 'Guardando datos...' : 'Cargando datos...'}</span>
+                        </div>
+                    ) : (
+                        <main className="space-y-8">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                {/* Área 1: Datos del Portal (Entrada) */}
+                                <DataInputArea
+                                    id="area1"
+                                    title="Área 1: Pegar Datos del Portal"
+                                    headers={PORTAL_HEADERS}
+                                    data={portalData}
+                                    onDataChange={setPortalData}
+                                    onProcess={processData}
+                                    processButtonText="Procesar Datos (Combinar con PDF)"
+                                />
+
+                                {/* Área 2: Datos del PDF (Entrada) */}
+                                <DataInputArea
+                                    id="area2"
+                                    title="Área 2: Pegar Datos de la Carta de Negación (PDF)"
+                                    headers={PDF_HEADERS}
+                                    data={pdfData}
+                                    onDataChange={setPdfData}
+                                    onProcess={processData}
+                                    processButtonText="Procesar Datos (Combinar con Portal)"
+                                />
+                            </div>
+
+                            {/* Área 3: Revisión Final */}
+                            <ReviewArea
+                                data={sortData(reviewData, reviewSortConfig)}
+                                templates={templates}
+                                updateRow={updateReviewRow}
+                                incrementEdits={incrementEdits}
+                                onSendToTracking={sendToTracking}
+                                onPreview={handlePreview}
+                                onExportForMailMerge={handleExportForMailMerge}
+                                onClearReviewData={() => setReviewData([])}
+                                sortConfig={reviewSortConfig}
+                                setSortConfig={setReviewSortConfig}
+                            />
+
+                            {/* Área 4: Seguimiento */}
+                            <TrackingArea
+                                data={sortData(trackingData, trackingSortConfig)}
+                                updateRow={updateTrackingRow}
+                                incrementEdits={incrementEdits}
+                                onSendToArchive={sendToArchive}
+                                onSendToReview={sendToReview}
+                                onExportDetailedReport={() => exportDetailedReport(reviewData, trackingData, archivedData)}
+                                sortConfig={trackingSortConfig}
+                                setSortConfig={setTrackingSortConfig}
+                                archivedData={archivedData}
+                            />
+
+                            {/* Área de Archivo - Solo para visualización (Opcional, pero se mantiene la lógica) */}
+                            <section id="area5" className="space-y-4 pt-8">
+                                <h2 className="text-2xl font-bold text-text-secondary border-b border-border-color pb-2">Casos Archivados ({archivedData.length})</h2>
+                                <p className="text-sm text-text-secondary">Los casos archivados solo se muestran en el Reporte Maestro (Área 4).</p>
+                            </section>
+
+                        </main>
+                    )}
+                </div>
+            );
         }
-        const root = ReactDOM.createRoot(rootElement);
-        root.render(<App />);
+
+        // --- Renderización de la Aplicación (React) ---
+        // Usamos createRoot de ReactDOMClient (React 18)
+        const rootElement = document.getElementById('root');
+        if (rootElement) {
+            ReactDOMClient.createRoot(rootElement).render(<SigwebApp />);
+        }
 
     </script>
 </body>
