@@ -61,7 +61,7 @@
         import ReactDOM from 'react-dom/client';
 
         // =================================================================================
-        // INLINED: constants.ts
+        // CONSTANTES
         // =================================================================================
         
         // --- Cabeceras del Portal (Área 1) ---
@@ -77,8 +77,7 @@
           "Archivo (No. Orden)", "Descripción", "Justificación", "Fundamento Legal", "Código"
         ];
 
-        // --- Cabeceras para la Exportación de Mail Merge (CRÍTICO) ---
-        // Este es el formato estricto que requiere la macro del usuario.
+        // --- Cabeceras para la Exportación de Mail Merge (CRÍTICO: FORMATO REQUERIDO) ---
         const MAIL_MERGE_HEADERS = [
           'No_Orden', 'Fecha_Neg', 'No_Cedula', 'Nombre', 'EPS', 'Programa', 'Motivo_Negacion', 
           'Descripcion_PDF', 'Justificacion_PDF', 'Fundamento_Legal_PDF', 'Tipo_Carta', 'Radicado_Comp',
@@ -100,7 +99,7 @@
 
 
         // =================================================================================
-        // INLINED: services/utilityService.ts
+        // SERVICIOS/UTILIDADES
         // =================================================================================
         const capitalizeWords = (str) => {
           if (!str) return '';
@@ -117,9 +116,6 @@
                     const rowObject = {};
                     
                     headers.forEach((header, index) => {
-                        // Limpieza: Aseguramos que los encabezados del Array (PORTAL_HEADERS o PDF_HEADERS) 
-                        // se usan como claves en el objeto, independientemente de si la data pegada 
-                        // contenía encabezados o no (ya que se asume que se pega el cuerpo de la tabla).
                         if (cells[index]) {
                             const cleanHeader = header.trim();
                             rowObject[cleanHeader] = cells[index].trim();
@@ -147,11 +143,10 @@
         };
 
         const exportDetailedReport = (finalData, trackingData, archivedData) => {
+          // Función auxiliar para exportar tablas de datos detalladas
           try {
-            // ... (Esta función es para reportes detallados, no la de Mail Merge, se mantiene por si acaso)
             const masterDataMap = new Map();
 
-            // Asegurar que todas las filas (Final, Tracking, Archivadas) estén disponibles con su información más reciente.
             [...finalData, ...trackingData, ...archivedData].forEach(row => {
               if (row.No_Orden) {
                 const key = row.No_Orden.trim();
@@ -194,9 +189,7 @@
           }
         };
 
-        // =================================================================================
-        // INLINED: services/templateService.ts
-        // =================================================================================
+        // --- Gestión de Plantillas ---
         const TEMPLATE_STORAGE_KEY = 'sigweb_emailTemplates';
 
         const loadTemplates = () => {
@@ -223,15 +216,10 @@
           }
         };
 
-
-        // =================================================================================
-        // INLINED: services/googleSheetService.ts (Stub/Mock)
-        // =================================================================================
-        // Nota: Estas funciones están simuladas ya que el backend de Google Sheet no está disponible.
-        // Se asume que el usuario proporcionará la URL del Web App de Google Apps Script.
+        // --- Simulación de Conexión a Google Sheet (Debe ser reemplazado por la URL real) ---
         const fetchData = async (url) => {
-            console.log("Simulando FETCH de datos...");
-            await new Promise(resolve => setTimeout(resolve, 500)); // Simular latencia
+            console.log("Simulando FETCH de datos de Google Sheet...");
+            await new Promise(resolve => setTimeout(resolve, 500)); 
             return {
                 finalData: JSON.parse(localStorage.getItem('saved_finalData') || '[]'),
                 trackingData: JSON.parse(localStorage.getItem('saved_trackingData') || '[]'),
@@ -240,20 +228,19 @@
         };
 
         const saveData = async (url, data) => {
-            console.log("Simulando SAVE de datos:", data);
+            console.log("Simulando SAVE de datos a Google Sheet:", data);
             
-            // Simulación de guardado local para persistencia de la sesión
             localStorage.setItem('saved_finalData', JSON.stringify(data.finalData || []));
             localStorage.setItem('saved_trackingData', JSON.stringify(data.trackingData || []));
             localStorage.setItem('saved_archivedData', JSON.stringify(data.archivedData || []));
             
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Simular latencia
+            await new Promise(resolve => setTimeout(resolve, 1000)); 
             return { status: 'success', message: 'Datos guardados en la simulación local.' };
         };
 
 
         // =================================================================================
-        // INLINED: components/Spinner.tsx
+        // COMPONENTES (Spinner, Notification, Header, etc.)
         // =================================================================================
         const Spinner = () => {
           return (
@@ -269,9 +256,6 @@
         };
 
 
-        // =================================================================================
-        // INLINED: components/Notification.tsx
-        // =================================================================================
         const Notification = ({ message, type, onClose }) => {
           const typeClasses = {
             success: 'bg-green-600',
@@ -287,9 +271,6 @@
           );
         };
 
-        // =================================================================================
-        // INLINED: components/Header.tsx
-        // =================================================================================
         const Header = ({ onSave, onManageTemplates, onReconfigure, isSaving }) => {
           return (
             <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-border-color sticky top-0 bg-background z-10">
@@ -331,9 +312,6 @@
         };
         
 
-        // =================================================================================
-        // INLINED: components/Dashboard.tsx
-        // =================================================================================
         const DashboardCard = ({ title, value, icon }) => (
           <div className="bg-surface p-4 rounded-lg border border-border-color flex items-center">
             <div className="text-3xl text-primary mr-4">{icon}</div>
@@ -353,10 +331,6 @@
           </section>
         );
 
-
-        // =================================================================================
-        // INLINED: components/DataInputArea.tsx
-        // =================================================================================
         function DataInputArea({
           id,
           title,
@@ -370,36 +344,33 @@
           const handlePaste = useCallback((e) => {
             e.preventDefault();
             const pastedText = e.clipboardData.getData('text/plain');
-            // Usamos la versión de processPastedData que ya filtra filas vacías
             const newRows = processPastedData(pastedText, headers);
 
-            // Filtra filas que contienen al menos un valor no vacío antes de agregar nuevas.
             const existingData = data.filter(row => Object.values(row).some(val => val));
-            const updatedData = [...existingData, ...newRows];
+            let updatedData = [...existingData, ...newRows];
             
-            // Añade 5 filas vacías para entrada manual, asegurando un mínimo.
-            for (let i = 0; i < 5; i++) {
-                updatedData.push({});
-            }
-
-            // Eliminar duplicados vacíos y limita el tamaño
+            // Eliminar duplicados vacíos y garantiza un mínimo de filas para entrada manual
             const finalData = updatedData.filter((row, index, self) => 
                 index === self.findIndex(r => JSON.stringify(r) === JSON.stringify(row)) || Object.values(row).some(val => val)
-            ).slice(0, 5 + newRows.length); // Mantener un número razonable de filas vacías al final
+            );
+            
+            // Asegura al menos 5 filas vacías
+            while (finalData.length < 5 || finalData.filter(row => !Object.values(row).some(val => val)).length < 5) {
+                finalData.push({});
+            }
             
             onDataChange(finalData);
           }, [data, headers, onDataChange]);
 
           const handleCellChange = (rowIndex, header, value) => {
             const newData = [...data];
-            // Usa el header como la clave (key) para actualizar el objeto
             newData[rowIndex] = { ...newData[rowIndex], [header]: value };
             
-            // Asegura que siempre haya al menos 5 filas vacías al final para la entrada de datos.
+            // Auto-añadir fila vacía si se está escribiendo en la última fila válida
             const hasData = Object.values(newData[rowIndex]).some(val => val);
-            const emptyRowCount = newData.filter(row => !Object.values(row).some(val => val)).length;
+            const isLastRow = rowIndex === newData.length - 1;
 
-            if (hasData && emptyRowCount < 5) {
+            if (hasData && isLastRow) {
                 newData.push({});
             }
 
@@ -453,9 +424,6 @@
           );
         }
 
-        // =================================================================================
-        // INLINED: components/ReviewArea.tsx
-        // =================================================================================
         const ReviewArea = ({
           data,
           templates,
@@ -617,7 +585,6 @@
                       const requiresRadicado = isComplementariedad;
                       
                       const rowKey = row.No_Orden ? `key-${row.No_Orden}` : `new-${rowIndex}`;
-                      // Usa un estilo para resaltar las filas con datos PDF faltantes
                       const isMissingPdfData = !row.Descripcion_PDF && !row.Justificacion_PDF && !row.Fundamento_Legal_PDF;
 
                       return (
@@ -675,10 +642,6 @@
           );
         };
 
-
-        // =================================================================================
-        // INLINED: components/TrackingArea.tsx
-        // =================================================================================
         const TrackingArea = ({
             title,
             data,
@@ -713,7 +676,7 @@
                             return sortConfig.direction === 'ascending' ? -1 : 1;
                         }
                         if (aValue > bValue) {
-                            return sortConfig.direction === 'ascending' ? 1 : -1; // Corregido: 1
+                            return sortConfig.direction === 'ascending' ? 1 : -1;
                         }
                         return 0;
                     });
@@ -846,9 +809,6 @@
             );
         };
 
-        // =================================================================================
-        // INLINED: components/TemplateModal.tsx
-        // =================================================================================
         const TemplateModal = ({ isOpen, onClose, templates, setTemplates, showNotification }) => {
             const [editingTemplate, setEditingTemplate] = useState(null);
             const [newTemplate, setNewTemplate] = useState({ name: '', body: '' });
@@ -979,9 +939,6 @@
         };
 
 
-        // =================================================================================
-        // INLINED: components/PreviewModal.tsx
-        // =================================================================================
         const PreviewModal = ({ isOpen, onClose, data, templates }) => {
             if (!isOpen || !data) return null;
 
@@ -1047,9 +1004,6 @@
             );
         };
 
-        // =================================================================================
-        // INLINED: components/ConfigModal.tsx
-        // =================================================================================
         const ConfigModal = ({ isOpen, onClose, sheetUrl, setSheetUrl, showNotification }) => {
             const [localUrl, setLocalUrl] = useState(sheetUrl);
 
@@ -1096,23 +1050,22 @@
         // MAIN APP COMPONENT
         // =================================================================================
         function App() {
-            // Estado para Datos de Entrada (Área 1 y 2)
+            // ---------------------------------------------------------------------------------
+            // ESTADO Y HOOKS (Declarados primero para evitar el ReferenceError)
+            // ---------------------------------------------------------------------------------
             const [portalData, setPortalData] = useState(Array(5).fill({}));
             const [pdfData, setPdfData] = useState(Array(5).fill({}));
             
-            // Estado para Datos Procesados (Área 3, 4 y Archivo)
             const [finalData, setFinalData] = useState([]);
             const [trackingData, setTrackingData] = useState([]);
             const [archivedData, setArchivedData] = useState([]);
 
-            // Estado de Control
             const [sheetUrl, setSheetUrl] = useState(localStorage.getItem('googleSheetUrl') || '');
             const [templates, setTemplates] = useState(loadTemplates);
             const [editsCount, setEditsCount] = useState(0);
             const [isLoading, setIsLoading] = useState(true);
             const [isSaving, setIsSaving] = useState(false);
 
-            // Estado de UI
             const [notification, setNotification] = useState(null);
             const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
             const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
@@ -1122,56 +1075,25 @@
             const [sortConfigTracking, setSortConfigTracking] = useState({ key: 'Fecha_Neg', direction: 'ascending' });
             const [sortConfigArchived, setSortConfigArchived] = useState({ key: 'Fecha_Neg', direction: 'ascending' });
             
-            // --- Handlers de Notificación ---
+            // ---------------------------------------------------------------------------------
+            // HANDLERS BÁSICOS (Declarados antes de los callbacks complejos)
+            // ---------------------------------------------------------------------------------
+            
             const showNotification = useCallback((note) => {
                 setNotification(note);
                 setTimeout(() => setNotification(null), 5000);
             }, []);
-
-            // --- Carga Inicial de Datos de la Nube ---
-            useEffect(() => {
-                const loadData = async () => {
-                    if (!sheetUrl) {
-                        setIsLoading(false);
-                        showNotification({ message: 'Configure la URL de Google Apps Script para cargar datos.', type: 'info' });
-                        return;
-                    }
-                    try {
-                        setIsLoading(true);
-                        const data = await fetchData(sheetUrl);
-                        setFinalData(data.finalData || []);
-                        setTrackingData(data.trackingData || []);
-                        setArchivedData(data.archivedData || []);
-                        setEditsCount(0);
-                        showNotification({ message: 'Datos cargados exitosamente desde la nube.', type: 'success' });
-                    } catch (error) {
-                        console.error('Fallo al cargar datos:', error);
-                        showNotification({ message: 'Error al cargar datos. Verifique la URL de conexión.', type: 'error' });
-                    } finally {
-                        setIsLoading(false);
-                    }
-                };
-
-                loadData();
-            }, [sheetUrl, showNotification]);
-
-            // --- Guardado de Plantillas en LocalStorage ---
-            useEffect(() => {
-                saveTemplates(templates);
-            }, [templates]);
             
-            // --- Guardado de URL en LocalStorage ---
-            useEffect(() => {
-                if (sheetUrl) {
-                    localStorage.setItem('googleSheetUrl', sheetUrl);
-                } else {
-                    localStorage.removeItem('googleSheetUrl');
-                }
-            }, [sheetUrl]);
+            const incrementEdits = useCallback(() => {
+                setEditsCount(prev => prev + 1);
+            }, []);
+
+            // ---------------------------------------------------------------------------------
+            // LÓGICA DE PROCESAMIENTO (Callbacks que usan los Handlers Básicos)
+            // ---------------------------------------------------------------------------------
 
             // --- Lógica de Procesamiento del Portal (Área 1 -> Área 3) ---
             const processPortalData = useCallback(() => {
-                // Filtra para solo incluir filas que tengan al menos un valor.
                 const validPortalData = portalData.filter(row => Object.values(row).some(val => val));
                 
                 if (validPortalData.length === 0) {
@@ -1183,28 +1105,26 @@
                     const newFinalData = [];
 
                     validPortalData.forEach(portalRow => {
-                        // Usamos la clave limpia "NÚMERO ORDEN" que definimos en PORTAL_HEADERS
                         const portalKey = (portalRow["NÚMERO ORDEN"] || "").trim();
 
                         if (!portalKey) return; 
 
                         const newRow = {
-                            // Mapeo directo de columnas del Portal
                             No_Orden: portalKey,
                             Fecha_Neg: portalRow["FECHA NEGACIÓN"] || '',
                             No_Cedula: portalRow["IDENTIFICACIÓN AFILIADO"] || '',
                             Nombre: capitalizeWords(portalRow["NOMBRE AFILIADO"]),
                             EPS: portalRow.EPS || '',
-                            Programa: portalRow.PROGRAMA || '', // **CORRECCIÓN:** Uso directo de la clave correcta
+                            Programa: portalRow.PROGRAMA || '', 
                             Motivo_Negacion: portalRow["MOTIVO NEGACIÓN"] || '',
 
-                            // Datos del PDF inicializados como vacíos (serán llenados en el siguiente paso)
+                            // Datos del PDF inicializados como vacíos (para ser complementados luego)
                             Descripcion_PDF: '', 
                             Justificacion_PDF: '', 
                             Fundamento_Legal_PDF: '',
                             Codigo: '',
 
-                            // Datos complementarios del Portal (para Mail Merge/Seguimiento)
+                            // Otros campos
                             Fecha_Asignacion: portalRow.Fecha_Asignacion || '',
                             EJECUTIVO: portalRow.EJECUTIVO || '',
                             TIPO_DOCUMENTO: portalRow["TIPO DOCUMENTO"] || '',
@@ -1216,7 +1136,6 @@
                             CELULAR: portalRow.CELULAR || '',
                             REGIONAL: portalRow.REGIONAL || '',
 
-                            // Campos de Estado/Control
                             ESTADO: 'Pendiente', 
                             Tipo_Carta: '', 
                             Radicado_Comp: '', 
@@ -1225,14 +1144,13 @@
                         newFinalData.push(newRow);
                     });
 
-                    // Agrega nuevos datos y mantiene los existentes que no fueron reemplazados
+                    // Agrega nuevos datos
                     setFinalData(prev => {
                         const existingDataMap = new Map(prev.map(r => [r.No_Orden, r]));
                         newFinalData.forEach(newR => existingDataMap.set(newR.No_Orden, newR));
                         return Array.from(existingDataMap.values());
                     });
                     
-                    // Limpiar Área 1
                     setPortalData(Array(5).fill({})); 
                     
                     showNotification({ message: `¡Procesamiento exitoso! Se han cargado ${newFinalData.length} caso(s) al Área de Revisión.`, type: 'success' });
@@ -1262,23 +1180,19 @@
                     const pdfMap = new Map();
                     let updatedCount = 0;
 
-                    // 1. Crear mapa de PDF por Número de Orden
                     validPdfData.forEach(row => {
-                        // Usamos la clave limpia "Archivo (No. Orden)" que definimos en PDF_HEADERS
                         const key = (row["Archivo (No. Orden)"] || "").trim();
                         if (key) {
                             pdfMap.set(key, row);
                         }
                     });
 
-                    // 2. Iterar sobre los datos del Área 3 y hacer el merge (complemento)
                     const updatedFinalData = finalData.map(finalRow => {
                         const finalKey = (finalRow.No_Orden || "").trim();
                         const pdfRow = pdfMap.get(finalKey);
 
                         if (pdfRow) {
                             updatedCount++;
-                            // Sobrescribir solo los campos del PDF si existen
                             return {
                                 ...finalRow,
                                 Descripcion_PDF: pdfRow["Descripción"] || finalRow.Descripcion_PDF,
@@ -1292,7 +1206,6 @@
 
                     setFinalData(updatedFinalData);
                     
-                    // Limpiar Área 2
                     setPdfData(Array(5).fill({})); 
                     incrementEdits();
                     
@@ -1304,7 +1217,7 @@
                 }
             }, [pdfData, finalData, incrementEdits, showNotification]);
 
-            // --- Handlers de Datos ---
+            // --- Handlers de Actualización ---
             const updateReviewRow = useCallback((noOrden, newValues) => {
                 setFinalData(prev => prev.map(row => 
                     row.No_Orden === noOrden ? { ...row, ...newValues } : row
@@ -1323,10 +1236,6 @@
                 ));
             }, []);
             
-            const incrementEdits = useCallback(() => {
-                setEditsCount(prev => prev + 1);
-            }, []);
-
             // --- Guardar en la Nube ---
             const handleSaveToCloud = async () => {
                 if (!sheetUrl) {
@@ -1378,11 +1287,9 @@
                 let remainingTracking = [];
 
                 if (ordersToArchive.length > 0) {
-                    // Archivar casos específicos (botón de fila individual)
                     rowsToArchive = trackingData.filter(row => ordersToArchive.includes(row.No_Orden) && row.ESTADO === 'Finalizado');
                     remainingTracking = trackingData.filter(row => !ordersToArchive.includes(row.No_Orden) || row.ESTADO !== 'Finalizado');
                 } else {
-                    // Archivar todos los casos "Finalizado" (botón de acción masiva)
                     rowsToArchive = trackingData.filter(row => row.ESTADO === 'Finalizado');
                     remainingTracking = trackingData.filter(row => row.ESTADO !== 'Finalizado');
                 }
@@ -1405,7 +1312,6 @@
                     return;
                 }
 
-                // **CRÍTICO: Usar el formato exacto requerido por la macro.**
                 const mailMergeHeaders = MAIL_MERGE_HEADERS;
                 
                 const exportableData = dataToExport.map(row => {
@@ -1418,7 +1324,6 @@
                         if (header === 'Tipo_Carta') {
                             acc[header] = templateName;
                         } else if (header === 'Fecha_Neg') {
-                            // Asegura formato de fecha simple si existe, aunque Excel se encarga del formato
                             acc[header] = rowValue.split(' ')[0]; 
                         }
                          else {
@@ -1440,6 +1345,53 @@
                 }
             }, [showNotification, templates]);
 
+
+            // ---------------------------------------------------------------------------------
+            // EFECTOS DE MONTAJE Y SINCRONIZACIÓN
+            // ---------------------------------------------------------------------------------
+            
+            useEffect(() => {
+                const loadData = async () => {
+                    if (!sheetUrl) {
+                        setIsLoading(false);
+                        showNotification({ message: 'Configure la URL de Google Apps Script para cargar datos.', type: 'info' });
+                        return;
+                    }
+                    try {
+                        setIsLoading(true);
+                        const data = await fetchData(sheetUrl);
+                        setFinalData(data.finalData || []);
+                        setTrackingData(data.trackingData || []);
+                        setArchivedData(data.archivedData || []);
+                        setEditsCount(0);
+                        showNotification({ message: 'Datos cargados exitosamente desde la nube.', type: 'success' });
+                    } catch (error) {
+                        console.error('Fallo al cargar datos:', error);
+                        showNotification({ message: 'Error al cargar datos. Verifique la URL de conexión.', type: 'error' });
+                    } finally {
+                        setIsLoading(false);
+                    }
+                };
+
+                loadData();
+            }, [sheetUrl, showNotification]);
+
+            useEffect(() => {
+                saveTemplates(templates);
+            }, [templates]);
+            
+            useEffect(() => {
+                if (sheetUrl) {
+                    localStorage.setItem('googleSheetUrl', sheetUrl);
+                } else {
+                    localStorage.removeItem('googleSheetUrl');
+                }
+            }, [sheetUrl]);
+
+
+            // ---------------------------------------------------------------------------------
+            // RENDERIZADO
+            // ---------------------------------------------------------------------------------
 
             if (isLoading) {
                 return (
@@ -1544,7 +1496,7 @@
                         updateRow={updateTrackingRow}
                         incrementEdits={incrementEdits}
                         onArchive={archiveTrackingCases}
-                        onExportToExcel={(data, title) => exportDetailedReport([], data, [])} // Usa el reporte detallado para seguimiento
+                        onExportToExcel={(data, title) => exportDetailedReport([], data, [])}
                         sortConfig={sortConfigTracking}
                         setSortConfig={setSortConfigTracking}
                     />
@@ -1558,7 +1510,7 @@
                         updateRow={updateArchivedRow}
                         incrementEdits={incrementEdits}
                         onArchive={() => showNotification({ message: 'Los casos archivados no se pueden archivar más.', type: 'info' })}
-                        onExportToExcel={(data, title) => exportDetailedReport([], [], data)} // Usa el reporte detallado para archivo
+                        onExportToExcel={(data, title) => exportDetailedReport([], [], data)}
                         canArchive={false}
                         sortConfig={sortConfigArchived}
                         setSortConfig={setSortConfigArchived}
