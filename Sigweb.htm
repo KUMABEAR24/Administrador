@@ -54,7 +54,6 @@
     <div id="root"></div>
 
     <script type="text/babel" data-presets="react">
-        // 3. CORRECCIÓN: La destructuración de 'React' y 'ReactDOM' funcionará correctamente ahora.
         const { useState, useEffect, useCallback, useMemo } = React;
         const ReactDOMClient = ReactDOM; 
         
@@ -132,10 +131,8 @@
             const masterDataMap = new Map();
 
             [...finalData, ...trackingData, ...archivedData].forEach(row => {
-              // Ajuste de clave: Usamos 'NÚMERO ORDEN' ya que está en PORTAL_HEADERS, 
-              // asumiendo que el proceso de pegado lo utiliza. Si tus datos internos usan 'No_Orden', 
-              // el código debe ser ajustado en esa lógica. Por seguridad, usamos 'NÚMERO ORDEN'.
-              const orderKey = row['NÚMERO ORDEN'] || row.No_Orden; 
+              // CLAVE: Usamos No_Orden que es la clave unificada en el estado de React
+              const orderKey = row.No_Orden; 
 
               if (orderKey) {
                 const key = orderKey.trim();
@@ -226,7 +223,6 @@
 
         const saveData = async (url, data) => {
             // Nota: Se usa 'no-cors' para Google App Script, lo que significa que no podemos leer la respuesta.
-            // Si la aplicación se rompe, la causa es probablemente que el endpoint de GAS no está bien configurado.
             const response = await fetch(url, {
                 method: 'POST',
                 mode: 'no-cors', 
@@ -440,7 +436,6 @@
         // =================================================================================
         // INLINED: components/ReviewArea.tsx
         // =================================================================================
-        // Columnas de Área 3 (como en la versión anterior)
         const ReviewArea = ({
           data,
           templates,
@@ -456,8 +451,7 @@
           const [selectedRows, setSelectedRows] = useState(new Set());
           const [filter, setFilter] = useState('');
           
-          // Columnas exactas solicitadas por el usuario
-          // CAMBIO CLAVE: Se eliminan las restricciones 'compact: true' de las descripciones largas
+          // Columnas: Mantenemos el ancho amplio solicitado
           const REVIEW_HEADERS = [
               { key: 'Fecha_Neg', label: 'Fecha de Negación' },
               { key: 'No_Orden', label: 'Número de Orden' },
@@ -466,9 +460,9 @@
               { key: 'EPS', label: 'EPS' },
               { key: 'Programa', label: 'Programa', compact: true },
               { key: 'Motivo_Negacion', label: 'Motivo Neg', compact: true },
-              { key: 'Descripcion_PDF', label: 'Descripción' }, // Ampliado
-              { key: 'Justificacion_PDF', label: 'Justificación' }, // Ampliado
-              { key: 'Fundamento_Legal_PDF', label: 'Fund. Legal' }, // Ampliado
+              { key: 'Descripcion_PDF', label: 'Descripción' }, 
+              { key: 'Justificacion_PDF', label: 'Justificación' }, 
+              { key: 'Fundamento_Legal_PDF', label: 'Fund. Legal' }, 
           ];
 
           // Lógica de ordenamiento
@@ -525,7 +519,6 @@
             const originalRow = data.find(r => r.No_Orden === noOrden);
             if (originalRow && originalRow[key] !== value) {
               updateRow(noOrden, { [key]: value });
-              incrementEdits();
             }
           };
           
@@ -535,9 +528,15 @@
             if (!template || !template.name.toUpperCase().includes('COMPLEMENTARIEDAD')) {
                 changes.Radicado_Comp = '';
             }
+            // CLAVE: updateRow manejará el incremento y la marcación de edición
             updateRow(noOrden, changes);
-            incrementEdits();
           };
+          
+          const handleArchive = (noOrden) => {
+            // CLAVE: Enviamos el cambio de estado. El hook useDataState se encarga de mover la fila.
+            updateRow(noOrden, { ESTADO_ACTUAL: 'Archivado' });
+          };
+
 
           const requestSort = (key) => {
             let direction = 'ascending';
@@ -607,7 +606,8 @@
                       const isComplementariedad = template && template.name.toUpperCase().includes('COMPLEMENTARIEDAD');
                       const requiresRadicado = isComplementariedad;
                       
-                      const rowKey = `${row.No_Orden || 'new'}-${rowIndex}`;
+                      // Usamos No_Orden como clave única
+                      const rowKey = row.No_Orden; 
 
                       return (
                         <tr key={rowKey} className={`border-b border-border-color ${row.isEdited ? 'animate-flash-success' : 'hover:bg-highlight'} ${isComplementariedad ? 'bg-indigo-900/50' : ''}`}>
@@ -641,8 +641,8 @@
                                   placeholder="Radicado..."
                                   value={row.Radicado_Comp || ''}
                                   onChange={(e) => {
+                                      // CLAVE: updateRow se encarga del incremento
                                       updateRow(row.No_Orden, { Radicado_Comp: e.target.value });
-                                      incrementEdits();
                                     }}
                                   className="bg-surface border border-border-color rounded-md px-2 py-1 text-text-primary w-full mt-1"
                                 />
@@ -651,7 +651,7 @@
                           </td>
                            <td className="px-4 py-2">
                                 <button
-                                    onClick={() => updateRow(row.No_Orden, { ESTADO_ACTUAL: 'Archivado' })}
+                                    onClick={() => handleArchive(row.No_Orden)}
                                     className="bg-archive hover:bg-gray-700 text-white font-bold py-1 px-3 rounded-lg text-xs"
                                 >
                                     Archivar
@@ -670,11 +670,9 @@
         // =================================================================================
         // INLINED: components/TrackingArea.tsx
         // =================================================================================
-        // Columnas de Área 4 (como en la versión anterior)
         const TrackingArea = ({
             data,
             updateRow,
-            incrementEdits,
             onSendToArchive,
             onExportAll,
             sortConfig,
@@ -726,14 +724,14 @@
             const handleCellBlur = (noOrden, key, value) => {
                 const originalRow = data.find(r => r.No_Orden === noOrden);
                 if (originalRow && originalRow[key] !== value) {
-                    updateRow(noOrden, { [key]: value, isEdited: true });
-                    incrementEdits();
+                    // CLAVE: updateRow se encarga del incremento y la marcación
+                    updateRow(noOrden, { [key]: value });
                 }
             };
 
             const handleStatusChange = (noOrden, status) => {
-                updateRow(noOrden, { ESTADO_ACTUAL: status, isEdited: true });
-                incrementEdits();
+                // CLAVE: updateRow se encarga del incremento y la marcación
+                updateRow(noOrden, { ESTADO_ACTUAL: status });
             };
 
             const requestSort = (key) => {
@@ -1133,7 +1131,8 @@
             // Función para añadir datos del portal (Área 1)
             const addPortalData = useCallback((newData) => {
                 setData(prev => {
-                    const existingOrders = new Set(prev.finalData.map(r => r['NÚMERO ORDEN'] || r.No_Orden).filter(Boolean));
+                    // CLAVE: Usamos 'NÚMERO ORDEN' para chequear duplicados.
+                    const existingOrders = new Set(prev.finalData.map(r => r.No_Orden).filter(Boolean));
                     const newUniqueData = newData.filter(row => !(row['NÚMERO ORDEN'] && existingOrders.has(row['NÚMERO ORDEN'])));
                     
                     if (newUniqueData.length === 0) return prev;
@@ -1141,8 +1140,9 @@
                     // Normalizar y añadir campos de revisión
                     const processedData = newUniqueData.map(row => ({
                         ...row,
+                        // CLAVE: Mapeo de columnas de entrada a claves internas unificadas
                         Fecha_Neg: row['FECHA NEGACIÓN'],
-                        No_Orden: row['NÚMERO ORDEN'],
+                        No_Orden: row['NÚMERO ORDEN'], // CLAVE UNIFICADA
                         No_Cedula: row['IDENTIFICACIÓN AFILIADO'],
                         Nombre: capitalizeWords(row['NOMBRE AFILIADO']),
                         Motivo_Negacion: row['MOTIVO NEGACIÓN'],
@@ -1158,7 +1158,8 @@
                     
                     return {
                         ...prev,
-                        finalData: [...prev.finalData, ...processedData].filter(r => r.No_Orden),
+                        // Filtramos las filas sin No_Orden
+                        finalData: [...prev.finalData, ...processedData].filter(r => r.No_Orden), 
                     };
                 });
             }, []);
@@ -1166,11 +1167,14 @@
             // Función para añadir datos del PDF (Área 2)
             const addPdfData = useCallback((newData) => {
                 setData(prev => {
+                    // CLAVE: Creamos un mapa por No_Orden (clave unificada)
                     const finalDataMap = new Map(prev.finalData.map(r => [r.No_Orden, r]));
                     let changedCount = 0;
 
                     newData.forEach(pdfRow => {
-                        const orderKey = pdfRow['Archivo (No. Orden)'];
+                        // CLAVE: El input del PDF debe usar la misma clave: 'Archivo (No. Orden)'
+                        const orderKey = pdfRow['Archivo (No. Orden)']; 
+                        
                         if (orderKey && finalDataMap.has(orderKey)) {
                             const current = finalDataMap.get(orderKey);
                             
@@ -1205,33 +1209,25 @@
                 });
             }, []);
 
-            // Función para actualizar una fila específica (Área 3 y 4)
+            // Función para actualizar una fila específica (Área 3 y 4) y manejar el Archivamiento desde Revisión
             const updateRow = useCallback((noOrden, changes, targetArea = 'finalData') => {
                 setData(prev => {
-                    const targetKey = targetArea === 'finalData' ? 'finalData' : 'trackingData';
+                    let updatedData = { ...prev };
                     
-                    const newData = prev[targetKey].map(row => {
-                        if (row.No_Orden === noOrden) {
-                            // Si se está actualizando un campo, marca como editado
-                            const newRow = { ...row, ...changes, isEdited: true }; 
-                            return newRow;
-                        }
-                        return row;
-                    });
-                    
-                    // Si el cambio es archivar (desde el área de revisión), se hace la transición
+                    // 1. Manejar Archivamiento desde la Revisión (Área 3)
                     if (targetArea === 'finalData' && changes.ESTADO_ACTUAL === 'Archivado') {
                         const rowToArchive = prev.finalData.find(row => row.No_Orden === noOrden);
                         if (rowToArchive) {
-                             setEditsCount(prev => prev + 1);
-                            
                             const remainingFinal = prev.finalData.filter(row => row.No_Orden !== noOrden);
                             const archivedRow = {
                                 ...rowToArchive,
                                 ESTADO_ACTUAL: 'Archivado',
                                 Fecha_Archivado: new Date().toISOString().slice(0, 10),
                                 Tipo_Carta_Name: initialTemplates.find(t => t.id === rowToArchive.Tipo_Carta)?.name || rowToArchive.Tipo_Carta,
+                                isEdited: false, // Se archiva, no es una edición pendiente
                             };
+                            
+                            setEditsCount(prev => prev + 1); // Contar la acción de archivado
 
                             return { 
                                 ...prev, 
@@ -1241,17 +1237,29 @@
                         }
                     }
 
-                    // Solo incrementa si los cambios no incluyen el archivado y no viene de la sync inicial
-                    if (changes.ESTADO_ACTUAL !== 'Archivado') {
-                         setEditsCount(prev => prev + 1);
-                    }
+                    // 2. Manejar la actualización normal (Edición de celdas, cambio de plantilla, etc.)
+                    const targetKey = targetArea === 'finalData' ? 'finalData' : 'trackingData';
                     
-                    return { ...prev, [targetKey]: newData };
+                    updatedData[targetKey] = prev[targetKey].map(row => {
+                        if (row.No_Orden === noOrden) {
+                            // Solo marcar como editado e incrementar si *realmente* hubo un cambio
+                            const isChanged = Object.keys(changes).some(key => row[key] !== changes[key]);
+
+                            if (isChanged && changes.ESTADO_ACTUAL !== 'Archivado') { // Aseguramos no contar el archivado dos veces
+                                setEditsCount(prev => prev + 1); 
+                                return { ...row, ...changes, isEdited: true };
+                            }
+                            return { ...row, ...changes }; // Aplicar cambios sin marcar si son iguales
+                        }
+                        return row;
+                    });
+                    
+                    return updatedData;
                 });
             }, [initialTemplates]);
 
 
-            // Función para mover a seguimiento
+            // Función para mover a seguimiento (Área 3 -> Área 4)
             const sendToTracking = useCallback((selectedOrderNumbers) => {
                 setData(prev => {
                     const toMove = prev.finalData.filter(row => selectedOrderNumbers.includes(row.No_Orden));
@@ -1259,8 +1267,8 @@
 
                     const movedWithStatus = toMove.map(row => ({
                         ...row,
-                        ESTADO_ACTUAL: 'Pendiente', // Estado inicial de seguimiento
-                        isEdited: true, // Marcar para guardar
+                        ESTADO_ACTUAL: 'Pendiente', 
+                        isEdited: true, // Marcar para que se guarde el cambio de área
                     }));
                     
                     setEditsCount(prev => prev + movedWithStatus.length);
@@ -1274,11 +1282,14 @@
                 return true;
             }, []);
 
-            // Función para mover a archivo (desde Tracking)
+            // Función para mover a archivo (desde Tracking) (Área 4 -> Área 5)
             const sendToArchive = useCallback((noOrden) => {
                 setData(prev => {
                     const rowToArchive = prev.trackingData.find(row => row.No_Orden === noOrden);
-                    if (!rowToArchive) return prev;
+                    if (!rowToArchive || rowToArchive.ESTADO_ACTUAL !== 'Finalizado') {
+                         console.warn("Intento de archivar caso no finalizado o inexistente:", noOrden);
+                        return prev;
+                    }
                     
                     const remainingTracking = prev.trackingData.filter(row => row.No_Orden !== noOrden);
                     
@@ -1287,6 +1298,7 @@
                         ESTADO_ACTUAL: 'Archivado',
                         Fecha_Archivado: new Date().toISOString().slice(0, 10),
                         Tipo_Carta_Name: initialTemplates.find(t => t.id === rowToArchive.Tipo_Carta)?.name || rowToArchive.Tipo_Carta,
+                        isEdited: false, // Ya no es una edición pendiente
                     };
                     
                     setEditsCount(prev => prev + 1);
@@ -1303,7 +1315,7 @@
             const clearReviewData = useCallback(() => {
                 if (window.confirm("¿Estás seguro de que quieres eliminar todos los casos en el Área de Revisión? Esta acción es irreversible.")) {
                     setData(prev => ({ ...prev, finalData: [] }));
-                    setEditsCount(prev => prev + 1); // Contar como una edición para sincronizar si es necesario
+                    setEditsCount(prev => prev + 1); 
                     return true;
                 }
                 return false;
@@ -1321,7 +1333,7 @@
                 sendToTracking,
                 sendToArchive,
                 clearReviewData,
-                setData, // Para la carga inicial desde la nube
+                setData, 
             };
         };
 
@@ -1341,12 +1353,12 @@
             const [notification, setNotification] = useState({ message: '', type: '' });
             const [isLoading, setIsLoading] = useState(false);
             
-            const [sortConfig, setSortConfig] = useState({ key: 'Fecha_Neg', direction: 'ascending' });
+            // Usamos un único sortConfig
+            const [sortConfig, setSortConfig] = useState({ key: 'Fecha_Neg', direction: 'ascending' }); 
 
             const { 
                 data, 
                 editsCount, 
-                incrementEdits, 
                 clearEdits, 
                 addPortalData, 
                 addPdfData, 
@@ -1492,7 +1504,7 @@
             // --- Render ---
 
             return (
-                // CAMBIO CLAVE: Ampliamos el contenedor principal a max-w-full
+                // CLAVE: max-w-full px-12 para el ancho amplio
                 <div className="min-h-screen p-6 space-y-8 max-w-full px-12">
                     
                     <Header 
@@ -1551,7 +1563,6 @@
                         data={data.finalData}
                         templates={templates}
                         updateRow={(noOrden, changes) => updateRow(noOrden, changes, 'finalData')}
-                        incrementEdits={incrementEdits}
                         onSendToTracking={(selectedOrders) => {
                             if (sendToTracking(selectedOrders)) {
                                 setNotification({ message: `Movidos ${selectedOrders.length} casos a Seguimiento Activo.`, type: 'info' });
@@ -1571,7 +1582,6 @@
                     <TrackingArea
                         data={data.trackingData}
                         updateRow={(noOrden, changes) => updateRow(noOrden, changes, 'trackingData')}
-                        incrementEdits={incrementEdits}
                         onSendToArchive={(noOrden) => {
                             sendToArchive(noOrden);
                             setNotification({ message: `Caso ${noOrden} finalizado y archivado.`, type: 'info' });
