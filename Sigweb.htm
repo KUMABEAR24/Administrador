@@ -7,55 +7,54 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-      // Tailwind CSS Configuration
-      tailwind.config = {
-        theme: {
-          extend: {
-            colors: {
-              'primary': '#4e9fef',
-              'background': '#1e1e1e',
-              'surface': '#2d2d2d',
-              'text-primary': '#d4d4d4',
-              'text-secondary': '#a0a0a0',
-              'border-color': '#444',
-              'header': '#3a3a3a',
-              'highlight': '#252526',
-              'warning': '#6e550c',
-              'archive': '#3a3a3a',
-              'success': '#28a745',
-              'danger': '#a02d2d',
-              'danger-hover': '#c0392b',
-              'btn-primary': '#0e639c',
-              'btn-primary-hover': '#1a73e8',
-            },
-            animation: {
-              'flash-success': 'flash-success 1s ease-out',
-            },
-            keyframes: {
-              'flash-success': {
-                'from': { backgroundColor: '#28a745' },
-                'to': { backgroundColor: 'transparent' },
-              }
+        // Tailwind CSS Configuration
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#4e9fef',
+                        'background': '#1e1e1e',
+                        'surface': '#2d2d2d',
+                        'text-primary': '#d4d4d4',
+                        'text-secondary': '#a0a0a0',
+                        'border-color': '#444',
+                        'header': '#3a3a3a',
+                        'highlight': '#252526',
+                        'warning': '#6e550c',
+                        'archive': '#3a3a3a',
+                        'success': '#28a745',
+                        'danger': '#a02d2d',
+                        'danger-hover': '#c0392b',
+                        'btn-primary': '#0e639c',
+                        'btn-primary-hover': '#1a73e8',
+                    },
+                    animation: {
+                        'flash-success': 'flash-success 1s ease-out',
+                    },
+                    keyframes: {
+                        'flash-success': {
+                            'from': { backgroundColor: '#28a745' },
+                            'to': { backgroundColor: 'transparent' },
+                        }
+                    }
+                }
             }
-          }
         }
-      }
     </script>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    
-    <script src="https://esm.sh/react@18.2.0"></script>
-    <script src="https://esm.sh/react-dom@18.2.0/client"></script>
-    
+
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    </head>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+</head>
 <body class="bg-background text-text-primary">
     <div id="root"></div>
 
-    <script type="text/babel" data-presets="react" data-type="module">
-        // 3. CORRECCIÓN: Se reemplazaron los 'import' por destructuración de variables globales.
-        // Esto es necesario ya que eliminamos el importmap y Babel Standalone inyecta 'React' y 'ReactDOM' globalmente.
+    <script type="text/babel" data-presets="react">
+        // 3. CORRECCIÓN: La destructuración de 'React' y 'ReactDOM' funcionará correctamente ahora.
         const { useState, useEffect, useCallback, useMemo } = React;
         const ReactDOMClient = ReactDOM; 
         
@@ -266,10 +265,22 @@
             warning: 'bg-yellow-500',
             info: 'bg-blue-600',
           };
+          // useEffect para cerrar automáticamente
+          useEffect(() => {
+              if (message) {
+                  const timer = setTimeout(() => {
+                      onClose();
+                  }, 5000); // 5 segundos
+                  return () => clearTimeout(timer);
+              }
+          }, [message, onClose]);
+          
+          if (!message) return null;
+
           return (
-            <div className={`fixed top-5 right-5 z-50 p-4 rounded-lg shadow-lg text-white ${typeClasses[type]} flex items-center gap-4`}>
+            <div className={`fixed top-5 right-5 z-50 p-4 rounded-lg shadow-lg text-white ${typeClasses[type]} flex items-center gap-4 transition-opacity duration-300`}>
               <span>{message}</span>
-              <button onClick={onClose} className="text-xl font-bold">&times;</button>
+              <button onClick={onClose} className="text-xl font-bold hover:text-gray-200">&times;</button>
             </div>
           );
         };
@@ -353,6 +364,7 @@
 
             const updatedData = [...data.filter(row => Object.values(row).some(val => val)), ...newRows];
             
+            // Asegurar que haya al menos 5 filas vacías al final si se pega contenido
             const emptyRowCount = updatedData.filter(row => !Object.values(row).some(val => val)).length;
             if (emptyRowCount < 5) {
                 for (let i = 0; i < (5 - emptyRowCount); i++) {
@@ -367,6 +379,7 @@
             const newData = [...data];
             newData[rowIndex] = { ...newData[rowIndex], [header]: value };
             
+            // Asegurar que haya al menos 5 filas vacías
             const emptyRowCount = newData.filter(row => !Object.values(row).some(val => val)).length;
             if (emptyRowCount < 5) {
                 newData.push({});
@@ -455,15 +468,36 @@
               { key: 'Fundamento_Legal_PDF', label: 'Fund. Legal', compact: true },
           ];
 
+          // Lógica de ordenamiento
+          const sortedData = useMemo(() => {
+              let sortableData = [...data];
+              if (sortConfig.key) {
+                  sortableData.sort((a, b) => {
+                      const aValue = a[sortConfig.key] || '';
+                      const bValue = b[sortConfig.key] || '';
+                      if (aValue < bValue) {
+                          return sortConfig.direction === 'ascending' ? -1 : 1;
+                      }
+                      if (aValue > bValue) {
+                          return sortConfig.direction === 'ascending' ? 1 : -1;
+                      }
+                      return 0;
+                  });
+              }
+              return sortableData;
+          }, [data, sortConfig]);
+
+
           const filteredData = useMemo(() => {
-            if (!filter) return data;
+            const currentData = sortedData;
+            if (!filter) return currentData;
             const lowercasedFilter = filter.toLowerCase();
-            return data.filter(row =>
+            return currentData.filter(row =>
               Object.values(row).some(value =>
                 String(value).toLowerCase().includes(lowercasedFilter)
               )
             );
-          }, [data, filter]);
+          }, [sortedData, filter]);
 
           const handleSelectRow = (noOrden) => {
             const newSelection = new Set(selectedRows);
@@ -477,7 +511,7 @@
 
           const handleSelectAll = (e) => {
             if (e.target.checked) {
-              const allOrderNumbers = filteredData.map(row => row.No_Orden);
+              const allOrderNumbers = filteredData.map(row => row.No_Orden).filter(Boolean); // Filtrar valores nulos/vacíos
               setSelectedRows(new Set(allOrderNumbers));
             } else {
               setSelectedRows(new Set());
@@ -527,6 +561,26 @@
                   onChange={(e) => setFilter(e.target.value)}
                 />
                 <span className="text-text-primary">{selectedRows.size} fila(s) seleccionada(s)</span>
+                <button
+                    onClick={() => onExportForMailMerge(Array.from(selectedRows))}
+                    className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors ml-auto"
+                    disabled={selectedRows.size === 0}
+                >
+                    Exportar para Mail Merge ({selectedRows.size})
+                </button>
+                <button
+                    onClick={() => onSendToTracking(Array.from(selectedRows))}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                    disabled={selectedRows.size === 0}
+                >
+                    Mover a Seguimiento ({selectedRows.size})
+                </button>
+                 <button
+                    onClick={onClearReviewData}
+                    className="bg-danger hover:bg-danger-hover text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                >
+                    Limpiar Área
+                </button>
               </div>
 
               <div className="table-container max-h-[700px] overflow-auto border border-border-color rounded-lg">
@@ -541,6 +595,7 @@
                           </th>
                         ))}
                       <th className="px-4 py-3">Tipo de Carta</th>
+                      <th className="px-4 py-3">Archivar</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -552,14 +607,14 @@
                       const rowKey = `${row.No_Orden || 'new'}-${rowIndex}`;
 
                       return (
-                        <tr key={rowKey} className={`border-b border-border-color hover:bg-highlight ${isComplementariedad ? 'bg-indigo-900/50' : ''}`}>
+                        <tr key={rowKey} className={`border-b border-border-color ${row.isEdited ? 'animate-flash-success' : 'hover:bg-highlight'} ${isComplementariedad ? 'bg-indigo-900/50' : ''}`}>
                           <td className="px-4 py-2"><input type="checkbox" checked={selectedRows.has(row.No_Orden)} onChange={() => handleSelectRow(row.No_Orden)} /></td>
                           <td className="px-4 py-2 text-lg cursor-pointer" onClick={() => onPreview(row)}>👁️</td>
                           
                           {REVIEW_HEADERS.map(({ key, compact }) => (
                             <td key={`${rowKey}-${key}`}
                                 className={`px-4 py-2 border-r border-border-color focus:bg-primary focus:text-black outline-none ${compact ? 'max-w-[150px] overflow-hidden text-ellipsis whitespace-nowrap' : ''}`}
-                                contentEditable
+                                contentEditable={key !== 'No_Orden' && key !== 'No_Cedula'} // No editar claves primarias
                                 onBlur={(e) => handleCellBlur(row.No_Orden, key, e.currentTarget.innerText)}
                                 suppressContentEditableWarning={true}
                             >
@@ -567,7 +622,7 @@
                             </td>
                           ))}
 
-                          <td className="px-4 py-2">
+                          <td className="px-4 py-2 w-[250px]">
                             <div className="flex flex-col gap-1">
                               <select 
                                 value={row.Tipo_Carta || ''}
@@ -591,519 +646,442 @@
                               )}
                             </div>
                           </td>
+                           <td className="px-4 py-2">
+                                <button
+                                    onClick={() => updateRow(row.No_Orden, { ESTADO_ACTUAL: 'Archivado' })}
+                                    className="bg-archive hover:bg-gray-700 text-white font-bold py-1 px-3 rounded-lg text-xs"
+                                >
+                                    Archivar
+                                </button>
+                            </td>
                         </tr>
                       );
                     })}
                   </tbody>
                 </table>
               </div>
-              <div className="flex flex-wrap gap-4">
-                <button 
-                    onClick={() => onSendToTracking(Array.from(selectedRows))}
-                    className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors"
-                >
-                    Enviar a Seguimiento
-                </button>
-                <button 
-                    onClick={() => onExportForMailMerge(data)}
-                    className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
-                >
-                    Exportar para Correo Masivo
-                </button>
-                <button 
-                    onClick={onClearReviewData}
-                    className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
-                >
-                    Limpiar Área de Revisión
-                </button>
-              </div>
             </section>
           );
         };
-        // =================================================================================
-        // FIN DEL CÓDIGO PROPORCIONADO - CONTINÚA EL CÓDIGO PRINCIPAL ABAJO.
-        // =================================================================================
-
 
         // =================================================================================
         // INLINED: components/TrackingArea.tsx
         // =================================================================================
-        // Asumiendo que esta es la siguiente parte de tu código (Línea 1400+)
+        // Columnas de Área 4 (como en la versión anterior)
         const TrackingArea = ({
-          data,
-          updateRow,
-          incrementEdits,
-          onSendToArchive,
-          onSendToReview,
-          onExportDetailedReport,
-          sortConfig,
-          setSortConfig,
-          archivedData // Recibimos data de archivo para el reporte detallado
+            data,
+            updateRow,
+            incrementEdits,
+            onSendToArchive,
+            onExportAll,
+            sortConfig,
+            setSortConfig,
         }) => {
-          const [filter, setFilter] = useState('');
-          const [selectedRows, setSelectedRows] = useState(new Set());
+            const [filter, setFilter] = useState('');
 
-          const TRACKING_HEADERS = [
-              { key: 'Fecha_Neg', label: 'Fecha Neg' },
-              { key: 'No_Orden', label: 'Orden' },
-              { key: 'Nombre', label: 'Afiliado' },
-              { key: 'EPS', label: 'EPS', compact: true },
-              { key: 'Tipo_Carta', label: 'Carta', compact: true },
-              { key: 'Radicado_Comp', label: 'Radicado', compact: true },
-              { key: 'Estado_Seguimiento', label: 'Estado', isStatus: true },
-              { key: 'Notas_Seguimiento', label: 'Notas' },
-          ];
+            const TRACKING_HEADERS = [
+                { key: 'Fecha_Neg', label: 'Fecha Negación' },
+                { key: 'No_Orden', label: 'No. Orden' },
+                { key: 'Nombre', label: 'Afiliado' },
+                { key: 'Tipo_Carta', label: 'Tipo Carta', compact: true },
+                { key: 'Radicado_Comp', label: 'Radicado', compact: true },
+                { key: 'ESTADO_ACTUAL', label: 'Estado' },
+                { key: 'Comentarios', label: 'Comentarios' },
+            ];
 
-          const sortedFilteredData = useMemo(() => {
-            let currentData = data;
-            
-            // 1. Filtrado
-            if (filter) {
+            // Lógica de ordenamiento
+            const sortedData = useMemo(() => {
+                let sortableData = [...data];
+                if (sortConfig.key) {
+                    sortableData.sort((a, b) => {
+                        const aValue = a[sortConfig.key] || '';
+                        const bValue = b[sortConfig.key] || '';
+                        if (aValue < bValue) {
+                            return sortConfig.direction === 'ascending' ? -1 : 1;
+                        }
+                        if (aValue > bValue) {
+                            return sortConfig.direction === 'ascending' ? 1 : -1;
+                        }
+                        return 0;
+                    });
+                }
+                return sortableData;
+            }, [data, sortConfig]);
+
+
+            const filteredData = useMemo(() => {
+                const currentData = sortedData;
+                if (!filter) return currentData;
                 const lowercasedFilter = filter.toLowerCase();
-                currentData = data.filter(row =>
-                  Object.values(row).some(value =>
-                    String(value).toLowerCase().includes(lowercasedFilter)
-                  )
+                return currentData.filter(row =>
+                    Object.values(row).some(value =>
+                        String(value).toLowerCase().includes(lowercasedFilter)
+                    )
                 );
-            }
+            }, [sortedData, filter]);
 
-            // 2. Ordenamiento
-            if (sortConfig.key) {
-                currentData = [...currentData].sort((a, b) => {
-                    const aValue = String(a[sortConfig.key] || "").toLowerCase();
-                    const bValue = String(b[sortConfig.key] || "").toLowerCase();
+            const handleCellBlur = (noOrden, key, value) => {
+                const originalRow = data.find(r => r.No_Orden === noOrden);
+                if (originalRow && originalRow[key] !== value) {
+                    updateRow(noOrden, { [key]: value, isEdited: true });
+                    incrementEdits();
+                }
+            };
 
-                    if (aValue < bValue) {
-                        return sortConfig.direction === 'ascending' ? -1 : 1;
-                    }
-                    if (aValue > bValue) {
-                        return sortConfig.direction === 'ascending' ? 1 : -1;
-                    }
-                    return 0;
-                });
-            }
+            const handleStatusChange = (noOrden, status) => {
+                updateRow(noOrden, { ESTADO_ACTUAL: status, isEdited: true });
+                incrementEdits();
+            };
 
-            return currentData;
-          }, [data, filter, sortConfig]);
+            const requestSort = (key) => {
+                let direction = 'ascending';
+                if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+                    direction = 'descending';
+                }
+                setSortConfig({ key, direction });
+            };
+            
+            const getSortIndicator = (key) => {
+                if (sortConfig.key !== key) return null;
+                return sortConfig.direction === 'ascending' ? ' ▲' : ' ▼';
+            };
 
+            return (
+                <section id="area4" className="space-y-4">
+                    <h2 className="text-2xl font-bold text-primary border-b border-border-color pb-2">Área 4: Seguimiento Activo</h2>
+                    
+                    <div className="action-bar bg-highlight p-4 rounded-lg flex flex-wrap items-center gap-4">
+                        <input
+                            type="text"
+                            placeholder="Buscar en seguimiento..."
+                            className="bg-surface border border-border-color rounded-md px-3 py-2 text-text-primary placeholder-text-secondary w-full sm:w-auto"
+                            value={filter}
+                            onChange={(e) => setFilter(e.target.value)}
+                        />
+                         <button
+                            onClick={onExportAll}
+                            className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors ml-auto flex items-center gap-2"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.5-11.5a1 1 0 10-2 0V11a1 1 0 102 0V5.5zm4 0a1 1 0 10-2 0V11a1 1 0 102 0V5.5zm4 0a1 1 0 10-2 0V11a1 1 0 102 0V5.5z" clipRule="evenodd" />
+                            </svg>
+                            Exportar Todo
+                        </button>
+                    </div>
 
-          const handleSelectRow = (noOrden) => {
-            const newSelection = new Set(selectedRows);
-            if (newSelection.has(noOrden)) {
-              newSelection.delete(noOrden);
-            } else {
-              newSelection.add(noOrden);
-            }
-            setSelectedRows(newSelection);
-          };
+                    <div className="table-container max-h-[500px] overflow-auto border border-border-color rounded-lg">
+                        <table className="w-full text-sm text-left text-text-secondary table-auto">
+                            <thead className="text-xs text-text-primary uppercase bg-header sticky top-0">
+                                <tr>
+                                    {TRACKING_HEADERS.map(({ key, label, compact }) => (
+                                        <th key={key} onClick={() => requestSort(key)} className={`px-4 py-3 cursor-pointer ${compact ? 'max-w-[150px]' : ''}`}>
+                                            {label}{getSortIndicator(key)}
+                                        </th>
+                                    ))}
+                                    <th className="px-4 py-3">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredData.map((row) => {
+                                    const rowKey = row.No_Orden;
+                                    const isFinalizado = row.ESTADO_ACTUAL === 'Finalizado';
 
-          const handleSelectAll = (e) => {
-            if (e.target.checked) {
-              const allOrderNumbers = sortedFilteredData.map(row => row.No_Orden);
-              setSelectedRows(new Set(allOrderNumbers));
-            } else {
-              setSelectedRows(new Set());
-            }
-          };
-
-          const handleCellBlur = (noOrden, key, value) => {
-            const originalRow = data.find(r => r.No_Orden === noOrden);
-            if (originalRow && originalRow[key] !== value) {
-              updateRow(noOrden, { [key]: value });
-              incrementEdits();
-            }
-          };
-          
-          const handleStatusChange = (noOrden, value) => {
-            updateRow(noOrden, { Estado_Seguimiento: value });
-            incrementEdits();
-          };
-
-          const requestSort = (key) => {
-            let direction = 'ascending';
-            if (sortConfig.key === key && sortConfig.direction === 'ascending') {
-                direction = 'descending';
-            }
-            setSortConfig({ key, direction });
-          };
-          
-          const getSortIndicator = (key) => {
-            if (sortConfig.key !== key) return null;
-            return sortConfig.direction === 'ascending' ? ' ▲' : ' ▼';
-          };
-          
-          const getStatusClass = (status) => {
-            switch (status) {
-                case 'Finalizado': return 'bg-success text-white';
-                case 'En Gestión': return 'bg-warning text-gray-900';
-                default: return 'bg-surface text-text-primary';
-            }
-          };
-
-          const selectedData = Array.from(selectedRows).map(noOrden => 
-            data.find(row => row.No_Orden === noOrden)
-          ).filter(row => row);
-
-          return (
-            <section id="area4" className="space-y-4 pt-8">
-              <h2 className="text-2xl font-bold text-primary border-b border-border-color pb-2">Área 4: Seguimiento y Archivo</h2>
-              
-              <div className="action-bar bg-highlight p-4 rounded-lg flex flex-wrap items-center gap-4">
-                <input
-                  type="text"
-                  placeholder="Buscar en tabla de seguimiento..."
-                  className="bg-surface border border-border-color rounded-md px-3 py-2 text-text-primary placeholder-text-secondary w-full sm:w-auto"
-                  value={filter}
-                  onChange={(e) => setFilter(e.target.value)}
-                />
-                <span className="text-text-primary">{selectedRows.size} fila(s) seleccionada(s)</span>
-                
-                <button
-                    onClick={() => onSendToArchive(Array.from(selectedRows))}
-                    className="bg-archive hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
-                >
-                    Archivar Seleccionados
-                </button>
-                 <button
-                    onClick={() => onSendToReview(Array.from(selectedRows))}
-                    className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
-                >
-                    Mover a Revisión
-                </button>
-                <button
-                    onClick={() => exportDetailedReport(data, archivedData, data)} // Pasa los datos necesarios para consolidar
-                    className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
-                >
-                    Exportar Reporte Maestro
-                </button>
-              </div>
-
-              <div className="table-container max-h-[700px] overflow-auto border border-border-color rounded-lg">
-                <table className="w-full text-sm text-left text-text-secondary table-auto">
-                  <thead className="text-xs text-text-primary uppercase bg-header sticky top-0">
-                    <tr>
-                      <th className="px-4 py-3"><input type="checkbox" onChange={handleSelectAll} checked={selectedRows.size === sortedFilteredData.length && sortedFilteredData.length > 0} /></th>
-                        {TRACKING_HEADERS.map(({ key, label, compact }) => (
-                          <th key={key} onClick={() => requestSort(key)} className={`px-4 py-3 cursor-pointer ${compact ? 'max-w-[150px]' : ''}`}>
-                              {label}{getSortIndicator(key)}
-                          </th>
-                        ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sortedFilteredData.map((row, rowIndex) => {
-                      const rowKey = `${row.No_Orden || 'new'}-${rowIndex}`;
-
-                      return (
-                        <tr key={rowKey} className={`border-b border-border-color hover:bg-highlight`}>
-                          <td className="px-4 py-2"><input type="checkbox" checked={selectedRows.has(row.No_Orden)} onChange={() => handleSelectRow(row.No_Orden)} /></td>
-                          
-                          {TRACKING_HEADERS.map(({ key, compact, isStatus }) => (
-                            <td key={`${rowKey}-${key}`}
-                                className={`px-4 py-2 border-r border-border-color ${compact ? 'max-w-[150px] overflow-hidden text-ellipsis whitespace-nowrap' : ''}`}
-                            >
-                                {isStatus ? (
-                                    <select
-                                        value={row.Estado_Seguimiento || 'Pendiente'}
-                                        onChange={(e) => handleStatusChange(row.No_Orden, e.target.value)}
-                                        className={`px-2 py-1 rounded-md border border-border-color w-full ${getStatusClass(row.Estado_Seguimiento)}`}
-                                    >
-                                        {TRACKING_STATUSES.map(status => (
-                                            <option key={status} value={status}>{status}</option>
-                                        ))}
-                                    </select>
-                                ) : (
-                                    <span
-                                      className="focus:bg-primary focus:text-black outline-none block"
-                                      contentEditable={key === 'Notas_Seguimiento' || key === 'Radicado_Comp'}
-                                      onBlur={(e) => handleCellBlur(row.No_Orden, key, e.currentTarget.innerText)}
-                                      suppressContentEditableWarning={true}
-                                    >
-                                        {row[key]}
-                                    </span>
-                                )}
-                            </td>
-                          ))}
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          );
+                                    return (
+                                        <tr key={rowKey} className={`border-b border-border-color ${row.isEdited ? 'animate-flash-success' : 'hover:bg-highlight'} ${isFinalizado ? 'opacity-70 bg-success/10' : ''}`}>
+                                            {TRACKING_HEADERS.map(({ key, compact }) => (
+                                                <td key={`${rowKey}-${key}`}
+                                                    className={`px-4 py-2 border-r border-border-color focus:bg-primary focus:text-black outline-none ${compact ? 'max-w-[150px] overflow-hidden text-ellipsis whitespace-nowrap' : ''}`}
+                                                    contentEditable={key === 'Radicado_Comp' || key === 'Comentarios'}
+                                                    onBlur={(e) => handleCellBlur(row.No_Orden, key, e.currentTarget.innerText)}
+                                                    suppressContentEditableWarning={true}
+                                                >
+                                                    {key === 'ESTADO_ACTUAL' ? (
+                                                        <select
+                                                            value={row.ESTADO_ACTUAL || 'Pendiente'}
+                                                            onChange={(e) => handleStatusChange(row.No_Orden, e.target.value)}
+                                                            className={`bg-surface border rounded-md px-2 py-1 text-text-primary w-full ${row.ESTADO_ACTUAL === 'Finalizado' ? 'text-success border-success' : 'border-border-color'}`}
+                                                        >
+                                                            {TRACKING_STATUSES.map(status => <option key={status} value={status}>{status}</option>)}
+                                                        </select>
+                                                    ) : row[key]}
+                                                </td>
+                                            ))}
+                                            <td className="px-4 py-2">
+                                                <button
+                                                    onClick={() => onSendToArchive(row.No_Orden)}
+                                                    disabled={!isFinalizado}
+                                                    className={`font-bold py-1 px-3 rounded-lg text-xs transition-colors ${isFinalizado ? 'bg-archive hover:bg-gray-700 text-white' : 'bg-gray-500 text-gray-300 cursor-not-allowed'}`}
+                                                >
+                                                    Archivar
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            );
         };
 
         // =================================================================================
-        // INLINED: components/TemplateManager.tsx
+        // INLINED: components/ArchiveArea.tsx
         // =================================================================================
-        const TemplateManager = ({ templates, onSaveTemplates, onClose }) => {
-            const [localTemplates, setLocalTemplates] = useState(templates);
-            const [newTemplate, setNewTemplate] = useState({ id: '', name: '', body: '' });
-            const [selectedTemplateId, setSelectedTemplateId] = useState(templates[0]?.id || '');
+        const ArchiveArea = ({ data }) => {
+            const [filter, setFilter] = useState('');
+            const ARCHIVE_HEADERS = ['Fecha Negación', 'No. Orden', 'Nombre', 'Tipo Carta', 'Radicado', 'Fecha Archivación'];
+
+            const filteredData = useMemo(() => {
+                if (!filter) return data;
+                const lowercasedFilter = filter.toLowerCase();
+                return data.filter(row =>
+                    Object.values(row).some(value =>
+                        String(value).toLowerCase().includes(lowercasedFilter)
+                    )
+                );
+            }, [data, filter]);
+
+            return (
+                <section id="area5" className="space-y-4">
+                    <h2 className="text-2xl font-bold text-text-secondary border-b border-border-color pb-2">Área 5: Casos Archivados</h2>
+                    <input
+                        type="text"
+                        placeholder="Buscar en archivo..."
+                        className="bg-surface border border-border-color rounded-md px-3 py-2 text-text-primary placeholder-text-secondary w-full sm:w-auto"
+                        value={filter}
+                        onChange={(e) => setFilter(e.target.value)}
+                    />
+                    <div className="table-container max-h-40 overflow-auto border border-border-color rounded-lg">
+                        <table className="w-full text-sm text-left text-text-secondary">
+                            <thead className="text-xs text-text-primary uppercase bg-header sticky top-0">
+                                <tr>
+                                    {ARCHIVE_HEADERS.map(header => <th key={header} className="px-4 py-3">{header}</th>)}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredData.map((row, index) => (
+                                    <tr key={index} className="border-b border-border-color bg-archive/50">
+                                        <td className="px-4 py-2">{row.Fecha_Neg}</td>
+                                        <td className="px-4 py-2">{row.No_Orden}</td>
+                                        <td className="px-4 py-2">{row.Nombre}</td>
+                                        <td className="px-4 py-2">{row.Tipo_Carta_Name || row.Tipo_Carta}</td>
+                                        <td className="px-4 py-2">{row.Radicado_Comp || 'N/A'}</td>
+                                        <td className="px-4 py-2">{row.Fecha_Archivado || 'N/A'}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            );
+        };
+
+        // =================================================================================
+        // INLINED: components/TemplateModal.tsx
+        // =================================================================================
+        const TemplateModal = ({ isOpen, onClose, templates, onSaveTemplates }) => {
+            const [currentTemplates, setCurrentTemplates] = useState(templates);
+            const [notification, setNotification] = useState({ message: '', type: '' });
 
             useEffect(() => {
-                // Sincronizar al abrir si hubo cambios externos
-                setLocalTemplates(templates);
-                if (selectedTemplateId && !templates.find(t => t.id === selectedTemplateId)) {
-                    setSelectedTemplateId(templates[0]?.id || '');
-                }
+                setCurrentTemplates(templates);
             }, [templates]);
 
-            const selectedTemplate = localTemplates.find(t => t.id === selectedTemplateId);
+            if (!isOpen) return null;
 
-            const handleTemplateChange = (field, value) => {
-                if (!selectedTemplate) return;
-                setLocalTemplates(prev => prev.map(t => 
-                    t.id === selectedTemplateId ? { ...t, [field]: value } : t
+            const handleTemplateChange = (id, key, value) => {
+                setCurrentTemplates(prev => prev.map(t =>
+                    t.id === id ? { ...t, [key]: value } : t
                 ));
             };
 
-            const handleNewTemplateChange = (field, value) => {
-                setNewTemplate(prev => ({ ...prev, [field]: value }));
-            };
-
-            const addTemplate = () => {
-                if (!newTemplate.id || !newTemplate.name) return alert('ID y Nombre son obligatorios.');
-                if (localTemplates.some(t => t.id === newTemplate.id)) return alert('Ya existe una plantilla con ese ID.');
-
-                setLocalTemplates(prev => [...prev, newTemplate]);
-                setNewTemplate({ id: '', name: '', body: '' });
-                setSelectedTemplateId(newTemplate.id);
-            };
-
-            const deleteTemplate = () => {
-                if (localTemplates.length <= defaultTemplates.length) {
-                    return alert('No puedes eliminar plantillas predeterminadas.');
-                }
-                if (!confirm(`¿Está seguro de eliminar la plantilla "${selectedTemplate.name}"?`)) return;
-
-                setLocalTemplates(prev => prev.filter(t => t.id !== selectedTemplateId));
-                setSelectedTemplateId(localTemplates.filter(t => t.id !== selectedTemplateId)[0]?.id || '');
-            };
-
             const handleSave = () => {
-                // Las plantillas predeterminadas no deben ser modificadas en su ID
-                const isValid = localTemplates.every(t => {
-                    if (defaultTemplates.find(dt => dt.id === t.id)) {
-                        return t.id.startsWith('tpl_'); // Regla simple para IDs predeterminados
-                    }
-                    return true;
-                });
-
-                if (!isValid) return alert('Error: Las plantillas predeterminadas han sido modificadas o tienen IDs inválidos.');
-
-                onSaveTemplates(localTemplates);
-                onClose();
-            };
-
-            return (
-                <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex justify-center items-center p-4">
-                    <div className="bg-surface p-6 rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-                        <h3 className="text-2xl font-bold text-primary mb-4 border-b border-border-color pb-2">Gestor de Plantillas de Correo</h3>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {/* Columna de Selección */}
-                            <div className="space-y-4">
-                                <h4 className="text-xl font-semibold text-text-primary">Seleccionar Plantilla</h4>
-                                <select 
-                                    value={selectedTemplateId}
-                                    onChange={(e) => setSelectedTemplateId(e.target.value)}
-                                    className="bg-background border border-border-color rounded-md px-3 py-2 text-text-primary w-full"
-                                >
-                                    {localTemplates.map(t => (
-                                        <option key={t.id} value={t.id}>{t.name}</option>
-                                    ))}
-                                </select>
-                                
-                                {selectedTemplate && !defaultTemplates.find(t => t.id === selectedTemplate.id) && (
-                                    <button 
-                                        onClick={deleteTemplate} 
-                                        className="bg-danger hover:bg-danger-hover text-white font-bold py-2 px-4 rounded-lg w-full transition-colors"
-                                    >
-                                        Eliminar Plantilla
-                                    </button>
-                                )}
-                            </div>
-
-                            {/* Columna de Edición */}
-                            <div className="md:col-span-2 space-y-4">
-                                <h4 className="text-xl font-semibold text-text-primary">Editar Plantilla Seleccionada</h4>
-                                {selectedTemplate ? (
-                                    <div className="space-y-3">
-                                        <label className="block text-sm font-medium">Nombre:</label>
-                                        <input 
-                                            type="text"
-                                            value={selectedTemplate.name}
-                                            onChange={(e) => handleTemplateChange('name', e.target.value)}
-                                            className="bg-background border border-border-color rounded-md px-3 py-2 text-text-primary w-full"
-                                        />
-                                        <label className="block text-sm font-medium">Cuerpo del Correo (HTML permitido y Placeholders `{{CLAVE}}`):</label>
-                                        <textarea
-                                            value={selectedTemplate.body}
-                                            onChange={(e) => handleTemplateChange('body', e.target.value)}
-                                            rows="10"
-                                            className="bg-background border border-border-color rounded-md px-3 py-2 text-text-primary w-full font-mono text-xs"
-                                        ></textarea>
-                                        
-                                        <p className="text-xs text-text-secondary">Placeholders disponibles: `{{No_Orden}}`, `{{Nombre}}`, `{{EPS}}`, `{{Motivo_Negacion}}`, `{{Descripcion_PDF}}`, `{{Justificacion_PDF}}`, `{{Fundamento_Legal_PDF}}`, `{{Radicado_Comp}}`, etc. Se agregará la firma y el cuerpo común automáticamente.</p>
-
-                                    </div>
-                                ) : (
-                                    <p className="text-text-secondary">Seleccione una plantilla para editar.</p>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="mt-8 border-t border-border-color pt-4">
-                            <h4 className="text-xl font-semibold text-text-primary mb-4">Añadir Nueva Plantilla</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium">ID Único (Ej: `tpl_nuevo`):</label>
-                                    <input 
-                                        type="text"
-                                        value={newTemplate.id}
-                                        onChange={(e) => handleNewTemplateChange('id', e.target.value.replace(/[^a-z0-9_]/g, ''))} // Limpia caracteres
-                                        className="bg-background border border-border-color rounded-md px-3 py-2 text-text-primary w-full"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium">Nombre:</label>
-                                    <input 
-                                        type="text"
-                                        value={newTemplate.name}
-                                        onChange={(e) => handleNewTemplateChange('name', e.target.value)}
-                                        className="bg-background border border-border-color rounded-md px-3 py-2 text-text-primary w-full"
-                                    />
-                                </div>
-                                <div className="flex items-end">
-                                    <button onClick={addTemplate} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg w-full transition-colors">
-                                        Añadir
-                                    </button>
-                                </div>
-                            </div>
-                            <div className="mt-4">
-                                <label className="block text-sm font-medium">Cuerpo (se guardará aquí si añades):</label>
-                                <textarea
-                                    value={newTemplate.body}
-                                    onChange={(e) => handleNewTemplateChange('body', e.target.value)}
-                                    rows="3"
-                                    placeholder="Cuerpo de la nueva plantilla..."
-                                    className="bg-background border border-border-color rounded-md px-3 py-2 text-text-primary w-full font-mono text-xs"
-                                ></textarea>
-                            </div>
-                        </div>
-
-
-                        <div className="flex justify-end gap-4 mt-6">
-                            <button onClick={onClose} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
-                                Cerrar
-                            </button>
-                            <button onClick={handleSave} className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors">
-                                Guardar Cambios y Cerrar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-
-        // =================================================================================
-        // INLINED: components/Modals.tsx (Email Preview)
-        // =================================================================================
-        const EmailPreviewModal = ({ rowData, template, onClose }) => {
-            if (!rowData || !template) return null;
-
-            const emailSubject = `Respuesta a Solicitud No. ${rowData.No_Orden || rowData['NÚMERO ORDEN']}`;
-            const customizedBody = replacePlaceholders(template.body, rowData);
-            const fullBody = customizedBody + COMMON_EMAIL_BODY + SIGNATURE;
-
-            const createMailtoLink = () => {
-                const recipient = rowData.EMAIL || '';
-                const subject = encodeURIComponent(emailSubject);
-                const body = encodeURIComponent(fullBody.replace(/<br>/g, '\n').replace(/<\/?[a-z][^>]*>/gi, '')); 
-                return `mailto:${recipient}?subject=${subject}&body=${body}`;
-            };
-
-            return (
-                <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex justify-center items-center p-4">
-                    <div className="bg-surface p-6 rounded-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-                        <h3 className="text-2xl font-bold text-primary mb-4 border-b border-border-color pb-2">Vista Previa de Correo Electrónico</h3>
-                        
-                        <div className="space-y-4">
-                            <p className="text-sm">**Asunto:** {emailSubject}</p>
-                            <div className="border border-border-color p-4 rounded-lg bg-background space-y-2">
-                                <h4 className="text-lg font-semibold text-text-primary">Cuerpo del Mensaje:</h4>
-                                <div className="text-sm text-text-secondary" dangerouslySetInnerHTML={{ __html: fullBody }} />
-                            </div>
-                        </div>
-                        
-                        <div className="flex justify-end gap-4 mt-6">
-                            <button onClick={onClose} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
-                                Cerrar Vista Previa
-                            </button>
-                            <a 
-                                href={createMailtoLink()} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                                </svg>
-                                Abrir en Outlook/Mail
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        // =================================================================================
-        // INLINED: components/Modals.tsx (Config Modal)
-        // =================================================================================
-        const URL_STORAGE_KEY = 'sigweb_googleSheetUrl';
-        const loadUrl = () => localStorage.getItem(URL_STORAGE_KEY) || '';
-        const saveUrl = (url) => localStorage.setItem(URL_STORAGE_KEY, url);
-
-        const ConfigModal = ({ onClose, onSuccess }) => {
-            const [url, setUrl] = useState(loadUrl());
-
-            const handleSave = () => {
-                if (!url.trim()) {
-                    alert('La URL del Script de Google Apps es obligatoria.');
+                // Validación básica de que no haya nombres vacíos o IDs duplicados (simplificado)
+                const isValid = currentTemplates.every(t => t.name.trim() !== '' && t.body.trim() !== '');
+                if (!isValid) {
+                    setNotification({ message: 'Error: El nombre y cuerpo de la plantilla no pueden estar vacíos.', type: 'error' });
                     return;
                 }
-                saveUrl(url.trim());
-                onSuccess(url.trim());
-                onClose();
+
+                onSaveTemplates(currentTemplates);
+                setNotification({ message: 'Plantillas guardadas con éxito.', type: 'success' });
+                setTimeout(onClose, 1500);
+            };
+            
+            const addNewTemplate = () => {
+                const newId = `custom_tpl_${Date.now()}`;
+                setCurrentTemplates(prev => [...prev, { id: newId, name: 'Nueva Plantilla', body: 'Cuerpo de la nueva plantilla...' }]);
+            };
+
+            const deleteTemplate = (idToDelete) => {
+                setCurrentTemplates(prev => prev.filter(t => t.id !== idToDelete));
             };
 
             return (
-                <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex justify-center items-center p-4">
-                    <div className="bg-surface p-6 rounded-lg w-full max-w-md">
-                        <h3 className="text-2xl font-bold text-primary mb-4 border-b border-border-color pb-2">Configuración de Conexión</h3>
+                <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
+                    <div className="bg-surface p-6 rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                        <h3 className="text-2xl font-bold text-primary mb-4 border-b border-border-color pb-2">
+                            Gestionar Plantillas de Correo
+                        </h3>
                         
-                        <div className="space-y-4">
-                            <p className="text-text-secondary">Introduce la URL del Script de Google Apps (API) para guardar y cargar datos de las hojas de cálculo.</p>
-                            <label className="block text-sm font-medium">URL de Despliegue del Script:</label>
-                            <input 
+                        <Notification 
+                            message={notification.message} 
+                            type={notification.type} 
+                            onClose={() => setNotification({ message: '', type: '' })} 
+                        />
+
+                        <div className="space-y-6">
+                            {currentTemplates.map((template, index) => (
+                                <div key={template.id} className="border border-border-color p-4 rounded-lg bg-highlight">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <h4 className="text-xl text-white font-semibold">{template.name}</h4>
+                                        <div>
+                                            {index >= defaultTemplates.length && (
+                                                <button onClick={() => deleteTemplate(template.id)} className="text-danger hover:text-red-400 font-bold ml-4">
+                                                    Eliminar
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="space-y-3">
+                                        <label className="block text-text-secondary text-sm">Nombre de la Plantilla:</label>
+                                        <input
+                                            type="text"
+                                            value={template.name}
+                                            onChange={(e) => handleTemplateChange(template.id, 'name', e.target.value)}
+                                            className="w-full bg-background border border-border-color rounded-md px-3 py-2 text-text-primary"
+                                        />
+                                        <label className="block text-text-secondary text-sm">Cuerpo (Use {{Placeholders}}):</label>
+                                        <textarea
+                                            value={template.body}
+                                            onChange={(e) => handleTemplateChange(template.id, 'body', e.target.value)}
+                                            className="w-full h-32 bg-background border border-border-color rounded-md px-3 py-2 text-text-primary font-mono text-sm"
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="flex justify-between items-center mt-6 pt-4 border-t border-border-color">
+                            <button onClick={addNewTemplate} className="bg-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg">
+                                + Agregar Nueva Plantilla
+                            </button>
+                            <div>
+                                <button onClick={onClose} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg mr-2">
+                                    Cancelar
+                                </button>
+                                <button onClick={handleSave} className="bg-success hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">
+                                    Guardar Cambios
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // =================================================================================
+        // INLINED: components/PreviewModal.tsx
+        // =================================================================================
+        const PreviewModal = ({ isOpen, onClose, rowData, templates }) => {
+            if (!isOpen || !rowData) return null;
+
+            const selectedTemplate = templates.find(t => t.id === rowData.Tipo_Carta);
+
+            const emailSubject = selectedTemplate ? `Información sobre ${rowData.Motivo_Negacion || 'su solicitud'}` : 'Previsualización de Correo';
+            
+            const emailBody = useMemo(() => {
+                if (!selectedTemplate) {
+                    return `<p class="text-warning">⚠️ No se ha seleccionado una plantilla válida para esta fila.</p>`;
+                }
+                let body = selectedTemplate.body + COMMON_EMAIL_BODY + SIGNATURE;
+                // Reemplazar saltos de línea por <br> para HTML
+                body = body.replace(/\n/g, '<br>');
+                return replacePlaceholders(body, rowData);
+            }, [rowData, selectedTemplate]);
+
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
+                    <div className="bg-surface p-6 rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                        <h3 className="text-2xl font-bold text-primary mb-4 border-b border-border-color pb-2">
+                            Previsualización de Correo Electrónico
+                        </h3>
+                        
+                        <div className="space-y-4 text-sm">
+                            <p><strong>Para:</strong> {rowData.EMAIL || '<span class="text-danger">Correo no disponible</span>'}</p>
+                            <p><strong>Asunto:</strong> {emailSubject}</p>
+                            <p><strong>Plantilla Seleccionada:</strong> {selectedTemplate?.name || 'Ninguna'}</p>
+                        </div>
+                        
+                        <div className="mt-4 p-4 border border-border-color rounded-lg bg-background min-h-[300px]">
+                            <h4 className="font-bold text-white mb-2">Cuerpo del Correo (HTML):</h4>
+                            <div className="prose text-text-primary" dangerouslySetInnerHTML={{ __html: emailBody }}></div>
+                        </div>
+                        
+                        <div className="flex justify-end mt-6 pt-4 border-t border-border-color">
+                            <button onClick={onClose} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg">
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // =================================================================================
+        // INLINED: components/ConfigModal.tsx
+        // =================================================================================
+        const ConfigModal = ({ isOpen, onClose, currentUrl, onSaveUrl }) => {
+            const [url, setUrl] = useState(currentUrl);
+
+            useEffect(() => {
+                setUrl(currentUrl);
+            }, [currentUrl]);
+
+            if (!isOpen) return null;
+
+            const handleSave = () => {
+                // Validación básica de URL
+                if (url && url.startsWith('https://script.google.com/macros/')) {
+                    onSaveUrl(url);
+                    alert('URL de App Script guardada con éxito.');
+                    onClose();
+                } else {
+                    alert('Por favor, introduce una URL de Google App Script válida.');
+                }
+            };
+
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
+                    <div className="bg-surface p-6 rounded-lg shadow-2xl w-full max-w-xl">
+                        <h3 className="text-2xl font-bold text-primary mb-4 border-b border-border-color pb-2">
+                            Configurar Conexión a Google Sheets
+                        </h3>
+                        
+                        <p className="text-text-secondary mb-4">
+                            Introduce la URL de implementación de tu Google App Script. Esta URL permite a la aplicación leer y escribir datos en tu hoja de cálculo.
+                        </p>
+
+                        <div className="mb-4">
+                            <label htmlFor="appScriptUrl" className="block text-text-secondary mb-2">URL de Google App Script:</label>
+                            <input
+                                id="appScriptUrl"
                                 type="url"
                                 value={url}
                                 onChange={(e) => setUrl(e.target.value)}
                                 placeholder="https://script.google.com/macros/s/..."
-                                className="bg-background border border-border-color rounded-md px-3 py-2 text-text-primary w-full"
+                                className="w-full bg-background border border-border-color rounded-md px-3 py-2 text-text-primary"
                             />
                         </div>
 
-                        <div className="flex justify-end gap-4 mt-6">
-                            <button onClick={onClose} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
-                                Cerrar
+                        <div className="flex justify-end gap-2">
+                            <button onClick={onClose} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg">
+                                Cancelar
                             </button>
-                            <button onClick={handleSave} className="bg-btn-primary hover:bg-btn-primary-hover text-white font-bold py-2 px-4 rounded-lg transition-colors">
-                                Guardar URL
+                            <button onClick={handleSave} className="bg-success hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">
+                                Guardar y Conectar
                             </button>
                         </div>
                     </div>
@@ -1111,447 +1089,530 @@
             );
         };
 
+        // =================================================================================
+        // MAIN APPLICATION: App.tsx
+        // =================================================================================
 
-        // =================================================================================
-        // INLINED: SigwebApp.tsx (Main Application Component)
-        // =================================================================================
-        function SigwebApp() {
-            const [portalData, setPortalData] = useState(Array(5).fill({}));
-            const [pdfData, setPdfData] = useState(Array(5).fill({}));
-            const [reviewData, setReviewData] = useState([]); // Casos en revisión (Área 3)
-            const [trackingData, setTrackingData] = useState([]); // Casos en seguimiento (Área 4)
-            const [archivedData, setArchivedData] = useState([]); // Casos archivados (Solo para reporte)
-            const [isSaving, setIsSaving] = useState(false);
-            const [isLoading, setIsLoading] = useState(false);
-            const [notification, setNotification] = useState(null);
+        const STORAGE_URL_KEY = 'sigweb_appScriptUrl';
+        const STORAGE_DATA_KEY = 'sigweb_localData';
+
+        // Custom Hook para manejar el estado persistente de la URL
+        const useAppScriptUrl = () => {
+            const [url, setUrl] = useState(() => {
+                return localStorage.getItem(STORAGE_URL_KEY) || '';
+            });
+
+            const saveUrl = useCallback((newUrl) => {
+                localStorage.setItem(STORAGE_URL_KEY, newUrl);
+                setUrl(newUrl);
+            }, []);
+
+            return [url, saveUrl];
+        };
+
+        // Custom Hook para manejar el estado de la data
+        const useDataState = (initialTemplates) => {
+            const [data, setData] = useState(() => {
+                const storedData = localStorage.getItem(STORAGE_DATA_KEY);
+                return storedData ? JSON.parse(storedData) : {
+                    finalData: [],
+                    trackingData: [],
+                    archivedData: [],
+                };
+            });
             const [editsCount, setEditsCount] = useState(0);
-            const [templates, setTemplates] = useState(loadTemplates);
-            const [showTemplateManager, setShowTemplateManager] = useState(false);
-            const [showConfigModal, setShowConfigModal] = useState(false);
-            const [googleSheetUrl, setGoogleSheetUrl] = useState(loadUrl());
-            const [previewRow, setPreviewRow] = useState(null);
-            const [reviewSortConfig, setReviewSortConfig] = useState({ key: 'Fecha_Neg', direction: 'descending' });
-            const [trackingSortConfig, setTrackingSortConfig] = useState({ key: 'Fecha_Neg', direction: 'descending' });
 
-            // --- Efectos y Configuración Inicial ---
+            // Sincronización con localStorage
             useEffect(() => {
-                if (!googleSheetUrl) {
-                    setShowConfigModal(true);
-                    return;
-                }
-                loadDataFromSheet();
-            }, [googleSheetUrl]);
+                localStorage.setItem(STORAGE_DATA_KEY, JSON.stringify(data));
+            }, [data]);
+            
+            // Función para añadir datos del portal (Área 1)
+            const addPortalData = useCallback((newData) => {
+                setData(prev => {
+                    const existingOrders = new Set(prev.finalData.map(r => r['NÚMERO ORDEN'] || r.No_Orden).filter(Boolean));
+                    const newUniqueData = newData.filter(row => !(row['NÚMERO ORDEN'] && existingOrders.has(row['NÚMERO ORDEN'])));
+                    
+                    if (newUniqueData.length === 0) return prev;
 
-            // --- Helper Functions ---
-            const showNotification = (message, type = 'info') => {
-                setNotification({ message, type });
-                setTimeout(() => setNotification(null), 5000);
-            };
+                    // Normalizar y añadir campos de revisión
+                    const processedData = newUniqueData.map(row => ({
+                        ...row,
+                        Fecha_Neg: row['FECHA NEGACIÓN'],
+                        No_Orden: row['NÚMERO ORDEN'],
+                        No_Cedula: row['IDENTIFICACIÓN AFILIADO'],
+                        Nombre: capitalizeWords(row['NOMBRE AFILIADO']),
+                        Motivo_Negacion: row['MOTIVO NEGACIÓN'],
+                        Tipo_Carta: '',
+                        Descripcion_PDF: '',
+                        Justificacion_PDF: '',
+                        Fundamento_Legal_PDF: '',
+                        isEdited: true, 
+                        ESTADO_ACTUAL: 'En Revisión',
+                    }));
 
-            const incrementEdits = () => setEditsCount(prev => prev + 1);
-
-            const sortData = (data, sortConfig) => {
-                if (!sortConfig.key) return data;
-                
-                return [...data].sort((a, b) => {
-                    const aValue = String(a[sortConfig.key] || "").toLowerCase();
-                    const bValue = String(b[sortConfig.key] || "").toLowerCase();
-
-                    if (aValue < bValue) {
-                        return sortConfig.direction === 'ascending' ? -1 : 1;
-                    }
-                    if (aValue > bValue) {
-                        return sortConfig.direction === 'ascending' ? 1 : -1;
-                    }
-                    return 0;
+                    setEditsCount(prev => prev + processedData.length);
+                    
+                    return {
+                        ...prev,
+                        finalData: [...prev.finalData, ...processedData].filter(r => r.No_Orden),
+                    };
                 });
-            };
+            }, []);
 
-            // --- Lógica de Procesamiento y Carga de Datos ---
-            const loadDataFromSheet = async () => {
-                if (!googleSheetUrl) return;
+            // Función para añadir datos del PDF (Área 2)
+            const addPdfData = useCallback((newData) => {
+                setData(prev => {
+                    const finalDataMap = new Map(prev.finalData.map(r => [r.No_Orden, r]));
+                    let changedCount = 0;
+
+                    newData.forEach(pdfRow => {
+                        const orderKey = pdfRow['Archivo (No. Orden)'];
+                        if (orderKey && finalDataMap.has(orderKey)) {
+                            const current = finalDataMap.get(orderKey);
+                            
+                            // Comparar y actualizar solo si hay cambios en los campos de PDF
+                            const newRow = { 
+                                ...current, 
+                                Descripcion_PDF: pdfRow.Descripción || current.Descripcion_PDF,
+                                Justificacion_PDF: pdfRow.Justificación || current.Justificacion_PDF,
+                                Fundamento_Legal_PDF: pdfRow['Fundamento Legal'] || current.Fundamento_Legal_PDF,
+                            };
+                            
+                            if (newRow.Descripcion_PDF !== current.Descripcion_PDF || 
+                                newRow.Justificacion_PDF !== current.Justificacion_PDF || 
+                                newRow.Fundamento_Legal_PDF !== current.Fundamento_Legal_PDF) {
+                                
+                                newRow.isEdited = true;
+                                changedCount++;
+                            }
+
+                            finalDataMap.set(orderKey, newRow);
+                        }
+                    });
+
+                    if (changedCount > 0) {
+                        setEditsCount(prev => prev + changedCount);
+                    }
+
+                    return {
+                        ...prev,
+                        finalData: Array.from(finalDataMap.values()),
+                    };
+                });
+            }, []);
+
+            // Función para actualizar una fila específica (Área 3 y 4)
+            const updateRow = useCallback((noOrden, changes, targetArea = 'finalData') => {
+                setData(prev => {
+                    const targetKey = targetArea === 'finalData' ? 'finalData' : 'trackingData';
+                    
+                    const newData = prev[targetKey].map(row => {
+                        if (row.No_Orden === noOrden) {
+                            // Si se está actualizando un campo, marca como editado
+                            const newRow = { ...row, ...changes, isEdited: true }; 
+                            return newRow;
+                        }
+                        return row;
+                    });
+                    
+                    // Solo incrementa si los cambios no incluyen el archivado y no viene de la sync inicial
+                    if (changes.ESTADO_ACTUAL !== 'Archivado') {
+                         setEditsCount(prev => prev + 1);
+                    }
+                    
+                    return { ...prev, [targetKey]: newData };
+                });
+            }, []);
+
+
+            // Función para mover a seguimiento
+            const sendToTracking = useCallback((selectedOrderNumbers) => {
+                setData(prev => {
+                    const toMove = prev.finalData.filter(row => selectedOrderNumbers.includes(row.No_Orden));
+                    const remaining = prev.finalData.filter(row => !selectedOrderNumbers.includes(row.No_Orden));
+
+                    const movedWithStatus = toMove.map(row => ({
+                        ...row,
+                        ESTADO_ACTUAL: 'Pendiente', // Estado inicial de seguimiento
+                        isEdited: true, // Marcar para guardar
+                    }));
+                    
+                    setEditsCount(prev => prev + movedWithStatus.length);
+
+                    return {
+                        ...prev,
+                        finalData: remaining,
+                        trackingData: [...prev.trackingData, ...movedWithStatus],
+                    };
+                });
+                return true;
+            }, []);
+
+            // Función para mover a archivo
+            const sendToArchive = useCallback((noOrden) => {
+                setData(prev => {
+                    const rowToArchive = prev.trackingData.find(row => row.No_Orden === noOrden);
+                    if (!rowToArchive) return prev;
+                    
+                    const remainingTracking = prev.trackingData.filter(row => row.No_Orden !== noOrden);
+                    
+                    const archivedRow = {
+                        ...rowToArchive,
+                        ESTADO_ACTUAL: 'Archivado',
+                        Fecha_Archivado: new Date().toISOString().slice(0, 10),
+                        Tipo_Carta_Name: initialTemplates.find(t => t.id === rowToArchive.Tipo_Carta)?.name || rowToArchive.Tipo_Carta,
+                    };
+                    
+                    setEditsCount(prev => prev + 1);
+
+                    return {
+                        ...prev,
+                        trackingData: remainingTracking,
+                        archivedData: [...prev.archivedData, archivedRow],
+                    };
+                });
+            }, [initialTemplates]);
+
+            // Función para limpiar data de revisión
+            const clearReviewData = useCallback(() => {
+                if (window.confirm("¿Estás seguro de que quieres eliminar todos los casos en el Área de Revisión? Esta acción es irreversible.")) {
+                    setData(prev => ({ ...prev, finalData: [] }));
+                    setEditsCount(prev => prev + 1); // Contar como una edición para sincronizar si es necesario
+                    return true;
+                }
+                return false;
+            }, []);
+
+
+            return {
+                data,
+                editsCount,
+                incrementEdits: () => setEditsCount(prev => prev + 1),
+                clearEdits: () => setEditsCount(0),
+                addPortalData,
+                addPdfData,
+                updateRow,
+                sendToTracking,
+                sendToArchive,
+                clearReviewData,
+                setData, // Para la carga inicial desde la nube
+            };
+        };
+
+        
+        const App = () => {
+            const [appScriptUrl, saveAppScriptUrl] = useAppScriptUrl();
+            const [isConfigModalOpen, setIsConfigModalOpen] = useState(!appScriptUrl);
+            const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+            const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+            const [previewRowData, setPreviewRowData] = useState(null);
+            
+            const [portalDataInput, setPortalDataInput] = useState(Array(5).fill({}));
+            const [pdfDataInput, setPdfDataInput] = useState(Array(5).fill({}));
+            
+            const [templates, setTemplates] = useState(loadTemplates);
+            
+            const [notification, setNotification] = useState({ message: '', type: '' });
+            const [isLoading, setIsLoading] = useState(false);
+            
+            const [sortConfig, setSortConfig] = useState({ key: 'Fecha_Neg', direction: 'ascending' });
+
+            const { 
+                data, 
+                editsCount, 
+                incrementEdits, 
+                clearEdits, 
+                addPortalData, 
+                addPdfData, 
+                updateRow, 
+                sendToTracking, 
+                sendToArchive,
+                clearReviewData,
+                setData
+            } = useDataState(templates);
+
+            // --- Handlers de Plantillas ---
+            const handleSaveTemplates = useCallback((newTemplates) => {
+                saveTemplates(newTemplates);
+                setTemplates(newTemplates);
+            }, []);
+
+            // --- Handlers de Modales ---
+            const handleReconfigure = () => setIsConfigModalOpen(true);
+            const handleManageTemplates = () => setIsTemplateModalOpen(true);
+            
+            const handlePreview = (row) => {
+                setPreviewRowData(row);
+                setIsPreviewModalOpen(true);
+            };
+            
+            // --- Sync con Google Sheets ---
+
+            const loadDataFromSheet = useCallback(async () => {
+                if (!appScriptUrl) return;
                 setIsLoading(true);
-                setEditsCount(0);
+                setNotification({ message: 'Cargando datos desde la nube...', type: 'info' });
                 try {
-                    const { finalData, trackingData, archivedData } = await fetchData(googleSheetUrl);
-                    setReviewData(finalData);
-                    setTrackingData(trackingData);
-                    setArchivedData(archivedData);
-                    showNotification('Datos cargados correctamente desde Google Sheets.', 'success');
+                    const loadedData = await fetchData(appScriptUrl);
+                    // Solo reemplazamos la data local si la data cargada tiene contenido significativo
+                    if (loadedData.finalData.length > 0 || loadedData.trackingData.length > 0 || loadedData.archivedData.length > 0) {
+                        setData(loadedData);
+                        setNotification({ message: 'Datos sincronizados desde la nube con éxito.', type: 'success' });
+                    } else {
+                        setNotification({ message: 'Conectado a la nube, pero no se encontraron datos nuevos.', type: 'warning' });
+                    }
+                    clearEdits();
                 } catch (error) {
-                    console.error('Error al cargar datos:', error);
-                    showNotification('Error al cargar datos. Revisa la URL de conexión.', 'error');
+                    console.error("Error al cargar datos:", error);
+                    setNotification({ message: 'Error al conectar o cargar datos: ' + error.message, type: 'error' });
                 } finally {
                     setIsLoading(false);
                 }
-            };
+            }, [appScriptUrl, setData, clearEdits]);
 
-            const processData = () => {
-                const validPortalRows = portalData.filter(row => row['NÚMERO ORDEN']);
-                const validPdfRows = pdfData.filter(row => row['Archivo (No. Orden)']);
 
-                if (validPortalRows.length === 0) {
-                    return showNotification('No hay datos válidos en el Área 1 (Portal).', 'warning');
-                }
-
-                if (validPdfRows.length === 0) {
-                    return showNotification('No hay datos válidos en el Área 2 (PDF).', 'warning');
-                }
-
-                const newReviewData = [...reviewData];
-
-                validPortalRows.forEach(pRow => {
-                    const orderNumber = pRow['NÚMERO ORDEN'] ? pRow['NÚMERO ORDEN'].trim() : null;
-                    if (!orderNumber) return;
-
-                    const existingRow = newReviewData.find(r => r.No_Orden === orderNumber);
-
-                    // 1. Encontrar datos de PDF que coincidan con el No. de Orden
-                    const matchingPdfRow = validPdfRows.find(pdfRow => {
-                        const pdfOrderNumber = pdfRow['Archivo (No. Orden)'].trim();
-                        return pdfOrderNumber.includes(orderNumber);
-                    });
-                    
-                    // 2. Mapear datos
-                    const mappedRow = {
-                        Fecha_Asignacion: pRow.Fecha_Asignacion,
-                        EJECUTIVO: pRow.EJECUTIVO,
-                        Fecha_Neg: pRow['FECHA NEGACIÓN'], // Usamos la clave limpia para consistencia
-                        REGIONAL: pRow.REGIONAL,
-                        No_Orden: orderNumber, // Clave única para manejo interno
-                        No_Cedula: pRow['IDENTIFICACIÓN AFILIADO'],
-                        Nombre: capitalizeWords(pRow['NOMBRE AFILIADO']),
-                        EDAD: pRow.EDAD,
-                        PROCEDIMIENTO: pRow.PROCEDIMIENTO,
-                        Motivo_Negacion: pRow['MOTIVO NEGACIÓN'],
-                        PLAN: pRow.PLAN,
-                        PROGRAMA: pRow.PROGRAMA,
-                        EPS: pRow.EPS,
-                        Fecha_Ingreso: pRow.Fecha_Ingreso,
-                        EMAIL: pRow.EMAIL,
-                        CELULAR: pRow.CELULAR,
-                        ESTADO_PORTAL: pRow.ESTADO, // Estado inicial del portal
-
-                        // Campos de PDF
-                        Descripcion_PDF: matchingPdfRow ? matchingPdfRow.Descripción : '',
-                        Justificacion_PDF: matchingPdfRow ? matchingPdfRow.Justificación : '',
-                        Fundamento_Legal_PDF: matchingPdfRow ? matchingPdfRow['Fundamento Legal'] : '',
-                        
-                        // Campos de Gestión
-                        Tipo_Carta: existingRow ? existingRow.Tipo_Carta : '', 
-                        Radicado_Comp: existingRow ? existingRow.Radicado_Comp : '', // Conserva radicado si existe
-                    };
-
-                    // 3. Agregar/Actualizar en Área de Revisión
-                    if (existingRow) {
-                        // Actualiza el existente (ej. si cambian los datos del portal/pdf)
-                        Object.assign(existingRow, mappedRow);
-                        incrementEdits();
-                    } else {
-                        // Agrega nuevo caso
-                        newReviewData.push(mappedRow);
-                    }
-                });
-
-                setReviewData(sortData(newReviewData, reviewSortConfig));
-                setPortalData(Array(5).fill({}));
-                setPdfData(Array(5).fill({}));
-                showNotification(`Se procesaron ${validPortalRows.length} caso(s).`, 'success');
-            };
-
-            // --- Lógica de Movimiento y Archivo ---
-
-            const updateReviewRow = useCallback((noOrden, updates) => {
-                setReviewData(prev => prev.map(row => {
-                    if (row.No_Orden === noOrden) {
-                        return { ...row, ...updates };
-                    }
-                    return row;
-                }));
-            }, []);
-
-            const updateTrackingRow = useCallback((noOrden, updates) => {
-                setTrackingData(prev => prev.map(row => {
-                    if (row.No_Orden === noOrden) {
-                        return { ...row, ...updates };
-                    }
-                    return row;
-                }));
-            }, []);
-
-            const sendToTracking = (selectedOrders) => {
-                if (selectedOrders.length === 0) return showNotification('Selecciona al menos una fila.', 'warning');
-
-                const rowsToMove = reviewData.filter(row => selectedOrders.includes(row.No_Orden));
-                
-                // Validación para campos obligatorios
-                const invalidRows = rowsToMove.filter(row => 
-                    !row.Tipo_Carta || (
-                        row.Tipo_Carta.includes('comp') && (!row.Radicado_Comp || row.Radicado_Comp.length < 5)
-                    )
-                );
-
-                if (invalidRows.length > 0) {
-                    return showNotification('Error: Hay filas seleccionadas sin Tipo de Carta o con Radicado Complementariedad incompleto.', 'error');
-                }
-
-                setReviewData(prev => prev.filter(row => !selectedOrders.includes(row.No_Orden)));
-                
-                const newTrackingRows = rowsToMove.map(row => ({
-                    ...row,
-                    Estado_Seguimiento: 'Pendiente', // Estado inicial en seguimiento
-                    Notas_Seguimiento: row.Notas_Seguimiento || '',
-                    Fecha_Movimiento_Tracking: new Date().toISOString().slice(0, 10),
-                }));
-                
-                setTrackingData(prev => sortData([...prev, ...newTrackingRows], trackingSortConfig));
-                setEditsCount(prev => prev + rowsToMove.length);
-                showNotification(`Movidos ${rowsToMove.length} casos a Seguimiento.`, 'info');
-            };
-
-            const sendToArchive = (selectedOrders) => {
-                if (selectedOrders.length === 0) return showNotification('Selecciona al menos una fila.', 'warning');
-
-                const rowsToMove = trackingData.filter(row => selectedOrders.includes(row.No_Orden));
-
-                setTrackingData(prev => prev.filter(row => !selectedOrders.includes(row.No_Orden)));
-                
-                const newArchivedRows = rowsToMove.map(row => ({
-                    ...row,
-                    Fecha_Archivo: new Date().toISOString().slice(0, 10),
-                }));
-
-                setArchivedData(prev => [...prev, ...newArchivedRows]);
-                setEditsCount(prev => prev + rowsToMove.length);
-                showNotification(`Archivados ${rowsToMove.length} casos.`, 'info');
-            };
-
-            const sendToReview = (selectedOrders) => {
-                 if (selectedOrders.length === 0) return showNotification('Selecciona al menos una fila.', 'warning');
-
-                const rowsToMove = trackingData.filter(row => selectedOrders.includes(row.No_Orden));
-
-                setTrackingData(prev => prev.filter(row => !selectedOrders.includes(row.No_Orden)));
-                
-                const newReviewRows = rowsToMove.map(row => {
-                    const { Estado_Seguimiento, Notas_Seguimiento, Fecha_Movimiento_Tracking, ...rest } = row;
-                    return rest; // Quita los campos de seguimiento
-                });
-
-                setReviewData(prev => sortData([...prev, ...newReviewRows], reviewSortConfig));
-                setEditsCount(prev => prev + rowsToMove.length);
-                showNotification(`Movidos ${rowsToMove.length} casos de vuelta a Revisión.`, 'warning');
-            };
-
-            // --- Guardar en Google Sheets ---
-            const saveToSheet = async () => {
-                if (!googleSheetUrl) {
-                    showConfigModal(true);
+            const saveLocalDataToSheet = useCallback(async () => {
+                if (!appScriptUrl) {
+                    setNotification({ message: 'Error: Configura la URL del App Script primero.', type: 'error' });
+                    setIsConfigModalOpen(true);
                     return;
                 }
                 if (editsCount === 0) {
-                    return showNotification('No hay cambios pendientes para guardar.', 'info');
+                    setNotification({ message: 'No hay ediciones locales pendientes para guardar.', type: 'info' });
+                    return;
                 }
 
-                setIsSaving(true);
+                setIsLoading(true);
+                setNotification({ message: 'Guardando datos en la nube...', type: 'info' });
+
                 try {
-                    const dataToSave = {
-                        reviewData,
-                        trackingData,
-                        archivedData
+                    // Limpiar la bandera isEdited antes de enviar
+                    const dataToSend = {
+                        finalData: data.finalData.map(r => ({ ...r, isEdited: false })),
+                        trackingData: data.trackingData.map(r => ({ ...r, isEdited: false })),
+                        archivedData: data.archivedData,
                     };
 
-                    // Aquí se llama a la función de Google Apps Script para guardar los datos
-                    await saveData(googleSheetUrl, dataToSave);
+                    await saveData(appScriptUrl, dataToSend);
                     
-                    setEditsCount(0);
-                    showNotification('Todos los cambios han sido guardados en la nube.', 'success');
+                    // Actualizar el estado local con la bandera limpia si el guardado fue exitoso
+                    setData(dataToSend);
+                    clearEdits(); 
+                    setNotification({ message: '¡Datos guardados en la nube con éxito!', type: 'success' });
+
                 } catch (error) {
-                    console.error('Error al guardar datos:', error);
-                    showNotification('Error al guardar. Revisa la consola y la configuración de tu Script.', 'error');
+                    console.error("Error al guardar datos:", error);
+                    setNotification({ message: 'Error al guardar datos: ' + error.message, type: 'error' });
                 } finally {
-                    setIsSaving(false);
+                    setIsLoading(false);
                 }
-            };
+            }, [appScriptUrl, data, editsCount, clearEdits, setData]);
+            
+            // --- Exportación para Mail Merge y Reporte Detallado ---
 
-            // --- Lógica de Plantillas y Correo ---
-            const handleSaveTemplates = (newTemplates) => {
-                saveTemplates(newTemplates);
-                setTemplates(newTemplates);
-                showNotification('Plantillas guardadas correctamente.', 'success');
-            };
+            const handleExportForMailMerge = (selectedOrderNumbers) => {
+                const mailMergeData = data.finalData
+                    .filter(row => selectedOrderNumbers.includes(row.No_Orden))
+                    .map(row => {
+                        const template = templates.find(t => t.id === row.Tipo_Carta);
+                        
+                        // Generar el cuerpo final con la firma y el cuerpo común
+                        let finalBody = template ? template.body + COMMON_EMAIL_BODY + SIGNATURE : '';
+                        finalBody = finalBody.replace(/\n/g, '<br>'); // Reemplazar saltos de línea por <br>
 
-            const handlePreview = (row) => {
-                const template = templates.find(t => t.id === row.Tipo_Carta);
-                if (!template) {
-                    return showNotification('Selecciona un Tipo de Carta para previsualizar.', 'warning');
+                        return {
+                            ...row,
+                            Tipo_Carta_Nombre: template?.name || 'N/A',
+                            Cuerpo_Correo_HTML: replacePlaceholders(finalBody, row),
+                            Asunto_Correo: `Información sobre ${row.Motivo_Negacion || 'su solicitud'}`,
+                            // Asegurarse de que las cabeceras de Excel sean planas
+                            Descripcion_PDF: row.Descripcion_PDF, 
+                            Justificacion_PDF: row.Justificacion_PDF,
+                            Fundamento_Legal_PDF: row.Fundamento_Legal_PDF,
+                        };
+                    });
+
+                if (mailMergeData.length === 0) {
+                    setNotification({ message: 'No hay filas seleccionadas para exportar o la data está incompleta.', type: 'warning' });
+                    return;
                 }
-                setPreviewRow({ row, template });
-            };
 
-            const handleExportForMailMerge = (dataToExport) => {
-                if (dataToExport.length === 0) return showNotification('No hay datos en el Área de Revisión para exportar.', 'warning');
-                
                 try {
-                    const exportData = dataToExport
-                        .filter(row => row.Tipo_Carta) // Solo exporta las que tienen plantilla seleccionada
-                        .map(row => {
-                            const template = templates.find(t => t.id === row.Tipo_Carta);
-                            const customizedBody = replacePlaceholders(template.body, row);
-
-                            return {
-                                No_Orden: row.No_Orden,
-                                Email: row.EMAIL,
-                                Asunto: `Respuesta a Solicitud No. ${row.No_Orden}`,
-                                Cuerpo_Correo: customizedBody + COMMON_EMAIL_BODY + SIGNATURE,
-                                Tipo_Carta: template.name,
-                                EPS: row.EPS,
-                                Radicado: row.Radicado_Comp || '',
-                            };
-                        });
-
-                    if (exportData.length === 0) {
-                        return showNotification('Ninguna fila tiene un "Tipo de Carta" seleccionado para exportar.', 'warning');
-                    }
-
+                    const ws = XLSX.utils.json_to_sheet(mailMergeData);
                     const wb = XLSX.utils.book_new();
-                    const ws = XLSX.utils.json_to_sheet(exportData);
                     XLSX.utils.book_append_sheet(wb, ws, "MailMerge_Export");
-                    XLSX.writeFile(wb, `Sigweb_MailMerge_Export_${new Date().toISOString().slice(0, 10)}.xlsx`);
-                    showNotification(`Exportadas ${exportData.length} filas para Correo Masivo.`, 'success');
+                    XLSX.writeFile(wb, `MailMerge_Export_${new Date().toISOString().slice(0, 10)}.xlsx`);
+                    setNotification({ message: `Exportados ${mailMergeData.length} casos para Mail Merge.`, type: 'success' });
                 } catch (error) {
-                    console.error('Error al exportar para Mail Merge:', error);
-                    showNotification('Ocurrió un error al generar el archivo de exportación.', 'error');
+                    console.error("Error al exportar Mail Merge:", error);
+                    setNotification({ message: 'Error al generar el archivo de Mail Merge.', type: 'error' });
                 }
             };
 
-            // --- Renderización Principal ---
-            return (
-                <div className="p-6 space-y-8 min-h-screen">
-                    {/* Modales */}
-                    {showConfigModal && (
-                        <ConfigModal 
-                            onClose={() => setShowConfigModal(false)}
-                            onSuccess={setGoogleSheetUrl}
-                        />
-                    )}
-                    {showTemplateManager && (
-                        <TemplateManager 
-                            templates={templates} 
-                            onSaveTemplates={handleSaveTemplates}
-                            onClose={() => setShowTemplateManager(false)}
-                        />
-                    )}
-                    {previewRow && (
-                        <EmailPreviewModal 
-                            rowData={previewRow.row}
-                            template={previewRow.template}
-                            onClose={() => setPreviewRow(null)}
-                        />
-                    )}
+            const handleExportDetailedReport = () => {
+                 exportDetailedReport(data.finalData, data.trackingData, data.archivedData);
+                 setNotification({ message: 'Reporte detallado de seguimiento generado.', type: 'info' });
+            };
 
-                    {/* Notificación */}
-                    {notification && (
-                        <Notification 
-                            message={notification.message}
-                            type={notification.type}
-                            onClose={() => setNotification(null)}
-                        />
-                    )}
+
+            // Carga inicial de datos desde la nube (si hay URL)
+            useEffect(() => {
+                if (appScriptUrl) {
+                    loadDataFromSheet();
+                }
+                // eslint-disable-next-line react-hooks/exhaustive-deps
+            }, [appScriptUrl]); // Ejecutar solo una vez al inicio si hay URL
+
+            // --- Render ---
+
+            return (
+                <div className="min-h-screen p-6 space-y-8 max-w-7xl mx-auto">
                     
-                    {/* Encabezado y Guardado */}
                     <Header 
-                        onSave={saveToSheet} 
-                        onManageTemplates={() => setShowTemplateManager(true)}
-                        onReconfigure={() => setShowConfigModal(true)}
+                        onSave={saveLocalDataToSheet} 
+                        onManageTemplates={handleManageTemplates}
+                        onReconfigure={handleReconfigure}
                     />
 
-                    {/* Dashboard */}
-                    <Dashboard
-                        reviewCount={reviewData.length}
-                        trackingCount={trackingData.length}
-                        archivedCount={archivedData.length}
+                    <Dashboard 
+                        reviewCount={data.finalData.length} 
+                        trackingCount={data.trackingData.length} 
+                        archivedCount={data.archivedData.length}
                         editsCount={editsCount}
                     />
 
-                    {/* Contenido Principal */}
-                    {isLoading || isSaving ? (
-                        <div className="flex justify-center items-center py-10">
-                            <Spinner />
-                            <span className="ml-3 text-lg">{isSaving ? 'Guardando datos...' : 'Cargando datos...'}</span>
-                        </div>
-                    ) : (
-                        <main className="space-y-8">
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                {/* Área 1: Datos del Portal (Entrada) */}
-                                <DataInputArea
-                                    id="area1"
-                                    title="Área 1: Pegar Datos del Portal"
-                                    headers={PORTAL_HEADERS}
-                                    data={portalData}
-                                    onDataChange={setPortalData}
-                                    onProcess={processData}
-                                    processButtonText="Procesar Datos (Combinar con PDF)"
-                                />
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <DataInputArea
+                            id="area1"
+                            title="Área 1: Datos del Portal"
+                            headers={PORTAL_HEADERS}
+                            data={portalDataInput}
+                            onDataChange={setPortalDataInput}
+                            onProcess={() => {
+                                const validData = portalDataInput.filter(row => row['NÚMERO ORDEN']);
+                                if (validData.length > 0) {
+                                    addPortalData(validData);
+                                    setPortalDataInput(Array(5).fill({}));
+                                    setNotification({ message: `Añadidos ${validData.length} casos a Revisión.`, type: 'success' });
+                                } else {
+                                    setNotification({ message: 'No hay datos válidos del portal para procesar.', type: 'warning' });
+                                }
+                            }}
+                            processButtonText="Añadir a Revisión"
+                        />
+                        <DataInputArea
+                            id="area2"
+                            title="Área 2: Datos del PDF (Justificación, Fundamento, etc.)"
+                            headers={PDF_HEADERS}
+                            data={pdfDataInput}
+                            onDataChange={setPdfDataInput}
+                            onProcess={() => {
+                                const validData = pdfDataInput.filter(row => row['Archivo (No. Orden)']);
+                                if (validData.length > 0) {
+                                    addPdfData(validData);
+                                    setPdfDataInput(Array(5).fill({}));
+                                    setNotification({ message: `Actualizados ${validData.length} casos en Revisión.`, type: 'success' });
+                                } else {
+                                    setNotification({ message: 'No hay datos válidos de PDF para procesar.', type: 'warning' });
+                                }
+                            }}
+                            processButtonText="Actualizar Revisión"
+                        />
+                    </div>
+                    
+                    <ReviewArea
+                        data={data.finalData}
+                        templates={templates}
+                        updateRow={(noOrden, changes) => updateRow(noOrden, changes, 'finalData')}
+                        incrementEdits={incrementEdits}
+                        onSendToTracking={(selectedOrders) => {
+                            if (sendToTracking(selectedOrders)) {
+                                setNotification({ message: `Movidos ${selectedOrders.length} casos a Seguimiento Activo.`, type: 'info' });
+                            }
+                            // Limpiar selección después de mover
+                            document.querySelectorAll('#area3 input[type="checkbox"]').forEach(cb => cb.checked = false);
+                        }}
+                        onPreview={handlePreview}
+                        onExportForMailMerge={handleExportForMailMerge}
+                        onClearReviewData={clearReviewData}
+                        sortConfig={sortConfig}
+                        setSortConfig={setSortConfig}
+                    />
 
-                                {/* Área 2: Datos del PDF (Entrada) */}
-                                <DataInputArea
-                                    id="area2"
-                                    title="Área 2: Pegar Datos de la Carta de Negación (PDF)"
-                                    headers={PDF_HEADERS}
-                                    data={pdfData}
-                                    onDataChange={setPdfData}
-                                    onProcess={processData}
-                                    processButtonText="Procesar Datos (Combinar con Portal)"
-                                />
+                    <hr className="border-border-color" />
+
+                    <TrackingArea
+                        data={data.trackingData}
+                        updateRow={(noOrden, changes) => updateRow(noOrden, changes, 'trackingData')}
+                        incrementEdits={incrementEdits}
+                        onSendToArchive={(noOrden) => {
+                            sendToArchive(noOrden);
+                            setNotification({ message: `Caso ${noOrden} finalizado y archivado.`, type: 'info' });
+                        }}
+                        onExportAll={handleExportDetailedReport}
+                        sortConfig={sortConfig}
+                        setSortConfig={setSortConfig}
+                    />
+                    
+                    <hr className="border-border-color" />
+
+                    <ArchiveArea
+                        data={data.archivedData}
+                    />
+
+                    {/* Modales */}
+                    <TemplateModal 
+                        isOpen={isTemplateModalOpen} 
+                        onClose={() => setIsTemplateModalOpen(false)} 
+                        templates={templates}
+                        onSaveTemplates={handleSaveTemplates}
+                    />
+                    
+                    <PreviewModal
+                        isOpen={isPreviewModalOpen}
+                        onClose={() => setIsPreviewModalOpen(false)}
+                        rowData={previewRowData}
+                        templates={templates}
+                    />
+
+                    <ConfigModal
+                        isOpen={isConfigModalOpen}
+                        onClose={() => setIsConfigModalOpen(false)}
+                        currentUrl={appScriptUrl}
+                        onSaveUrl={(url) => {
+                            saveAppScriptUrl(url);
+                            // Intentar cargar datos inmediatamente después de guardar la URL
+                            loadDataFromSheet();
+                        }}
+                    />
+
+                    {/* Notificaciones y Spinner */}
+                    <Notification 
+                        message={notification.message} 
+                        type={notification.type} 
+                        onClose={() => setNotification({ message: '', type: '' })} 
+                    />
+
+                    {isLoading && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-center justify-center">
+                            <div className="flex flex-col items-center p-6 bg-surface rounded-lg shadow-xl">
+                                <Spinner />
+                                <p className="mt-4 text-white">Procesando datos...</p>
                             </div>
-
-                            {/* Área 3: Revisión Final */}
-                            <ReviewArea
-                                data={sortData(reviewData, reviewSortConfig)}
-                                templates={templates}
-                                updateRow={updateReviewRow}
-                                incrementEdits={incrementEdits}
-                                onSendToTracking={sendToTracking}
-                                onPreview={handlePreview}
-                                onExportForMailMerge={handleExportForMailMerge}
-                                onClearReviewData={() => setReviewData([])}
-                                sortConfig={reviewSortConfig}
-                                setSortConfig={setReviewSortConfig}
-                            />
-
-                            {/* Área 4: Seguimiento */}
-                            <TrackingArea
-                                data={sortData(trackingData, trackingSortConfig)}
-                                updateRow={updateTrackingRow}
-                                incrementEdits={incrementEdits}
-                                onSendToArchive={sendToArchive}
-                                onSendToReview={sendToReview}
-                                onExportDetailedReport={() => exportDetailedReport(reviewData, trackingData, archivedData)}
-                                sortConfig={trackingSortConfig}
-                                setSortConfig={setTrackingSortConfig}
-                                archivedData={archivedData}
-                            />
-
-                            {/* Área de Archivo - Solo para visualización (Opcional, pero se mantiene la lógica) */}
-                            <section id="area5" className="space-y-4 pt-8">
-                                <h2 className="text-2xl font-bold text-text-secondary border-b border-border-color pb-2">Casos Archivados ({archivedData.length})</h2>
-                                <p className="text-sm text-text-secondary">Los casos archivados solo se muestran en el Reporte Maestro (Área 4).</p>
-                            </section>
-
-                        </main>
+                        </div>
                     )}
+
                 </div>
             );
-        }
+        };
 
-        // --- Renderización de la Aplicación (React) ---
-        // Usamos createRoot de ReactDOMClient (React 18)
-        const rootElement = document.getElementById('root');
-        if (rootElement) {
-            ReactDOMClient.createRoot(rootElement).render(<SigwebApp />);
-        }
+        // Montaje de la aplicación React
+        const container = document.getElementById('root');
+        const root = ReactDOMClient.createRoot(container);
+        root.render(<App />);
 
     </script>
+
 </body>
 </html>
