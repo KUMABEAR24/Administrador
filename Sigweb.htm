@@ -225,6 +225,8 @@
         };
 
         const saveData = async (url, data) => {
+            // Nota: Se usa 'no-cors' para Google App Script, lo que significa que no podemos leer la respuesta.
+            // Si la aplicación se rompe, la causa es probablemente que el endpoint de GAS no está bien configurado.
             const response = await fetch(url, {
                 method: 'POST',
                 mode: 'no-cors', 
@@ -455,6 +457,7 @@
           const [filter, setFilter] = useState('');
           
           // Columnas exactas solicitadas por el usuario
+          // CAMBIO CLAVE: Se eliminan las restricciones 'compact: true' de las descripciones largas
           const REVIEW_HEADERS = [
               { key: 'Fecha_Neg', label: 'Fecha de Negación' },
               { key: 'No_Orden', label: 'Número de Orden' },
@@ -463,9 +466,9 @@
               { key: 'EPS', label: 'EPS' },
               { key: 'Programa', label: 'Programa', compact: true },
               { key: 'Motivo_Negacion', label: 'Motivo Neg', compact: true },
-              { key: 'Descripcion_PDF', label: 'Descripción', compact: true },
-              { key: 'Justificacion_PDF', label: 'Justificación', compact: true },
-              { key: 'Fundamento_Legal_PDF', label: 'Fund. Legal', compact: true },
+              { key: 'Descripcion_PDF', label: 'Descripción' }, // Ampliado
+              { key: 'Justificacion_PDF', label: 'Justificación' }, // Ampliado
+              { key: 'Fundamento_Legal_PDF', label: 'Fund. Legal' }, // Ampliado
           ];
 
           // Lógica de ordenamiento
@@ -1216,6 +1219,28 @@
                         return row;
                     });
                     
+                    // Si el cambio es archivar (desde el área de revisión), se hace la transición
+                    if (targetArea === 'finalData' && changes.ESTADO_ACTUAL === 'Archivado') {
+                        const rowToArchive = prev.finalData.find(row => row.No_Orden === noOrden);
+                        if (rowToArchive) {
+                             setEditsCount(prev => prev + 1);
+                            
+                            const remainingFinal = prev.finalData.filter(row => row.No_Orden !== noOrden);
+                            const archivedRow = {
+                                ...rowToArchive,
+                                ESTADO_ACTUAL: 'Archivado',
+                                Fecha_Archivado: new Date().toISOString().slice(0, 10),
+                                Tipo_Carta_Name: initialTemplates.find(t => t.id === rowToArchive.Tipo_Carta)?.name || rowToArchive.Tipo_Carta,
+                            };
+
+                            return { 
+                                ...prev, 
+                                finalData: remainingFinal,
+                                archivedData: [...prev.archivedData, archivedRow]
+                            };
+                        }
+                    }
+
                     // Solo incrementa si los cambios no incluyen el archivado y no viene de la sync inicial
                     if (changes.ESTADO_ACTUAL !== 'Archivado') {
                          setEditsCount(prev => prev + 1);
@@ -1223,7 +1248,7 @@
                     
                     return { ...prev, [targetKey]: newData };
                 });
-            }, []);
+            }, [initialTemplates]);
 
 
             // Función para mover a seguimiento
@@ -1249,7 +1274,7 @@
                 return true;
             }, []);
 
-            // Función para mover a archivo
+            // Función para mover a archivo (desde Tracking)
             const sendToArchive = useCallback((noOrden) => {
                 setData(prev => {
                     const rowToArchive = prev.trackingData.find(row => row.No_Orden === noOrden);
@@ -1466,7 +1491,8 @@
 
             // --- Render ---
 
-           return (
+            return (
+                // CAMBIO CLAVE: Ampliamos el contenedor principal a max-w-full
                 <div className="min-h-screen p-6 space-y-8 max-w-full px-12">
                     
                     <Header 
@@ -1616,4 +1642,3 @@
 
 </body>
 </html>
-
