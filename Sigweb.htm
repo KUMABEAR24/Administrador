@@ -4,12 +4,29 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GESTION NEGACIONES EJE CAFETERO</title>
-    
+
     <script src="https://cdn.tailwindcss.com"></script>
     
     <script>
       // Tailwind CSS Configuration
       tailwind.config = {
+    ```
+
+### 🧐 Razón del Cambio
+
+Tu código original tenía líneas vacías (`<br>`) o scripts intermedios que impedían que la configuración se ejecutara inmediatamente después del CDN. Al compactar y asegurar el orden de esta manera:
+
+1.  **Línea 8:** Carga la biblioteca.
+2.  **Línea 9:** Abre el bloque de configuración inmediatamente después.
+
+Se aumenta drásticamente la probabilidad de que el objeto `tailwind` esté definido antes de que se acceda a él en la línea 11 (`tailwind.config`).
+
+**Importante:** Recuerda que **debes cerrar la etiqueta `<script>`** después de tu configuración:
+
+```html
+      // ... el resto de tu configuración
+      } // Cierra tailwind.config
+    </script>
         theme: {
           extend: {
             colors: {
@@ -1495,4 +1512,5 @@
     </script>
 </body>
 </html>
+
 
