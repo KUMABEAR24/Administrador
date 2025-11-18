@@ -77,14 +77,22 @@
           "Archivo (No. Orden)", "Descripción", "Justificación", "Fundamento Legal", "Código"
         ];
 
+        // --- Cabeceras para la Exportación de Mail Merge (CRÍTICO) ---
+        // Este es el formato estricto que requiere la macro del usuario.
+        const MAIL_MERGE_HEADERS = [
+          'No_Orden', 'Fecha_Neg', 'No_Cedula', 'Nombre', 'EPS', 'Programa', 'Motivo_Negacion', 
+          'Descripcion_PDF', 'Justificacion_PDF', 'Fundamento_Legal_PDF', 'Tipo_Carta', 'Radicado_Comp',
+          'EMAIL', 'CELULAR', 'Fecha_Asignacion', 'EJECUTIVO', 'REGIONAL'
+        ];
+
         const TRACKING_STATUSES = ['Pendiente', 'En Gestión', 'Finalizado'];
         
         const COMMON_EMAIL_BODY = `<br><br><b>Si tiene alguna duda puede contactarse por medio de los canales que tenemos disponibles para usted:</b><br>· Nuestra línea nacional 018000931666. O con nuestras líneas locales: Cali (602) 489 0073, Bogotá (601) 743 5485, Medellín (604) 604 4507, Barranquilla (605) 385 3165, Bucaramanga (607) 697 3350, Cartagena (605) 693 9853, Tuluá (602) 235 9483, Valledupar (605)588 5699, Pereira (606) 340 2635.<br>· WhatsApp: 317-224-07-94<br><br>Gracias por su Atención.`;
         const SIGNATURE = `<br><br>Cordialmente,<br><br><b>Juan Ricardo Morales Agudelo</b><br>Ejecutivo De Atención Integral<br>Coomeva Medicina Prepagada<br>Cra. 13 No.11-12 Centro Médico Circunvalar<br>Coomeva Medicina Prepagada Pereira, Risaralda<br><br><i>Este correo es generado automáticamente, por favor no responda este mensaje.</i>`;
 
         const defaultTemplates = [
-            { id: 'tpl_neg_gen', name: 'PLANTILLA NEGACION GENERAL', body: `Apreciado usuario;<br><br>Agradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y la de su familia. Por medio de este correo queremos brindar información acerca del servicio {{Motivo_Negacion}} que en esta oportunidad no está aprobado debido a que corresponde a EXCLUSIÓN ({{Descripcion_PDF}}), ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).<br><br>El servicio negado anteriormente; debe tramitarlo a través su EPS asignada. Adjuntamos soporte de la carta de negación.` },
-            { id: 'tpl_neg_pert', name: 'PLANTILLA NO PERTINENCIA Y TEMAS ESTETICOS', body: `Apreciado usuario;<br><br>Agradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y la de su familia. Por medio de este correo queremos brindar información acerca del servicio {{Motivo_Negacion}} que en esta oportunidad No está aprobado debido a que corresponde a NO PERTINENCIA ({{Descripcion_PDF}}), ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).<br><br>` },
+            { id: 'tpl_neg_gen', name: 'PLANTILLA NEGACION GENERAL', body: `Apreciado usuario;<br><br>Agradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y la de su familia. Por medio de este correo queremos brindar información acerca del servicio {{Motivo_Negacion}} que en esta oportunidad no está aprobado debido a que corresponde a EXCLUSIÓN ({{Descripcion_PDF}}), ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}), ({{Programa}}).<br><br>El servicio negado anteriormente; debe tramitarlo a través su EPS asignada. Adjuntamos soporte de la carta de negación.` },
+            { id: 'tpl_neg_pert', name: 'PLANTILLA NO PERTINENCIA Y TEMAS ESTETICOS', body: `Apreciado usuario;<br><br>Agradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y la de su familia. Por medio de este correo queremos brindar información acerca del servicio {{Motivo_Negacion}} que en esta oportunidad No está aprobado debido a que corresponde a NO PERTINENCIA ({{Descripcion_PDF}}), ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}), ({{Programa}}).<br><br>` },
             { id: 'tpl_comp_coinc', name: 'COMPLEMENTARIEDAD RED COINCIDENTE', body: `Apreciado Usuario;<br><br>Agradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y el de su familia. Por medio de este correo queremos brindar información acerca del servicio ({{Descripcion_PDF}}) que en esta oportunidad no fue aprobado, debido a que ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).<br><br>Sin embargo, está en gestión a través de su EPS ({{EPS}}) con el número de radicado ({{Radicado_Comp}}), puede realizar seguimiento mediante la oficina virtual de la EPS ({{Oficina_Virtual_EPS}}).<br><br>Adicional estaremos haciendo seguimiento al radicado y una vez se encuentre gestionado por la EPS, le notificaremos por medio de correo electrónico.` },
             { id: 'tpl_comp_no_coinc', name: 'COMPLEMENTARIEDAD RED NO COINCIDENTE', body: `Agradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y la de su familia. Por medio de este correo queremos brindar información acerca del servicio ({{Descripcion_PDF}}) que en esta oportunidad no está aprobado, debido a que corresponde a ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).<br><br>El prestador actual solicitado, no tiene convenio con la EPS, por lo que los costos adicionales del servicio o insumo estarán a cargo del paciente. Sin embargo; se radica la solicitud ante su EPS con el número ({{Radicado_Comp}}) por favor realizar seguimiento mediante la oficina virtual de la EPS ({{Oficina_Virtual_EPS}}).` },
             { id: 'tpl_comp_ayudas', name: 'COMPLEMENTARIEDAD AYUDAS DIAGNOSTICAS', body: `Apreciado usuario;<br><br>Agradecemos la confianza que ha depositado en nosotros al confiar el cuidado de su salud y la de su familia. Por medio de este correo queremos brindar información acerca del servicio ({{Descripcion_PDF}}) que en esta oportunidad no está aprobado debido a que corresponde a ({{Justificacion_PDF}}), ({{Fundamento_Legal_PDF}}).<br><br>Sin embargo, se encuentra en gestión a través de su EPS con el número de radicado ({{Radicado_Comp}}), por favor realizar seguimiento mediante la oficina virtual. ({{Oficina_Virtual_EPS}}).` },
@@ -100,21 +108,27 @@
         };
 
         const processPastedData = (pastedText, headers) => {
-          return pastedText
-            .trim()
-            .split(/\r?\n/)
-            .map(rowText => {
-              // Usamos una regex más robusta para manejar separadores de tabulación, incluso si hay múltiples espacios
-              const cells = rowText.split('\t'); 
-              const rowObject = {};
-              headers.forEach((header, index) => {
-                if (cells[index]) {
-                  // Guardamos la clave tal como está en 'headers' (PORTAL_HEADERS o PDF_HEADERS)
-                  rowObject[header] = cells[index].trim();
-                }
-              });
-              return rowObject;
-            });
+            return pastedText
+                .trim()
+                .split(/\r?\n/)
+                .map(rowText => {
+                    // Split por tabulador (\t) para datos pegados de Excel/Google Sheets
+                    const cells = rowText.split('\t'); 
+                    const rowObject = {};
+                    
+                    headers.forEach((header, index) => {
+                        // Limpieza: Aseguramos que los encabezados del Array (PORTAL_HEADERS o PDF_HEADERS) 
+                        // se usan como claves en el objeto, independientemente de si la data pegada 
+                        // contenía encabezados o no (ya que se asume que se pega el cuerpo de la tabla).
+                        if (cells[index]) {
+                            const cleanHeader = header.trim();
+                            rowObject[cleanHeader] = cells[index].trim();
+                        }
+                    });
+                    
+                    return rowObject;
+                })
+                .filter(row => Object.values(row).some(val => val)); // Filtrar filas completamente vacías
         };
 
         const replacePlaceholders = (templateBody, data) => {
@@ -134,6 +148,7 @@
 
         const exportDetailedReport = (finalData, trackingData, archivedData) => {
           try {
+            // ... (Esta función es para reportes detallados, no la de Mail Merge, se mantiene por si acaso)
             const masterDataMap = new Map();
 
             // Asegurar que todas las filas (Final, Tracking, Archivadas) estén disponibles con su información más reciente.
@@ -355,6 +370,7 @@
           const handlePaste = useCallback((e) => {
             e.preventDefault();
             const pastedText = e.clipboardData.getData('text/plain');
+            // Usamos la versión de processPastedData que ya filtra filas vacías
             const newRows = processPastedData(pastedText, headers);
 
             // Filtra filas que contienen al menos un valor no vacío antes de agregar nuevas.
@@ -366,7 +382,7 @@
                 updatedData.push({});
             }
 
-            // Eliminar duplicados vacíos
+            // Eliminar duplicados vacíos y limita el tamaño
             const finalData = updatedData.filter((row, index, self) => 
                 index === self.findIndex(r => JSON.stringify(r) === JSON.stringify(row)) || Object.values(row).some(val => val)
             ).slice(0, 5 + newRows.length); // Mantener un número razonable de filas vacías al final
@@ -376,6 +392,7 @@
 
           const handleCellChange = (rowIndex, header, value) => {
             const newData = [...data];
+            // Usa el header como la clave (key) para actualizar el objeto
             newData[rowIndex] = { ...newData[rowIndex], [header]: value };
             
             // Asegura que siempre haya al menos 5 filas vacías al final para la entrada de datos.
@@ -559,7 +576,7 @@
                 />
                 <span className="text-text-primary">{selectedRows.size} fila(s) seleccionada(s)</span>
                 <button 
-                  onClick={() => onExportForMailMerge(data)}
+                  onClick={() => onExportForMailMerge(filteredData)}
                   className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors ml-auto"
                 >
                     Exportar para Mail Merge ({filteredData.length})
@@ -600,9 +617,11 @@
                       const requiresRadicado = isComplementariedad;
                       
                       const rowKey = row.No_Orden ? `key-${row.No_Orden}` : `new-${rowIndex}`;
+                      // Usa un estilo para resaltar las filas con datos PDF faltantes
+                      const isMissingPdfData = !row.Descripcion_PDF && !row.Justificacion_PDF && !row.Fundamento_Legal_PDF;
 
                       return (
-                        <tr key={rowKey} className={`border-b border-border-color hover:bg-highlight ${isComplementariedad ? 'bg-indigo-900/50' : ''}`}>
+                        <tr key={rowKey} className={`border-b border-border-color hover:bg-highlight ${isComplementariedad ? 'bg-indigo-900/50' : isMissingPdfData ? 'bg-yellow-900/40' : ''}`}>
                           <td className="px-4 py-2"><input type="checkbox" checked={selectedRows.has(row.No_Orden)} onChange={() => handleSelectRow(row.No_Orden)} /></td>
                           <td className="px-4 py-2 text-lg cursor-pointer text-center" onClick={() => onPreview(row)}>👁️</td>
                           
@@ -694,7 +713,7 @@
                             return sortConfig.direction === 'ascending' ? -1 : 1;
                         }
                         if (aValue > bValue) {
-                            return sortConfig.direction === 'ascending' ? 1 : -1;
+                            return sortConfig.direction === 'ascending' ? 1 : -1; // Corregido: 1
                         }
                         return 0;
                     });
@@ -868,7 +887,7 @@
                 showNotification({ message: 'Plantilla añadida.', type: 'success' });
             };
 
-            const placeholderTags = ['Motivo_Negacion', 'Descripcion_PDF', 'Justificacion_PDF', 'Fundamento_Legal_PDF', 'EPS', 'Radicado_Comp', 'Oficina_Virtual_EPS', 'Nombre'];
+            const placeholderTags = ['Motivo_Negacion', 'Descripcion_PDF', 'Justificacion_PDF', 'Fundamento_Legal_PDF', 'Programa', 'EPS', 'Radicado_Comp', 'Oficina_Virtual_EPS', 'Nombre'];
 
             return (
                 <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex justify-center items-start overflow-y-auto p-4 sm:p-8">
@@ -1150,62 +1169,40 @@
                 }
             }, [sheetUrl]);
 
-            // --- Lógica de Procesamiento Central (Área 4) ---
+            // --- Lógica de Procesamiento del Portal (Área 1 -> Área 3) ---
             const processPortalData = useCallback(() => {
-                const portalHasData = portalData.some(row => Object.values(row).some(val => val));
-                const pdfHasData = pdfData.some(row => Object.values(row).some(val => val));
-
-                if (!portalHasData) {
+                // Filtra para solo incluir filas que tengan al menos un valor.
+                const validPortalData = portalData.filter(row => Object.values(row).some(val => val));
+                
+                if (validPortalData.length === 0) {
                     showNotification({ message: 'Primero, pegue los datos del Portal (Área 1).', type: 'warning' });
-                    return;
-                }
-                if (!pdfHasData) {
-                    showNotification({ message: 'Faltan los datos del PDF para completar la información (Área 2).', type: 'warning' });
                     return;
                 }
 
                 try {
-                    const pdfMap = new Map();
-                    // 1. Crear mapa de PDF por Número de Orden
-                    pdfData.forEach(row => {
-                        const key = (row["Archivo (No. Orden)"] || "").trim();
-                        if (key) {
-                            pdfMap.set(key, row);
-                        }
-                    });
-
                     const newFinalData = [];
 
-                    // 2. Iterar sobre los datos del Portal y hacer el merge
-                    portalData.forEach(portalRow => {
+                    validPortalData.forEach(portalRow => {
+                        // Usamos la clave limpia "NÚMERO ORDEN" que definimos en PORTAL_HEADERS
                         const portalKey = (portalRow["NÚMERO ORDEN"] || "").trim();
 
-                        // Solo procesar filas con Número de Orden válido
                         if (!portalKey) return; 
 
-                        const pdfRow = pdfMap.get(portalKey);
-
-                        // Solo procesar si hay un PDF correspondiente (UNION INTERNA)
-                        if (!pdfRow) return;
-
                         const newRow = {
-                            // Campos Clave para el Área 3 (Revisión)
+                            // Mapeo directo de columnas del Portal
                             No_Orden: portalKey,
                             Fecha_Neg: portalRow["FECHA NEGACIÓN"] || '',
                             No_Cedula: portalRow["IDENTIFICACIÓN AFILIADO"] || '',
                             Nombre: capitalizeWords(portalRow["NOMBRE AFILIADO"]),
                             EPS: portalRow.EPS || '',
-                            
-                            // *** CORRECCIÓN APLICADA: Uso de corchetes para robustez ***
-                            Programa: portalRow["PROGRAMA"] || '', 
-                            
+                            Programa: portalRow.PROGRAMA || '', // **CORRECCIÓN:** Uso directo de la clave correcta
                             Motivo_Negacion: portalRow["MOTIVO NEGACIÓN"] || '',
 
-                            // Datos del PDF mergeados
-                            Descripcion_PDF: pdfRow["Descripción"] || '',
-                            Justificacion_PDF: pdfRow["Justificación"] || '',
-                            Fundamento_Legal_PDF: pdfRow["Fundamento Legal"] || '',
-                            Codigo: pdfRow.Código || '',
+                            // Datos del PDF inicializados como vacíos (serán llenados en el siguiente paso)
+                            Descripcion_PDF: '', 
+                            Justificacion_PDF: '', 
+                            Fundamento_Legal_PDF: '',
+                            Codigo: '',
 
                             // Datos complementarios del Portal (para Mail Merge/Seguimiento)
                             Fecha_Asignacion: portalRow.Fecha_Asignacion || '',
@@ -1220,27 +1217,92 @@
                             REGIONAL: portalRow.REGIONAL || '',
 
                             // Campos de Estado/Control
-                            ESTADO: 'Pendiente', // Se inicializa como Pendiente
-                            Tipo_Carta: '', // Se inicializa para que el usuario seleccione
-                            Radicado_Comp: '', // Campo adicional para Complementariedad
+                            ESTADO: 'Pendiente', 
+                            Tipo_Carta: '', 
+                            Radicado_Comp: '', 
                         };
 
                         newFinalData.push(newRow);
                     });
 
-                    setFinalData(prev => [...prev.filter(r => !newFinalData.some(n => n.No_Orden === r.No_Orden)), ...newFinalData]);
+                    // Agrega nuevos datos y mantiene los existentes que no fueron reemplazados
+                    setFinalData(prev => {
+                        const existingDataMap = new Map(prev.map(r => [r.No_Orden, r]));
+                        newFinalData.forEach(newR => existingDataMap.set(newR.No_Orden, newR));
+                        return Array.from(existingDataMap.values());
+                    });
                     
-                    // Limpiar Áreas de entrada
+                    // Limpiar Área 1
                     setPortalData(Array(5).fill({})); 
-                    setPdfData(Array(5).fill({})); 
                     
                     showNotification({ message: `¡Procesamiento exitoso! Se han cargado ${newFinalData.length} caso(s) al Área de Revisión.`, type: 'success' });
 
                 } catch (error) {
-                    console.error("Error al procesar los datos:", error);
-                    showNotification({ message: `Error al procesar los datos: ${error.message}`, type: 'error' });
+                    console.error("Error al procesar los datos del Portal:", error);
+                    showNotification({ message: `Error al procesar los datos del Portal: ${error.message}`, type: 'error' });
                 }
-            }, [portalData, pdfData, showNotification]);
+            }, [portalData, showNotification]);
+
+
+            // --- Lógica de Procesamiento del PDF (Área 2 -> Área 3) ---
+            const processPdfData = useCallback(() => {
+                const validPdfData = pdfData.filter(row => Object.values(row).some(val => val));
+                
+                if (finalData.length === 0) {
+                    showNotification({ message: 'El Área de Revisión (3) está vacía. Primero procese los datos del Portal (Área 1).', type: 'warning' });
+                    return;
+                }
+                
+                if (validPdfData.length === 0) {
+                    showNotification({ message: 'Primero, pegue los datos del PDF (Área 2).', type: 'warning' });
+                    return;
+                }
+                
+                try {
+                    const pdfMap = new Map();
+                    let updatedCount = 0;
+
+                    // 1. Crear mapa de PDF por Número de Orden
+                    validPdfData.forEach(row => {
+                        // Usamos la clave limpia "Archivo (No. Orden)" que definimos en PDF_HEADERS
+                        const key = (row["Archivo (No. Orden)"] || "").trim();
+                        if (key) {
+                            pdfMap.set(key, row);
+                        }
+                    });
+
+                    // 2. Iterar sobre los datos del Área 3 y hacer el merge (complemento)
+                    const updatedFinalData = finalData.map(finalRow => {
+                        const finalKey = (finalRow.No_Orden || "").trim();
+                        const pdfRow = pdfMap.get(finalKey);
+
+                        if (pdfRow) {
+                            updatedCount++;
+                            // Sobrescribir solo los campos del PDF si existen
+                            return {
+                                ...finalRow,
+                                Descripcion_PDF: pdfRow["Descripción"] || finalRow.Descripcion_PDF,
+                                Justificacion_PDF: pdfRow["Justificación"] || finalRow.Justificacion_PDF,
+                                Fundamento_Legal_PDF: pdfRow["Fundamento Legal"] || finalRow.Fundamento_Legal_PDF,
+                                Codigo: pdfRow.Código || finalRow.Codigo,
+                            };
+                        }
+                        return finalRow;
+                    });
+
+                    setFinalData(updatedFinalData);
+                    
+                    // Limpiar Área 2
+                    setPdfData(Array(5).fill({})); 
+                    incrementEdits();
+                    
+                    showNotification({ message: `¡Complementación exitosa! Se actualizaron ${updatedCount} caso(s) en el Área de Revisión.`, type: 'success' });
+
+                } catch (error) {
+                    console.error("Error al procesar los datos del PDF:", error);
+                    showNotification({ message: `Error al procesar los datos del PDF: ${error.message}`, type: 'error' });
+                }
+            }, [pdfData, finalData, incrementEdits, showNotification]);
 
             // --- Handlers de Datos ---
             const updateReviewRow = useCallback((noOrden, newValues) => {
@@ -1336,28 +1398,31 @@
                 incrementEdits();
             }, [trackingData, incrementEdits, showNotification]);
 
-            // --- Exportar para Mail Merge ---
+            // --- Exportar para Mail Merge (CRÍTICO: FORMATO) ---
             const exportForMailMerge = useCallback((dataToExport) => {
                 if (dataToExport.length === 0) {
                     showNotification({ message: 'No hay datos para exportar.', type: 'warning' });
                     return;
                 }
 
-                const mailMergeHeaders = [
-                    'No_Orden', 'Fecha_Neg', 'No_Cedula', 'Nombre', 'EPS', 'Programa', 'Motivo_Negacion', 
-                    'Descripcion_PDF', 'Justificacion_PDF', 'Fundamento_Legal_PDF', 'Tipo_Carta', 'Radicado_Comp',
-                    'EMAIL', 'CELULAR', 'Fecha_Asignacion', 'EJECUTIVO', 'REGIONAL'
-                ];
+                // **CRÍTICO: Usar el formato exacto requerido por la macro.**
+                const mailMergeHeaders = MAIL_MERGE_HEADERS;
                 
                 const exportableData = dataToExport.map(row => {
                     const template = templates.find(t => t.id === row.Tipo_Carta);
                     const templateName = template ? template.name : 'Sin Plantilla';
 
                     return mailMergeHeaders.reduce((acc, header) => {
+                        const rowValue = row[header] || '';
+                        
                         if (header === 'Tipo_Carta') {
                             acc[header] = templateName;
-                        } else {
-                            acc[header] = row[header] || '';
+                        } else if (header === 'Fecha_Neg') {
+                            // Asegura formato de fecha simple si existe, aunque Excel se encarga del formato
+                            acc[header] = rowValue.split(' ')[0]; 
+                        }
+                         else {
+                            acc[header] = rowValue;
                         }
                         return acc;
                     }, {});
@@ -1439,33 +1504,33 @@
                             data={portalData}
                             onDataChange={setPortalData}
                             onProcess={processPortalData}
-                            processButtonText="Pasar al Área de Revisión"
+                            processButtonText="1. Enviar a Revisión (Área 3)"
                         />
-                        
-                        {/* Área 2: Datos del PDF (Soporte) */}
+
+                        {/* Área 2: Datos del PDF */}
                         <DataInputArea
                             id="area2"
-                            title="Área 2: Pegar Datos del PDF (Soporte)"
+                            title="Área 2: Pegar Datos del PDF (Complemento)"
                             headers={PDF_HEADERS}
                             data={pdfData}
                             onDataChange={setPdfData}
-                            onProcess={processPortalData}
-                            processButtonText="Pasar al Área de Revisión"
+                            onProcess={processPdfData}
+                            processButtonText="2. Complementar Revisión (Área 3)"
                         />
                     </div>
 
                     <hr className="border-border-color" />
 
-                    {/* Área 3: Revisión Final */}
-                    <ReviewArea
+                    {/* Área 3: Revisión Final y Exportación */}
+                    <ReviewArea 
                         data={finalData}
                         templates={templates}
                         updateRow={updateReviewRow}
                         incrementEdits={incrementEdits}
                         onSendToTracking={sendToTracking}
-                        onPreview={(row) => { setPreviewData(row); setIsPreviewModalOpen(true); }}
+                        onPreview={setPreviewData}
                         onExportForMailMerge={exportForMailMerge}
-                        onClearReviewData={() => { setFinalData([]); showNotification({ message: 'Área de Revisión limpiada.', type: 'info' }); incrementEdits(); }}
+                        onClearReviewData={() => {setFinalData([]); incrementEdits();}}
                         sortConfig={sortConfigReview}
                         setSortConfig={setSortConfigReview}
                     />
@@ -1479,34 +1544,30 @@
                         updateRow={updateTrackingRow}
                         incrementEdits={incrementEdits}
                         onArchive={archiveTrackingCases}
-                        onExportToExcel={(data, title) => exportDetailedReport([], data, [])}
-                        canArchive={true}
-                        statusOptions={TRACKING_STATUSES}
+                        onExportToExcel={(data, title) => exportDetailedReport([], data, [])} // Usa el reporte detallado para seguimiento
                         sortConfig={sortConfigTracking}
                         setSortConfig={setSortConfigTracking}
                     />
 
                     <hr className="border-border-color" />
 
-                    {/* Área 5: Casos Archivados */}
+                    {/* Área 5: Archivo */}
                     <TrackingArea
-                        title="Área 5: Casos Archivados"
+                        title="Área 5: Archivo"
                         data={archivedData}
                         updateRow={updateArchivedRow}
                         incrementEdits={incrementEdits}
-                        onArchive={() => showNotification({ message: 'Los casos archivados no se pueden mover.', type: 'warning' })}
-                        onExportToExcel={(data, title) => exportDetailedReport([], [], data)}
+                        onArchive={() => showNotification({ message: 'Los casos archivados no se pueden archivar más.', type: 'info' })}
+                        onExportToExcel={(data, title) => exportDetailedReport([], [], data)} // Usa el reporte detallado para archivo
                         canArchive={false}
-                        statusOptions={TRACKING_STATUSES}
                         sortConfig={sortConfigArchived}
                         setSortConfig={setSortConfigArchived}
                     />
-
-                    <div className="h-10"></div> {/* Espacio extra al final */}
                 </div>
             );
         }
 
+        // Renderiza la aplicación
         ReactDOM.createRoot(document.getElementById('root')).render(<App />);
     </script>
 </body>
