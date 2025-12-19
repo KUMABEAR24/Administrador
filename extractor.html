@@ -3,12 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Extractor Profesional de Datos PDF v3.0 (Stable)</title>
+    <title>Extractor Profesional PDF v3.1 (Hotfix)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        // Configuración para silenciar advertencias no críticas de Tailwind en consola
+        tailwind.config = {
+            theme: { extend: { colors: { primary: '#4f46e5' } } }
+        }
+    </script>
     <style>
         body { font-family: 'Inter', sans-serif; }
         .loader { border-top-color: #4f46e5; animation: spin 1s linear infinite; }
@@ -18,7 +24,6 @@
         .highlight-error { background-color: rgba(248, 113, 113, 0.15); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.2); }
         .version-tag { position: fixed; right: 16px; bottom: 8px; z-index: 50; font-size: 0.85rem; font-weight: bold; background: #4f46e5; color: #fff; padding: 4px 10px; border-radius: 6px; opacity: 0.8; }
         
-        /* Scrollbar personalizada para la tabla */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #1f2937; }
         ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
@@ -30,7 +35,7 @@
     <div class="w-full max-w-7xl mx-auto bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-8 border border-gray-700">
         <header class="text-center mb-8">
             <h1 class="text-3xl md:text-4xl font-bold text-white mb-3 tracking-tight">Extractor de Datos Clínicos & Legales</h1>
-            <p class="text-gray-400 mb-6 text-sm md:text-base">Procesamiento inteligente de PDFs mediante IA Generativa.</p>
+            <p class="text-gray-400 mb-6 text-sm md:text-base">Procesamiento inteligente de PDFs con IA Generativa (Google Gemini)</p>
             
             <div class="bg-gray-700/50 rounded-lg px-5 py-4 text-left text-sm text-gray-300 border border-gray-600 shadow-inner">
                 <strong class="text-indigo-400 block mb-2">Protocolo de ejecución:</strong>
@@ -38,7 +43,7 @@
                     <li>Ingrese su <strong>API Key de Google Gemini</strong>.</li>
                     <li>Cargue el archivo <strong>JSON</strong> maestro de códigos.</li>
                     <li>Seleccione o arrastre los archivos <strong>PDF</strong> a procesar.</li>
-                    <li>Ejecute la extracción y espere los resultados en la tabla inferior.</li>
+                    <li>Ejecute la extracción.</li>
                 </ol>
             </div>
         </header>
@@ -49,11 +54,8 @@
                     <label class="block mb-2 text-xs font-bold uppercase tracking-wider text-gray-400">Credencial API (Gemini)</label>
                     <div class="relative">
                         <input type="password" id="api-key" placeholder="Pegue su API Key aquí..." class="w-full bg-gray-900 text-white border border-gray-600 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"/>
-                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                            <svg class="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a2 2 0 012 2v6a2 2 0 01-2 2h-6a2 2 0 01-2-2V9a2 2 0 012-2h1v2a2 2 0 01-2 2v6h6v-6a2 2 0 01-2-2V9a2 2 0 00-2-2" /></svg>
-                        </div>
                     </div>
-                    <p id="api-key-error" class="text-red-400 text-xs mt-2 hidden flex items-center"><span class="mr-1">⚠</span> La API Key es obligatoria para conectar con el motor de IA.</p>
+                    <p id="api-key-error" class="text-red-400 text-xs mt-2 hidden flex items-center"><span class="mr-1">⚠</span> La API Key es obligatoria.</p>
                 </div>
                 <div>
                     <label class="block mb-2 text-xs font-bold uppercase tracking-wider text-gray-400">Base de Conocimiento (JSON)</label>
@@ -73,7 +75,6 @@
                             </svg>
                         </div>
                         <span class="text-base font-medium text-gray-200">Seleccionar archivos PDF</span>
-                        <span class="text-xs text-gray-500 mt-1">o arrastrar y soltar aquí</span>
                         <input type="file" id="pdf-files" multiple accept=".pdf" class="hidden">
                     </label>
                     <p id="file-info" class="mt-4 text-sm font-medium text-indigo-300 min-h-[1.25rem]"></p>
@@ -81,7 +82,7 @@
             </div>
 
             <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
-                <button id="process-btn" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg shadow-indigo-500/30 transition-all duration-300 flex items-center justify-center gap-2 disabled:bg-gray-600 disabled:text-gray-400 disabled:shadow-none disabled:cursor-not-allowed transform hover:-translate-y-0.5 active:translate-y-0">
+                <button id="process-btn" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg shadow-indigo-500/30 transition-all duration-300 flex items-center justify-center gap-2 disabled:bg-gray-600 disabled:text-gray-400 disabled:shadow-none disabled:cursor-not-allowed">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd" /></svg>
                     <span>Iniciar Extracción</span>
                 </button>
@@ -101,11 +102,10 @@
             </div>
             
             <div id="error-message" class="hidden mb-6 bg-red-900/30 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg text-sm flex items-start gap-2">
-                <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 <span id="error-text"></span>
             </div>
 
-            <div id="results-container" class="hidden mt-8 animation-fade-in">
+            <div id="results-container" class="hidden mt-8">
                 <div class="flex justify-between items-end mb-4">
                     <h2 class="text-xl font-bold text-white flex items-center gap-2">
                         <span class="w-2 h-6 bg-indigo-500 rounded-sm"></span>
@@ -129,11 +129,11 @@
             </div>
         </main>
     </div>
-    <div class="version-tag">Dev: Expert v3.0</div>
+    <div class="version-tag">v3.1 Stable</div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Configuración del Worker de PDF.js (Versión coincidente estricta)
+            // Configuración del Worker de PDF.js
             pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.js`;
 
             // Referencias DOM
@@ -181,7 +181,6 @@
                 dom.jsonCodesInput.addEventListener('change', handleJsonUpload);
                 dom.fileInput.addEventListener('change', (e) => updateFiles(e.target.files));
                 
-                // Drag & Drop
                 ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
                     dom.uploadArea.addEventListener(eventName, preventDefaults, false);
                 });
@@ -251,7 +250,6 @@
             async function startProcessing() {
                 const apiKey = dom.apiKeyInput.value.trim();
                 
-                // Validaciones
                 if (!apiKey) {
                     dom.apiKeyInput.classList.add('border-red-500', 'ring-2', 'ring-red-500');
                     dom.apiKeyError.classList.remove('hidden');
@@ -275,11 +273,11 @@
                     
                     try {
                         const pdfText = await extractPdfText(file);
-                        const aiData = await queryGemini(pdfText, apiKey);
+                        const aiData = await queryGeminiWithFallback(pdfText, apiKey);
                         renderRow(file.name, aiData);
                     } catch (error) {
                         console.error(error);
-                        renderRow(file.name, { error: error.message });
+                        renderRow(file.name, { error: `Error AI: ${error.message}` });
                     }
                 }
 
@@ -299,7 +297,7 @@
                 dom.statusText.classList.toggle('hidden', !processing);
                 if (processing) {
                     dom.errorMessage.classList.add('hidden');
-                    dom.resultsTableBody.innerHTML = ''; // Limpiar tabla anterior
+                    dom.resultsTableBody.innerHTML = '';
                     dom.resultsContainer.classList.add('hidden');
                 }
             }
@@ -319,7 +317,6 @@
                     for (let i = 1; i <= pdf.numPages; i++) {
                         const page = await pdf.getPage(i);
                         const content = await page.getTextContent();
-                        // Mejora: unir con espacio para evitar palabras pegadas
                         const strings = content.items.map(item => item.str);
                         fullText += strings.join(' ') + '\n';
                     }
@@ -329,64 +326,64 @@
                 }
             }
 
-            // --- CONEXIÓN IA (GEMINI) ---
-            async function queryGemini(text, key) {
-                // Configuración: Usamos gemini-1.5-flash por estabilidad y velocidad
-                const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+            // --- CONEXIÓN IA (GEMINI) CON FALLBACK ---
+            async function queryGeminiWithFallback(text, key) {
+                // Primero intentamos con el modelo más rápido y actual
+                try {
+                    return await queryGemini(text, key, 'gemini-1.5-flash-latest');
+                } catch (error) {
+                    console.warn("Fallo gemini-1.5-flash-latest, intentando con gemini-pro...", error);
+                    // Si falla (por ejemplo error 404), intentamos con el modelo estándar Pro
+                    return await queryGemini(text, key, 'gemini-pro');
+                }
+            }
+
+            async function queryGemini(text, key, modelVersion) {
+                const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${modelVersion}:generateContent?key=${key}`;
                 
                 const prompt = `
-                    Actúa como un analista experto en auditoría médica. Tu tarea es extraer datos estructurados de un documento de negación de servicios de salud.
-                    Analiza el texto proporcionado y extrae EXCLUSIVAMENTE un objeto JSON con estos campos:
-                    1. "codigo": El código CUPS o numérico del procedimiento negado (ej. 123456). Si hay varios, toma el principal.
-                    2. "justificacion": Resumen claro de la razón clínica/técnica de la negación.
-                    3. "fundamento_legal": Referencia exacta a la cláusula, artículo o sección del contrato mencionada.
+                    Actúa como un analista experto en auditoría médica. Extrae datos de este documento de negación.
+                    Devuelve EXCLUSIVAMENTE un JSON con:
+                    1. "codigo": Código del procedimiento (ej. 123456).
+                    2. "justificacion": Razón clínica.
+                    3. "fundamento_legal": Cláusula del contrato.
 
-                    Reglas críticas:
-                    - Si no encuentras un dato, usa el valor exacto: "No encontrado".
-                    - NO inventes información.
-                    - Tu respuesta debe ser SOLO el JSON válido, sin bloques de código markdown (\`\`\`).
+                    Si no encuentras algo, usa "No encontrado".
                     
-                    Texto del documento:
+                    Texto:
                     ${text.substring(0, 30000)} 
                 `;
 
-                try {
-                    const response = await fetch(ENDPOINT, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            contents: [{ parts: [{ text: prompt }] }],
-                            generationConfig: {
-                                temperature: 0.2, // Baja temperatura para mayor precisión
-                                responseMimeType: "application/json" // Forzar modo JSON
-                            }
-                        })
-                    });
+                const response = await fetch(ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: {
+                            temperature: 0.1,
+                            responseMimeType: "application/json"
+                        }
+                    })
+                });
 
-                    if (!response.ok) {
-                        const err = await response.json();
-                        throw new Error(err.error?.message || `Error API (${response.status})`);
-                    }
-
-                    const json = await response.json();
-                    const candidate = json.candidates?.[0]?.content?.parts?.[0]?.text;
-                    
-                    if (!candidate) throw new Error("La IA no devolvió contenido.");
-
-                    // Limpieza agresiva para asegurar JSON válido
-                    const cleanJsonStr = candidate.replace(/```json/g, '').replace(/```/g, '').trim();
-                    const data = JSON.parse(cleanJsonStr);
-
-                    // Cruce con base de datos local
-                    const codeDesc = state.codesDict && data.codigo ? 
-                                   (state.codesDict[data.codigo] || "Código no existe en BD") : 
-                                   "---";
-
-                    return { ...data, descripcion: codeDesc };
-
-                } catch (e) {
-                    throw new Error(`Fallo IA: ${e.message}`);
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error?.message || `Error API (${response.status})`);
                 }
+
+                const json = await response.json();
+                const candidate = json.candidates?.[0]?.content?.parts?.[0]?.text;
+                
+                if (!candidate) throw new Error("La IA no devolvió contenido.");
+
+                const cleanJsonStr = candidate.replace(/```json/g, '').replace(/```/g, '').trim();
+                const data = JSON.parse(cleanJsonStr);
+
+                const codeDesc = state.codesDict && data.codigo ? 
+                               (state.codesDict[data.codigo] || "Código no existe en BD") : 
+                               "---";
+
+                return { ...data, descripcion: codeDesc };
             }
 
             // --- RENDERIZADO ---
@@ -400,13 +397,13 @@
                         <td colspan="4" class="px-6 py-4"><span class="highlight-error px-2 py-1 rounded text-xs font-bold">ERROR</span> <span class="text-red-300 text-sm ml-2">${data.error}</span></td>
                     `;
                 } else {
-                    const isNotFound = (val) => val === 'No encontrado' || val === 'Código no existe en BD';
+                    const isNotFound = (val) => !val || val === 'No encontrado' || val === 'Código no existe en BD';
                     
                     const cell = (text, checkWarn = false) => {
                         const warn = checkWarn && isNotFound(text);
                         return `<td class="px-6 py-4 align-top ${warn ? 'text-yellow-500' : ''}">
                             ${warn ? '<span class="highlight-warning px-2 py-0.5 rounded text-xs font-bold inline-block mb-1">ATENCIÓN</span><br>' : ''}
-                            ${text}
+                            ${text || 'No encontrado'}
                         </td>`;
                     };
 
