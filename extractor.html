@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Extractor Blindado PDF v3.3</title>
+    <title>Extractor PDF v5.0 (Full Model Scanner)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { theme: { extend: { colors: { primary: '#4f46e5' } } } }
@@ -14,65 +14,74 @@
         body { font-family: 'Inter', sans-serif; }
         .loader { border-top-color: #4f46e5; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .highlight-warning { background-color: rgba(251, 191, 36, 0.15); color: #facc15; }
-        .highlight-error { background-color: rgba(248, 113, 113, 0.15); color: #f87171; }
-        /* Scrollbar oscura */
+        /* Scrollbar personalizada */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #1f2937; }
         ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        .log-entry { font-family: monospace; font-size: 0.75rem; border-left: 2px solid #4b5563; padding-left: 8px; margin-bottom: 4px; }
+        .log-success { border-color: #4ade80; color: #4ade80; }
+        .log-fail { border-color: #f87171; color: #9ca3af; }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-200 min-h-screen flex items-center justify-center p-4">
 
     <div class="w-full max-w-7xl mx-auto bg-gray-800 rounded-2xl shadow-2xl p-6 border border-gray-700">
         <header class="text-center mb-6">
-            <h1 class="text-3xl font-bold text-white mb-2">Extractor de Datos v3.3 (Anti-Bloqueo)</h1>
-            <p class="text-gray-400 text-sm">Incluye pausa automática para evitar errores de cuota de Google.</p>
+            <h1 class="text-2xl md:text-3xl font-bold text-white mb-2">Extractor Universal v5.0</h1>
+            <p class="text-gray-400 text-sm">Escaneo total de modelos de Gemini para garantizar conexión.</p>
         </header>
 
         <main>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div>
-                    <label class="block mb-1 text-xs font-bold text-gray-400">API Key Gemini</label>
-                    <input type="password" id="api-key" class="w-full bg-gray-900 text-white border border-gray-600 rounded p-2 focus:ring-2 focus:ring-indigo-500"/>
+                    <label class="block mb-1 text-xs font-bold text-indigo-400 uppercase">1. API Key Gemini</label>
+                    <input type="password" id="api-key" placeholder="Pega tu clave aquí" class="w-full bg-gray-900 text-white border border-gray-600 rounded p-2 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"/>
                 </div>
                 <div>
-                    <label class="block mb-1 text-xs font-bold text-gray-400">Base de Datos (JSON)</label>
+                    <label class="block mb-1 text-xs font-bold text-indigo-400 uppercase">2. Base de Datos (JSON)</label>
                     <input type="file" id="json-codes" accept="application/json" class="block w-full text-sm text-gray-400 file:bg-indigo-600 file:text-white file:border-0 file:rounded file:px-2 file:py-1 cursor-pointer bg-gray-900 border border-gray-600 rounded"/>
                     <span id="json-status" class="text-xs mt-1 block h-4"></span>
                 </div>
             </div>
             
-            <div id="upload-area" class="bg-gray-800 border-2 border-dashed border-gray-600 rounded-xl p-6 text-center hover:bg-gray-700/50 cursor-pointer mb-6 transition-colors">
-                <p class="text-gray-300 font-medium">Click o arrastra tus PDFs aquí</p>
+            <div id="upload-area" class="bg-gray-800 border-2 border-dashed border-gray-600 rounded-xl p-6 text-center hover:bg-gray-700/50 cursor-pointer mb-6 transition-colors group">
+                <div class="mb-2 text-indigo-400 group-hover:text-indigo-300">
+                    <svg class="w-10 h-10 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                </div>
+                <p class="text-gray-300 font-medium">3. Arrastra tus PDFs aquí</p>
                 <input type="file" id="pdf-files" multiple accept=".pdf" class="hidden">
                 <p id="file-info" class="mt-2 text-sm text-indigo-400 min-h-[1.25rem]"></p>
             </div>
 
             <div class="flex justify-center gap-4 mb-6">
-                <button id="process-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-8 rounded shadow-lg disabled:bg-gray-600 disabled:cursor-not-allowed transition-all">
-                    INICIAR EXTRACCIÓN
+                <button id="process-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-8 rounded shadow-lg disabled:bg-gray-600 disabled:cursor-not-allowed transition-all transform hover:scale-105 active:scale-95">
+                    ESCANEAR Y EXTRAER
                 </button>
                 <button id="clear-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded border border-gray-600 transition-all">
-                    LIMPIAR
+                    REINICIAR
                 </button>
             </div>
 
-            <div id="progress-container" class="hidden mb-4">
-                <div class="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+            <div id="progress-container" class="hidden mb-4 bg-gray-900 rounded-lg p-4 border border-gray-700">
+                <div class="flex justify-between text-xs text-gray-400 mb-1">
+                    <span id="status-text">Iniciando...</span>
+                    <span id="model-badge" class="font-mono">Buscando modelo...</span>
+                </div>
+                <div class="w-full bg-gray-700 rounded-full h-2 overflow-hidden mb-3">
                     <div id="progress-bar" class="bg-indigo-500 h-2 w-0 transition-all duration-300"></div>
                 </div>
-                <p id="status-text" class="text-center text-xs text-gray-400 mt-1">Esperando...</p>
+                <div class="text-xs text-gray-500 font-bold mb-1">REGISTRO DE CONEXIÓN:</div>
+                <div id="logs" class="h-24 overflow-y-auto bg-black/30 p-2 rounded border border-gray-800"></div>
             </div>
 
-            <div id="results-container" class="hidden mt-6">
-                <div class="overflow-x-auto bg-gray-900 rounded border border-gray-700">
+            <div id="results-container" class="hidden mt-6 animate-fade-in">
+                <div class="overflow-x-auto bg-gray-900 rounded border border-gray-700 shadow-xl">
                     <table class="min-w-full text-sm text-left text-gray-300">
                         <thead class="text-xs text-gray-400 uppercase bg-gray-800 border-b border-gray-700">
                             <tr>
                                 <th class="px-4 py-3">Archivo</th>
                                 <th class="px-4 py-3">Código</th>
-                                <th class="px-4 py-3">Descripción (BD)</th>
+                                <th class="px-4 py-3">Descripción</th>
                                 <th class="px-4 py-3 w-1/3">Justificación</th>
                                 <th class="px-4 py-3">Fundamento</th>
                             </tr>
@@ -99,29 +108,49 @@
             prog: document.getElementById('progress-container'),
             bar: document.getElementById('progress-bar'),
             status: document.getElementById('status-text'),
+            modelBadge: document.getElementById('model-badge'),
+            logs: document.getElementById('logs'),
             resCont: document.getElementById('results-container'),
             resBody: document.getElementById('results-body')
         };
 
-        let appData = { files: [], codes: null, processing: false };
+        let state = { files: [], codes: null, activeModel: null };
 
-        // Inicialización
+        // --- LISTA COMPLETA DE MODELOS A PROBAR ---
+        const ALL_MODELS = [
+            'gemini-1.5-flash',           // Estándar actual rápido
+            'gemini-1.5-flash-latest',    // Alias latest
+            'gemini-1.5-pro',             // Estándar potente
+            'gemini-1.5-pro-latest',      // Alias latest pro
+            'gemini-1.0-pro',             // Versión estable anterior
+            'gemini-pro',                 // Alias legacy (a veces funciona)
+            'gemini-1.5-flash-001',       // Versiones numeradas
+            'gemini-1.5-flash-002',
+            'gemini-1.5-flash-8b',        // Experimental rápido
+            'gemini-1.5-pro-001',
+            'gemini-1.5-pro-002'
+        ];
+
         (function init() {
-            ui.key.value = localStorage.getItem('gemini_key_v3') || '';
-            
-            ui.key.addEventListener('input', e => localStorage.setItem('gemini_key_v3', e.target.value.trim()));
+            ui.key.value = localStorage.getItem('gemini_key_v5') || '';
+            ui.key.addEventListener('input', e => localStorage.setItem('gemini_key_v5', e.target.value.trim()));
             ui.json.addEventListener('change', loadJson);
             ui.files.addEventListener('change', e => setFiles(e.target.files));
             ui.drop.addEventListener('click', () => ui.files.click());
-            
             ['dragenter','dragover','dragleave','drop'].forEach(ev => {
                 ui.drop.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); });
             });
             ui.drop.addEventListener('drop', e => setFiles(e.dataTransfer.files));
-            
-            ui.btn.addEventListener('click', processFiles);
+            ui.btn.addEventListener('click', startProcess);
             ui.clear.addEventListener('click', reset);
         })();
+
+        function addLog(msg, type = 'neutral') {
+            const div = document.createElement('div');
+            div.textContent = msg;
+            div.className = `log-entry ${type === 'success' ? 'log-success' : type === 'fail' ? 'log-fail' : ''}`;
+            ui.logs.prepend(div);
+        }
 
         function loadJson(e) {
             const f = e.target.files[0];
@@ -129,11 +158,11 @@
             const r = new FileReader();
             r.onload = ev => {
                 try {
-                    appData.codes = JSON.parse(ev.target.result);
+                    state.codes = JSON.parse(ev.target.result);
                     ui.jsonStatus.textContent = "Base de datos cargada OK";
                     ui.jsonStatus.className = "text-xs mt-1 block h-4 text-green-400";
                 } catch(err) {
-                    ui.jsonStatus.textContent = "Error: JSON inválido";
+                    ui.jsonStatus.textContent = "Error JSON";
                     ui.jsonStatus.className = "text-xs mt-1 block h-4 text-red-400";
                 }
             };
@@ -141,58 +170,54 @@
         }
 
         function setFiles(list) {
-            appData.files = Array.from(list).filter(f => f.type === 'application/pdf');
-            ui.info.textContent = `${appData.files.length} Archivos PDF listos`;
+            state.files = Array.from(list).filter(f => f.type === 'application/pdf');
+            ui.info.textContent = `${state.files.length} Archivos PDF`;
         }
 
         function reset() {
-            appData = { files: [], codes: null, processing: false };
+            state = { files: [], codes: null, activeModel: null };
             ui.files.value = '';
             ui.json.value = '';
             ui.info.textContent = '';
             ui.resBody.innerHTML = '';
             ui.resCont.classList.add('hidden');
             ui.prog.classList.add('hidden');
+            ui.logs.innerHTML = '';
             ui.jsonStatus.textContent = '';
         }
 
-        async function processFiles() {
-            if (!ui.key.value) return alert("Falta la API Key");
-            if (!appData.codes) return alert("Falta el JSON de códigos");
-            if (appData.files.length === 0) return alert("No hay PDFs");
+        async function startProcess() {
+            if (!ui.key.value) return alert("Falta API Key");
+            if (!state.codes) return alert("Falta JSON");
+            if (state.files.length === 0) return alert("Faltan PDFs");
 
             ui.btn.disabled = true;
             ui.prog.classList.remove('hidden');
             ui.resCont.classList.remove('hidden');
             ui.resBody.innerHTML = '';
-            
-            const total = appData.files.length;
-            
+            ui.logs.innerHTML = '';
+
+            const total = state.files.length;
+
             for (let i = 0; i < total; i++) {
-                const file = appData.files[i];
-                ui.status.textContent = `Procesando ${i+1}/${total}: ${file.name}...`;
+                const file = state.files[i];
+                ui.status.textContent = `Procesando ${i+1}/${total}: ${file.name}`;
                 ui.bar.style.width = `${((i)/total)*100}%`;
 
                 try {
-                    // 1. Extraer texto
                     const text = await extractText(file);
                     
-                    // 2. Validar si es imagen
-                    if (text.length < 50) throw new Error("PDF Escaneado (Sin texto detectado)");
-
-                    // 3. Consultar IA (con reintentos)
-                    const data = await askGemini(text, ui.key.value);
+                    // La magia ocurre aquí: Negociación de modelo
+                    const data = await smartQuery(text, ui.key.value);
                     
-                    // 4. Renderizar
                     addRow(file.name, data);
-
-                    // 5. PAUSA ANTI-BLOQUEO (2 segundos)
-                    if (i < total - 1) await new Promise(r => setTimeout(r, 2000));
-
                 } catch (e) {
-                    console.error(e);
+                    addLog(`Error fatal en ${file.name}: ${e.message}`, 'fail');
                     addRow(file.name, { error: e.message });
                 }
+                
+                // Pausa anti-bloqueo
+                if (i < total - 1) await new Promise(r => setTimeout(r, 1500));
             }
 
             ui.bar.style.width = '100%';
@@ -208,24 +233,42 @@
                 const content = await page.getTextContent();
                 full += content.items.map(item => item.str).join(" ") + "\n";
             }
+            if (full.length < 20) throw new Error("PDF vacío o escaneado (sin texto)");
             return full;
         }
 
-        async function askGemini(text, key) {
-            // Usamos el modelo estable actual
-            const model = "gemini-1.5-flash"; 
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
-            
-            const prompt = `
-                Analiza este documento médico. Extrae UNICAMENTE un JSON:
-                {
-                    "codigo": "Código del procedimiento (solo números o alfanumérico corto)",
-                    "justificacion": "Motivo médico de la negación",
-                    "fundamento_legal": "Cláusula o artículo mencionado"
+        async function smartQuery(text, key) {
+            // Si ya tenemos un modelo que funciona, lo usamos directo
+            if (state.activeModel) {
+                return await callGemini(text, key, state.activeModel);
+            }
+
+            // Si no, probamos la lista
+            for (const model of ALL_MODELS) {
+                try {
+                    ui.modelBadge.textContent = `Probando: ${model}...`;
+                    addLog(`Intentando conectar con: ${model}`);
+                    
+                    const result = await callGemini(text, key, model);
+                    
+                    // ¡Éxito!
+                    state.activeModel = model;
+                    ui.modelBadge.textContent = `Conectado: ${model}`;
+                    ui.modelBadge.className = "font-mono text-green-400 font-bold";
+                    addLog(`¡Conexión establecida con ${model}!`, 'success');
+                    return result;
+
+                } catch (e) {
+                    addLog(`Fallo ${model}: ${e.message}`, 'fail');
+                    // Continuar al siguiente modelo...
                 }
-                Si no encuentras el dato pon "No encontrado".
-                Texto: ${text.substring(0, 25000)}
-            `;
+            }
+            throw new Error("Ningún modelo de Gemini aceptó tu llave (404/403).");
+        }
+
+        async function callGemini(text, key, model) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+            const prompt = `Extrae SOLO un JSON: {"codigo":"...","justificacion":"...","fundamento_legal":"..."}. Si no hay dato usa "No encontrado". Texto: ${text.substring(0, 30000)}`;
 
             const resp = await fetch(url, {
                 method: 'POST',
@@ -236,23 +279,20 @@
                 })
             });
 
-            if (resp.status === 429) throw new Error("Cuota excedida (Espera un minuto)");
-            if (!resp.ok) throw new Error(`Error API: ${resp.status}`);
+            if (!resp.ok) {
+                const err = await resp.json().catch(() => ({}));
+                throw new Error(err.error?.message || `Status ${resp.status}`);
+            }
 
             const json = await resp.json();
-            const rawText = json.candidates?.[0]?.content?.parts?.[0]?.text;
-            
-            if (!rawText) throw new Error("La IA no respondió nada");
+            const raw = json.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!raw) throw new Error("Respuesta vacía");
 
-            // Limpieza robusta usando Regex para encontrar el primer objeto JSON válido
-            const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-            if (!jsonMatch) throw new Error("La IA no devolvió un JSON válido");
+            const match = raw.match(/\{[\s\S]*\}/);
+            if (!match) throw new Error("No es JSON");
 
-            const data = JSON.parse(jsonMatch[0]);
-            
-            // Cruzar con BD
-            data.descripcion = appData.codes[data.codigo] || "Código no en BD";
-            
+            const data = JSON.parse(match[0]);
+            data.descripcion = state.codes && data.codigo ? (state.codes[data.codigo] || "Código no en BD") : "---";
             return data;
         }
 
@@ -261,15 +301,11 @@
             tr.className = 'border-b border-gray-800 hover:bg-gray-800/50';
             
             if (data.error) {
-                tr.innerHTML = `
-                    <td class="px-4 py-3 text-white">${name}</td>
-                    <td colspan="4" class="px-4 py-3"><span class="highlight-error px-2 py-1 rounded text-xs font-bold">ERROR</span> ${data.error}</td>
-                `;
+                tr.innerHTML = `<td class="px-4 py-3 text-white">${name}</td><td colspan="4" class="px-4 py-3 text-red-400 font-bold">ERROR: ${data.error}</td>`;
             } else {
-                const warn = t => (!t || t === 'No encontrado' || t === 'Código no en BD') ? 'text-yellow-500' : 'text-gray-300';
-                
+                const warn = t => (!t || t.includes('No encontrado') || t.includes('no en BD')) ? 'text-yellow-500' : 'text-gray-300';
                 tr.innerHTML = `
-                    <td class="px-4 py-3 text-white font-medium">${name.replace('.pdf','')}</td>
+                    <td class="px-4 py-3 text-white">${name.replace('.pdf','')}</td>
                     <td class="px-4 py-3 ${warn(data.codigo)}">${data.codigo || 'NF'}</td>
                     <td class="px-4 py-3 ${warn(data.descripcion)}">${data.descripcion}</td>
                     <td class="px-4 py-3 ${warn(data.justificacion)}">${data.justificacion || 'NF'}</td>
