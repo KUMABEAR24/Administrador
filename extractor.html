@@ -3,422 +3,281 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Extractor Profesional PDF v3.2 (Stable Fix)</title>
+    <title>Extractor Blindado PDF v3.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = {
-            theme: { extend: { colors: { primary: '#4f46e5' } } }
-        }
+        tailwind.config = { theme: { extend: { colors: { primary: '#4f46e5' } } } }
     </script>
     <script src="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
         .loader { border-top-color: #4f46e5; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .drag-over { border-color: #4f46e5; background-color: #374151; }
-        .highlight-warning { background-color: rgba(251, 191, 36, 0.15); color: #facc15; border: 1px solid rgba(251, 191, 36, 0.2); }
-        .highlight-error { background-color: rgba(248, 113, 113, 0.15); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.2); }
-        .version-tag { position: fixed; right: 16px; bottom: 8px; z-index: 50; font-size: 0.85rem; font-weight: bold; background: #4f46e5; color: #fff; padding: 4px 10px; border-radius: 6px; opacity: 0.8; }
-        
+        .highlight-warning { background-color: rgba(251, 191, 36, 0.15); color: #facc15; }
+        .highlight-error { background-color: rgba(248, 113, 113, 0.15); color: #f87171; }
+        /* Scrollbar oscura */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #1f2937; }
         ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-200 min-h-screen flex items-center justify-center p-4">
 
-    <div class="w-full max-w-7xl mx-auto bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-8 border border-gray-700">
-        <header class="text-center mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-white mb-3 tracking-tight">Extractor de Datos Clínicos & Legales</h1>
-            <p class="text-gray-400 mb-6 text-sm md:text-base">Procesamiento inteligente de PDFs con IA Generativa (Google Gemini)</p>
-            
-            <div class="bg-gray-700/50 rounded-lg px-5 py-4 text-left text-sm text-gray-300 border border-gray-600 shadow-inner">
-                <strong class="text-indigo-400 block mb-2">Protocolo de ejecución:</strong>
-                <ol class="list-decimal ml-5 space-y-1 marker:text-gray-500">
-                    <li>Ingrese su <strong>API Key de Google Gemini</strong>.</li>
-                    <li>Cargue el archivo <strong>JSON</strong> maestro de códigos.</li>
-                    <li>Seleccione o arrastre los archivos <strong>PDF</strong> a procesar.</li>
-                    <li>Ejecute la extracción.</li>
-                </ol>
-            </div>
+    <div class="w-full max-w-7xl mx-auto bg-gray-800 rounded-2xl shadow-2xl p-6 border border-gray-700">
+        <header class="text-center mb-6">
+            <h1 class="text-3xl font-bold text-white mb-2">Extractor de Datos v3.3 (Anti-Bloqueo)</h1>
+            <p class="text-gray-400 text-sm">Incluye pausa automática para evitar errores de cuota de Google.</p>
         </header>
 
         <main>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div>
-                    <label class="block mb-2 text-xs font-bold uppercase tracking-wider text-gray-400">Credencial API (Gemini)</label>
-                    <div class="relative">
-                        <input type="password" id="api-key" placeholder="Pegue su API Key aquí..." class="w-full bg-gray-900 text-white border border-gray-600 rounded-lg py-3 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"/>
-                    </div>
-                    <p id="api-key-error" class="text-red-400 text-xs mt-2 hidden flex items-center"><span class="mr-1">⚠</span> La API Key es obligatoria.</p>
+                    <label class="block mb-1 text-xs font-bold text-gray-400">API Key Gemini</label>
+                    <input type="password" id="api-key" class="w-full bg-gray-900 text-white border border-gray-600 rounded p-2 focus:ring-2 focus:ring-indigo-500"/>
                 </div>
                 <div>
-                    <label class="block mb-2 text-xs font-bold uppercase tracking-wider text-gray-400">Base de Conocimiento (JSON)</label>
-                    <div class="relative">
-                        <input type="file" id="json-codes" accept="application/json" class="block w-full text-sm text-gray-400 file:mr-4 file:py-3 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:uppercase file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer bg-gray-900 border border-gray-600 rounded-lg"/>
-                    </div>
-                    <span id="json-codes-status" class="text-xs mt-2 block h-4"></span>
+                    <label class="block mb-1 text-xs font-bold text-gray-400">Base de Datos (JSON)</label>
+                    <input type="file" id="json-codes" accept="application/json" class="block w-full text-sm text-gray-400 file:bg-indigo-600 file:text-white file:border-0 file:rounded file:px-2 file:py-1 cursor-pointer bg-gray-900 border border-gray-600 rounded"/>
+                    <span id="json-status" class="text-xs mt-1 block h-4"></span>
                 </div>
             </div>
             
-            <div class="mb-8">
-                <div id="upload-area" class="bg-gray-800 border-2 border-dashed border-gray-600 rounded-xl p-8 text-center transition-all duration-300 hover:border-indigo-500 hover:bg-gray-700/30 group">
-                    <label for="pdf-files" class="cursor-pointer flex flex-col items-center justify-center h-full w-full">
-                        <div class="p-4 bg-gray-700 rounded-full mb-4 group-hover:bg-gray-600 transition-colors">
-                            <svg class="w-8 h-8 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m.75 12 3 3m0 0 3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-                            </svg>
-                        </div>
-                        <span class="text-base font-medium text-gray-200">Seleccionar archivos PDF</span>
-                        <input type="file" id="pdf-files" multiple accept=".pdf" class="hidden">
-                    </label>
-                    <p id="file-info" class="mt-4 text-sm font-medium text-indigo-300 min-h-[1.25rem]"></p>
-                </div>
+            <div id="upload-area" class="bg-gray-800 border-2 border-dashed border-gray-600 rounded-xl p-6 text-center hover:bg-gray-700/50 cursor-pointer mb-6 transition-colors">
+                <p class="text-gray-300 font-medium">Click o arrastra tus PDFs aquí</p>
+                <input type="file" id="pdf-files" multiple accept=".pdf" class="hidden">
+                <p id="file-info" class="mt-2 text-sm text-indigo-400 min-h-[1.25rem]"></p>
             </div>
 
-            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
-                <button id="process-btn" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg shadow-indigo-500/30 transition-all duration-300 flex items-center justify-center gap-2 disabled:bg-gray-600 disabled:text-gray-400 disabled:shadow-none disabled:cursor-not-allowed">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd" /></svg>
-                    <span>Iniciar Extracción</span>
+            <div class="flex justify-center gap-4 mb-6">
+                <button id="process-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-8 rounded shadow-lg disabled:bg-gray-600 disabled:cursor-not-allowed transition-all">
+                    INICIAR EXTRACCIÓN
                 </button>
-                <button id="clear-btn" class="w-full sm:w-auto bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-8 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 border border-gray-600">
-                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
-                    <span>Reiniciar</span>
+                <button id="clear-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded border border-gray-600 transition-all">
+                    LIMPIAR
                 </button>
             </div>
 
-            <div id="progress-container" class="w-full bg-gray-700 rounded-full h-2 hidden mb-6 overflow-hidden">
-                <div id="progress-bar" class="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full transition-all duration-500 w-0"></div>
-            </div>
-            <div id="status-text" class="text-center text-xs text-gray-400 mb-4 hidden">Procesando...</div>
-
-            <div id="loading-spinner" class="flex justify-center items-center h-12 w-full hidden mb-4">
-                <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-600 h-8 w-8"></div>
-            </div>
-            
-            <div id="error-message" class="hidden mb-6 bg-red-900/30 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg text-sm flex items-start gap-2">
-                <span id="error-text"></span>
-            </div>
-
-            <div id="results-container" class="hidden mt-8">
-                <div class="flex justify-between items-end mb-4">
-                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
-                        <span class="w-2 h-6 bg-indigo-500 rounded-sm"></span>
-                        Resultados del Análisis
-                    </h2>
+            <div id="progress-container" class="hidden mb-4">
+                <div class="w-full bg-gray-700 rounded-full h-2 overflow-hidden">
+                    <div id="progress-bar" class="bg-indigo-500 h-2 w-0 transition-all duration-300"></div>
                 </div>
-                <div class="overflow-x-auto bg-gray-900 rounded-xl border border-gray-700 shadow-xl">
+                <p id="status-text" class="text-center text-xs text-gray-400 mt-1">Esperando...</p>
+            </div>
+
+            <div id="results-container" class="hidden mt-6">
+                <div class="overflow-x-auto bg-gray-900 rounded border border-gray-700">
                     <table class="min-w-full text-sm text-left text-gray-300">
                         <thead class="text-xs text-gray-400 uppercase bg-gray-800 border-b border-gray-700">
                             <tr>
-                                <th scope="col" class="px-6 py-4 font-semibold w-1/12">Archivo</th>
-                                <th scope="col" class="px-6 py-4 font-semibold w-1/12">Código</th>
-                                <th scope="col" class="px-6 py-4 font-semibold w-3/12">Descripción (BD)</th>
-                                <th scope="col" class="px-6 py-4 font-semibold w-4/12">Justificación Médica</th>
-                                <th scope="col" class="px-6 py-4 font-semibold w-3/12">Fundamento Legal</th>
+                                <th class="px-4 py-3">Archivo</th>
+                                <th class="px-4 py-3">Código</th>
+                                <th class="px-4 py-3">Descripción (BD)</th>
+                                <th class="px-4 py-3 w-1/3">Justificación</th>
+                                <th class="px-4 py-3">Fundamento</th>
                             </tr>
                         </thead>
-                        <tbody id="results-table-body" class="divide-y divide-gray-800"></tbody>
+                        <tbody id="results-body" class="divide-y divide-gray-800"></tbody>
                     </table>
                 </div>
             </div>
         </main>
     </div>
-    <div class="version-tag">v3.2 Stable</div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Configuración del Worker de PDF.js
-            pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.js`;
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.js`;
 
-            // Referencias DOM
-            const dom = {
-                fileInput: document.getElementById('pdf-files'),
-                processBtn: document.getElementById('process-btn'),
-                clearBtn: document.getElementById('clear-btn'),
-                fileInfo: document.getElementById('file-info'),
-                progressContainer: document.getElementById('progress-container'),
-                progressBar: document.getElementById('progress-bar'),
-                statusText: document.getElementById('status-text'),
-                resultsContainer: document.getElementById('results-container'),
-                resultsTableBody: document.getElementById('results-table-body'),
-                loadingSpinner: document.getElementById('loading-spinner'),
-                errorMessage: document.getElementById('error-message'),
-                errorText: document.getElementById('error-text'),
-                uploadArea: document.getElementById('upload-area'),
-                jsonCodesInput: document.getElementById('json-codes'),
-                jsonCodesStatus: document.getElementById('json-codes-status'),
-                apiKeyInput: document.getElementById('api-key'),
-                apiKeyError: document.getElementById('api-key-error')
-            };
+        const ui = {
+            key: document.getElementById('api-key'),
+            json: document.getElementById('json-codes'),
+            jsonStatus: document.getElementById('json-status'),
+            files: document.getElementById('pdf-files'),
+            drop: document.getElementById('upload-area'),
+            btn: document.getElementById('process-btn'),
+            clear: document.getElementById('clear-btn'),
+            info: document.getElementById('file-info'),
+            prog: document.getElementById('progress-container'),
+            bar: document.getElementById('progress-bar'),
+            status: document.getElementById('status-text'),
+            resCont: document.getElementById('results-container'),
+            resBody: document.getElementById('results-body')
+        };
 
-            // Estado
-            let state = {
-                filesToProcess: [],
-                codesDict: null,
-                isProcessing: false
-            };
+        let appData = { files: [], codes: null, processing: false };
 
-            // --- INICIALIZACIÓN ---
-            function init() {
-                const savedKey = localStorage.getItem('geminiApiKey_v3');
-                if (savedKey) dom.apiKeyInput.value = savedKey;
-                bindEvents();
-            }
+        // Inicialización
+        (function init() {
+            ui.key.value = localStorage.getItem('gemini_key_v3') || '';
+            
+            ui.key.addEventListener('input', e => localStorage.setItem('gemini_key_v3', e.target.value.trim()));
+            ui.json.addEventListener('change', loadJson);
+            ui.files.addEventListener('change', e => setFiles(e.target.files));
+            ui.drop.addEventListener('click', () => ui.files.click());
+            
+            ['dragenter','dragover','dragleave','drop'].forEach(ev => {
+                ui.drop.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); });
+            });
+            ui.drop.addEventListener('drop', e => setFiles(e.dataTransfer.files));
+            
+            ui.btn.addEventListener('click', processFiles);
+            ui.clear.addEventListener('click', reset);
+        })();
 
-            function bindEvents() {
-                dom.apiKeyInput.addEventListener('input', (e) => {
-                    localStorage.setItem('geminiApiKey_v3', e.target.value.trim());
-                    dom.apiKeyError.classList.add('hidden');
-                    dom.apiKeyInput.classList.remove('border-red-500', 'ring-2', 'ring-red-500');
-                });
-
-                dom.jsonCodesInput.addEventListener('change', handleJsonUpload);
-                dom.fileInput.addEventListener('change', (e) => updateFiles(e.target.files));
-                
-                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                    dom.uploadArea.addEventListener(eventName, preventDefaults, false);
-                });
-                dom.uploadArea.addEventListener('dragenter', () => dom.uploadArea.classList.add('drag-over'));
-                dom.uploadArea.addEventListener('dragleave', () => dom.uploadArea.classList.remove('drag-over'));
-                dom.uploadArea.addEventListener('drop', handleDrop);
-
-                dom.clearBtn.addEventListener('click', resetApp);
-                dom.processBtn.addEventListener('click', startProcessing);
-            }
-
-            function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
-
-            function handleDrop(e) {
-                dom.uploadArea.classList.remove('drag-over');
-                updateFiles(e.dataTransfer.files);
-            }
-
-            function handleJsonUpload(e) {
-                const file = e.target.files[0];
-                if (!file) {
-                    state.codesDict = null;
-                    updateJsonStatus('', '');
-                    return;
-                }
-                const reader = new FileReader();
-                reader.onload = (evt) => {
-                    try {
-                        state.codesDict = JSON.parse(evt.target.result);
-                        updateJsonStatus('Base de datos cargada correctamente.', 'text-green-400');
-                    } catch (err) {
-                        state.codesDict = null;
-                        updateJsonStatus('Error: Formato JSON inválido.', 'text-red-400');
-                    }
-                };
-                reader.readAsText(file);
-            }
-
-            function updateJsonStatus(msg, colorClass) {
-                dom.jsonCodesStatus.textContent = msg;
-                dom.jsonCodesStatus.className = `text-xs mt-2 block h-4 font-medium ${colorClass}`;
-            }
-
-            function updateFiles(fileList) {
-                state.filesToProcess = Array.from(fileList).filter(f => f.type === 'application/pdf');
-                const count = state.filesToProcess.length;
-                dom.fileInfo.textContent = count > 0 ? `${count} archivo(s) listo(s)` : '';
-                dom.fileInfo.className = count > 0 ? "mt-4 text-sm font-medium text-green-400 min-h-[1.25rem]" : "mt-4 text-sm font-medium text-indigo-300 min-h-[1.25rem]";
-            }
-
-            function resetApp() {
-                dom.fileInput.value = '';
-                dom.jsonCodesInput.value = '';
-                state.filesToProcess = [];
-                state.codesDict = null;
-                state.isProcessing = false;
-                dom.resultsTableBody.innerHTML = '';
-                dom.resultsContainer.classList.add('hidden');
-                dom.errorMessage.classList.add('hidden');
-                dom.progressContainer.classList.add('hidden');
-                dom.statusText.classList.add('hidden');
-                dom.fileInfo.textContent = '';
-                updateJsonStatus('', '');
-            }
-
-            // --- LÓGICA CORE ---
-            async function startProcessing() {
-                const apiKey = dom.apiKeyInput.value.trim();
-                
-                if (!apiKey) {
-                    dom.apiKeyInput.classList.add('border-red-500', 'ring-2', 'ring-red-500');
-                    dom.apiKeyError.classList.remove('hidden');
-                    return;
-                }
-                if (!state.codesDict) {
-                    updateJsonStatus('⚠ Requerido: Cargue el archivo JSON primero.', 'text-red-400');
-                    return;
-                }
-                if (state.filesToProcess.length === 0) {
-                    dom.fileInfo.textContent = '⚠ Seleccione al menos un archivo PDF.';
-                    dom.fileInfo.className = "mt-4 text-sm font-medium text-red-400 min-h-[1.25rem]";
-                    return;
-                }
-
-                setUiState(true);
-
-                for (let i = 0; i < state.filesToProcess.length; i++) {
-                    const file = state.filesToProcess[i];
-                    updateProgress(i, state.filesToProcess.length, `Analizando: ${file.name}...`);
-                    
-                    try {
-                        const pdfText = await extractPdfText(file);
-                        const aiData = await queryGeminiWithFallback(pdfText, apiKey);
-                        renderRow(file.name, aiData);
-                    } catch (error) {
-                        console.error(error);
-                        renderRow(file.name, { error: `Error AI: ${error.message}` });
-                    }
-                }
-
-                updateProgress(100, 100, 'Completado');
-                setUiState(false);
-                dom.resultsContainer.classList.remove('hidden');
-                dom.resultsContainer.scrollIntoView({ behavior: 'smooth' });
-            }
-
-            function setUiState(processing) {
-                state.isProcessing = processing;
-                dom.processBtn.disabled = processing;
-                dom.clearBtn.disabled = processing;
-                dom.fileInput.disabled = processing;
-                dom.loadingSpinner.classList.toggle('hidden', !processing);
-                dom.progressContainer.classList.toggle('hidden', !processing);
-                dom.statusText.classList.toggle('hidden', !processing);
-                if (processing) {
-                    dom.errorMessage.classList.add('hidden');
-                    dom.resultsTableBody.innerHTML = '';
-                    dom.resultsContainer.classList.add('hidden');
-                }
-            }
-
-            function updateProgress(current, total, text) {
-                const percent = total === 100 ? 100 : Math.round(((current) / total) * 100);
-                dom.progressBar.style.width = `${percent}%`;
-                dom.statusText.textContent = text || `${percent}%`;
-            }
-
-            // --- EXTRACCIÓN PDF ---
-            async function extractPdfText(file) {
-                const url = URL.createObjectURL(file);
+        function loadJson(e) {
+            const f = e.target.files[0];
+            if (!f) return;
+            const r = new FileReader();
+            r.onload = ev => {
                 try {
-                    const pdf = await pdfjsLib.getDocument(url).promise;
-                    let fullText = '';
-                    for (let i = 1; i <= pdf.numPages; i++) {
-                        const page = await pdf.getPage(i);
-                        const content = await page.getTextContent();
-                        const strings = content.items.map(item => item.str);
-                        fullText += strings.join(' ') + '\n';
-                    }
-                    return fullText;
-                } finally {
-                    URL.revokeObjectURL(url);
+                    appData.codes = JSON.parse(ev.target.result);
+                    ui.jsonStatus.textContent = "Base de datos cargada OK";
+                    ui.jsonStatus.className = "text-xs mt-1 block h-4 text-green-400";
+                } catch(err) {
+                    ui.jsonStatus.textContent = "Error: JSON inválido";
+                    ui.jsonStatus.className = "text-xs mt-1 block h-4 text-red-400";
                 }
-            }
+            };
+            r.readAsText(f);
+        }
 
-            // --- CONEXIÓN IA (GEMINI) CON FALLBACK ACTUALIZADO ---
-            async function queryGeminiWithFallback(text, key) {
-                // MODELO PRINCIPAL: gemini-1.5-flash (Sin -latest, es el estándar actual)
+        function setFiles(list) {
+            appData.files = Array.from(list).filter(f => f.type === 'application/pdf');
+            ui.info.textContent = `${appData.files.length} Archivos PDF listos`;
+        }
+
+        function reset() {
+            appData = { files: [], codes: null, processing: false };
+            ui.files.value = '';
+            ui.json.value = '';
+            ui.info.textContent = '';
+            ui.resBody.innerHTML = '';
+            ui.resCont.classList.add('hidden');
+            ui.prog.classList.add('hidden');
+            ui.jsonStatus.textContent = '';
+        }
+
+        async function processFiles() {
+            if (!ui.key.value) return alert("Falta la API Key");
+            if (!appData.codes) return alert("Falta el JSON de códigos");
+            if (appData.files.length === 0) return alert("No hay PDFs");
+
+            ui.btn.disabled = true;
+            ui.prog.classList.remove('hidden');
+            ui.resCont.classList.remove('hidden');
+            ui.resBody.innerHTML = '';
+            
+            const total = appData.files.length;
+            
+            for (let i = 0; i < total; i++) {
+                const file = appData.files[i];
+                ui.status.textContent = `Procesando ${i+1}/${total}: ${file.name}...`;
+                ui.bar.style.width = `${((i)/total)*100}%`;
+
                 try {
-                    return await queryGemini(text, key, 'gemini-1.5-flash');
-                } catch (error) {
-                    console.warn("Fallo gemini-1.5-flash, intentando con gemini-1.5-flash-002...", error);
-                    // MODELO DE RESPALDO: Una versión específica pineada si la general falla
-                    return await queryGemini(text, key, 'gemini-1.5-flash-002');
+                    // 1. Extraer texto
+                    const text = await extractText(file);
+                    
+                    // 2. Validar si es imagen
+                    if (text.length < 50) throw new Error("PDF Escaneado (Sin texto detectado)");
+
+                    // 3. Consultar IA (con reintentos)
+                    const data = await askGemini(text, ui.key.value);
+                    
+                    // 4. Renderizar
+                    addRow(file.name, data);
+
+                    // 5. PAUSA ANTI-BLOQUEO (2 segundos)
+                    if (i < total - 1) await new Promise(r => setTimeout(r, 2000));
+
+                } catch (e) {
+                    console.error(e);
+                    addRow(file.name, { error: e.message });
                 }
             }
 
-            async function queryGemini(text, key, modelVersion) {
-                const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${modelVersion}:generateContent?key=${key}`;
-                
-                const prompt = `
-                    Actúa como un analista experto en auditoría médica. Extrae datos de este documento de negación.
-                    Devuelve EXCLUSIVAMENTE un JSON con:
-                    1. "codigo": Código del procedimiento (ej. 123456).
-                    2. "justificacion": Razón clínica.
-                    3. "fundamento_legal": Cláusula del contrato.
+            ui.bar.style.width = '100%';
+            ui.status.textContent = "Finalizado";
+            ui.btn.disabled = false;
+        }
 
-                    Si no encuentras algo, usa "No encontrado".
-                    
-                    Texto:
-                    ${text.substring(0, 30000)} 
+        async function extractText(file) {
+            const pdf = await pdfjsLib.getDocument(URL.createObjectURL(file)).promise;
+            let full = "";
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const content = await page.getTextContent();
+                full += content.items.map(item => item.str).join(" ") + "\n";
+            }
+            return full;
+        }
+
+        async function askGemini(text, key) {
+            // Usamos el modelo estable actual
+            const model = "gemini-1.5-flash"; 
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+            
+            const prompt = `
+                Analiza este documento médico. Extrae UNICAMENTE un JSON:
+                {
+                    "codigo": "Código del procedimiento (solo números o alfanumérico corto)",
+                    "justificacion": "Motivo médico de la negación",
+                    "fundamento_legal": "Cláusula o artículo mencionado"
+                }
+                Si no encuentras el dato pon "No encontrado".
+                Texto: ${text.substring(0, 25000)}
+            `;
+
+            const resp = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: { responseMimeType: "application/json" }
+                })
+            });
+
+            if (resp.status === 429) throw new Error("Cuota excedida (Espera un minuto)");
+            if (!resp.ok) throw new Error(`Error API: ${resp.status}`);
+
+            const json = await resp.json();
+            const rawText = json.candidates?.[0]?.content?.parts?.[0]?.text;
+            
+            if (!rawText) throw new Error("La IA no respondió nada");
+
+            // Limpieza robusta usando Regex para encontrar el primer objeto JSON válido
+            const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) throw new Error("La IA no devolvió un JSON válido");
+
+            const data = JSON.parse(jsonMatch[0]);
+            
+            // Cruzar con BD
+            data.descripcion = appData.codes[data.codigo] || "Código no en BD";
+            
+            return data;
+        }
+
+        function addRow(name, data) {
+            const tr = document.createElement('tr');
+            tr.className = 'border-b border-gray-800 hover:bg-gray-800/50';
+            
+            if (data.error) {
+                tr.innerHTML = `
+                    <td class="px-4 py-3 text-white">${name}</td>
+                    <td colspan="4" class="px-4 py-3"><span class="highlight-error px-2 py-1 rounded text-xs font-bold">ERROR</span> ${data.error}</td>
                 `;
-
-                const response = await fetch(ENDPOINT, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }],
-                        generationConfig: {
-                            temperature: 0.1,
-                            responseMimeType: "application/json"
-                        }
-                    })
-                });
-
-                if (!response.ok) {
-                    const err = await response.json();
-                    throw new Error(err.error?.message || `Error API (${response.status})`);
-                }
-
-                const json = await response.json();
-                const candidate = json.candidates?.[0]?.content?.parts?.[0]?.text;
+            } else {
+                const warn = t => (!t || t === 'No encontrado' || t === 'Código no en BD') ? 'text-yellow-500' : 'text-gray-300';
                 
-                if (!candidate) throw new Error("La IA no devolvió contenido.");
-
-                const cleanJsonStr = candidate.replace(/```json/g, '').replace(/```/g, '').trim();
-                const data = JSON.parse(cleanJsonStr);
-
-                const codeDesc = state.codesDict && data.codigo ? 
-                               (state.codesDict[data.codigo] || "Código no existe en BD") : 
-                               "---";
-
-                return { ...data, descripcion: codeDesc };
+                tr.innerHTML = `
+                    <td class="px-4 py-3 text-white font-medium">${name.replace('.pdf','')}</td>
+                    <td class="px-4 py-3 ${warn(data.codigo)}">${data.codigo || 'NF'}</td>
+                    <td class="px-4 py-3 ${warn(data.descripcion)}">${data.descripcion}</td>
+                    <td class="px-4 py-3 ${warn(data.justificacion)}">${data.justificacion || 'NF'}</td>
+                    <td class="px-4 py-3 ${warn(data.fundamento_legal)}">${data.fundamento_legal || 'NF'}</td>
+                `;
             }
-
-            // --- RENDERIZADO ---
-            function renderRow(filename, data) {
-                const tr = document.createElement('tr');
-                tr.className = 'border-b border-gray-800 hover:bg-gray-800/50 transition-colors duration-150';
-
-                if (data.error) {
-                    tr.innerHTML = `
-                        <td class="px-6 py-4 font-medium text-gray-300 truncate max-w-[150px]" title="${filename}">${filename}</td>
-                        <td colspan="4" class="px-6 py-4"><span class="highlight-error px-2 py-1 rounded text-xs font-bold">ERROR</span> <span class="text-red-300 text-sm ml-2">${data.error}</span></td>
-                    `;
-                } else {
-                    const isNotFound = (val) => !val || val === 'No encontrado' || val === 'Código no existe en BD';
-                    
-                    const cell = (text, checkWarn = false) => {
-                        const warn = checkWarn && isNotFound(text);
-                        return `<td class="px-6 py-4 align-top ${warn ? 'text-yellow-500' : ''}">
-                            ${warn ? '<span class="highlight-warning px-2 py-0.5 rounded text-xs font-bold inline-block mb-1">ATENCIÓN</span><br>' : ''}
-                            ${text || 'No encontrado'}
-                        </td>`;
-                    };
-
-                    tr.innerHTML = `
-                        <td class="px-6 py-4 align-top font-medium text-white truncate max-w-[120px]" title="${filename}">${filename.replace('.pdf','')}</td>
-                        ${cell(data.codigo, true)}
-                        ${cell(data.descripcion, true)}
-                        ${cell(data.justificacion, true)}
-                        ${cell(data.fundamento_legal, true)}
-                    `;
-                }
-                dom.resultsTableBody.appendChild(tr);
-            }
-
-            init();
-        });
+            ui.resBody.appendChild(tr);
+        }
     </script>
 </body>
 </html>
