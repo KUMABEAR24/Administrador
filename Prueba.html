@@ -3,862 +3,309 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buscadores Cuadrantes</title>
+    <title>Buscadores Cuadrantes - Versión Mejorada</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
-
-        :root {
-            /* PALETA DARK MODE PRO */
-            --bg-main: #0F0F13;           /* Fondo ultra oscuro */
-            --bg-card: #18181B;           /* Tarjetas gris muy oscuro */
-            --bg-input: #09090B;          /* Inputs casi negros */
-            --accent: #3B82F6;            /* Azul vibrante */
-            --accent-hover: #2563EB;
-            --text-main: #E2E8F0;
-            --text-muted: #94A3B8;
-            --border: #27272A;            /* Bordes sutiles */
-            --highlight: #F59E0B;         /* Amarillo para busqueda */
-            --success: #10B981;
-            --danger: #EF4444;
-        }
-
-        /* --- PERSONALIZACIÓN SCROLLBAR (Mejora Visual) --- */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: var(--bg-main); 
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #3F3F46; 
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #52525B; 
-        }
-
+        /* --- ESTILOS GENERALES (MODO OSCURO) --- */
         body {
             margin: 0;
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-main);
-            color: var(--text-main);
-            display: flex;
-            flex-direction: column;
+            padding: 0;
+            background-color: #121212; /* Fondo muy oscuro */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #e0e0e0;
             height: 100vh;
-            overflow: hidden;
-        }
-
-        /* Menú Superior */
-        .top-menu {
-            height: 60px;
-            background-color: var(--bg-card);
-            display: flex;
-            justify-content: space-between; /* Separar título y botones */
-            align-items: center;
-            padding: 0 30px;
-            border-bottom: 1px solid var(--border);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-            z-index: 100;
-        }
-
-        .top-menu span {
-            font-size: 20px;
-            font-weight: 600;
-            color: var(--text-main);
-            letter-spacing: -0.5px;
-        }
-
-        .top-menu .menu-buttons {
-            display: flex;
-            gap: 10px;
-        }
-
-        .top-menu button {
-            background-color: #27272A;
-            color: var(--text-main);
-            border: 1px solid var(--border);
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-        
-        .top-menu button:hover {
-            background-color: var(--accent);
-            border-color: var(--accent);
-            color: white;
-        }
-        
-        .top-menu button.reset-btn:hover {
-            background-color: var(--danger);
-            border-color: var(--danger);
-        }
-
-        /* Grid Principal */
-        .grid-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: 1fr 1fr;
-            gap: 15px;
-            padding: 15px;
-            flex-grow: 1;
-            overflow: hidden; /* El scroll lo maneja cada tabla */
-        }
-        
-        .grid-container .search-box:nth-child(1) { grid-area: 1 / 1 / 2 / 2; }
-        .grid-container .search-box:nth-child(2) { grid-area: 1 / 2 / 2 / 3; }
-        .grid-container .search-box:nth-child(3) { grid-area: 2 / 1 / 3 / 2; }
-        .grid-container .search-box:nth-child(4) { grid-area: 2 / 2 / 3 / 3; }
-
-        /* Tarjeta de Buscador */
-        .search-box {
-            background-color: var(--bg-card);
-            border-radius: 8px;
-            border: 1px solid var(--border);
             display: flex;
             flex-direction: column;
-            overflow: hidden;
-            position: relative;
-            transition: box-shadow 0.3s;
         }
 
-        .search-box:focus-within {
-            border-color: #52525B;
-            box-shadow: 0 0 0 2px rgba(63, 63, 70, 0.4);
-        }
-
-        /* Cabecera de la Tarjeta */
-        .box-header {
-            padding: 12px 15px;
-            border-bottom: 1px solid var(--border);
+        /* --- BARRA SUPERIOR --- */
+        header {
+            background-color: #1f1f1f;
+            padding: 10px 20px;
+            border-bottom: 1px solid #333;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background-color: rgba(255,255,255,0.02);
+            height: 40px;
         }
+        h1 { font-size: 16px; margin: 0; font-weight: bold; }
 
-        .box-header h3 {
-            margin: 0;
-            font-size: 14px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--accent);
+        /* --- CONTENEDOR PRINCIPAL (GRILLA DE 4) --- */
+        .main-grid {
             display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .sync-icon {
-            color: #555;
-            cursor: pointer;
-            font-size: 16px;
-            transition: color 0.3s;
-        }
-        .sync-icon.active { color: var(--success); }
-        .sync-icon:hover { color: var(--text-main); }
-
-        .options-toggle {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            font-size: 18px;
-            padding: 0;
-        }
-        .options-toggle:hover { color: var(--text-main); }
-
-        /* Área de Input */
-        .input-area {
-            padding: 15px;
-            background-color: var(--bg-card);
-        }
-
-        .input-wrapper {
-            position: relative;
-        }
-
-        .search-box input {
-            width: 100%;
-            padding: 10px 12px;
-            background-color: var(--bg-input);
-            border: 1px solid var(--border);
-            color: var(--text-main);
-            border-radius: 6px;
-            font-size: 14px;
+            flex-wrap: wrap;
+            height: calc(100vh - 60px); /* Usa el resto de la altura disponible */
+            padding: 5px;
             box-sizing: border-box;
-            transition: all 0.2s;
-            font-family: 'Inter', sans-serif;
+            gap: 10px;
         }
 
-        .search-box input:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 1px var(--accent);
-        }
-
-        /* Historial (Chips) */
-        .history-container {
+        /* --- CADA CUADRANTE --- */
+        .cuadrante {
+            background-color: #0d1117; /* Fondo tipo panel */
+            border: 1px solid #30363d;
+            border-radius: 6px;
             display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-top: 8px;
-            min-height: 24px;
-        }
-
-        .history-tag {
-            background-color: #27272A;
-            color: var(--text-muted);
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            cursor: pointer;
-            border: 1px solid transparent;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            transition: all 0.2s;
-        }
-
-        .history-tag:hover {
-            background-color: #3F3F46;
-            color: var(--text-main);
-            border-color: #52525B;
-        }
-
-        .remove-item {
-            font-size: 14px;
-            line-height: 1;
-            opacity: 0.5;
-        }
-        .remove-item:hover { opacity: 1; color: var(--danger); }
-
-        /* Panel de Opciones */
-        .options-panel {
-            display: none;
-            padding: 0 15px 15px 15px;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .options-panel button {
-            background-color: #27272A;
-            border: 1px solid var(--border);
-            color: var(--text-muted);
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-size: 11px;
-            cursor: pointer;
-        }
-        .options-panel button:hover {
-            background-color: var(--accent);
-            color: white;
-            border-color: var(--accent);
-        }
-
-        .exact-label {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            font-size: 11px;
-            color: var(--text-muted);
-            margin-left: auto;
-        }
-
-        /* Tabla de Resultados */
-        .results {
-            flex-grow: 1;
-            overflow: auto;
-            background-color: var(--bg-input);
-            border-top: 1px solid var(--border);
+            flex-direction: column;
+            /* Aquí hacemos que ocupe el 50% del ancho y 50% del alto aprox */
+            width: calc(50% - 10px); 
+            height: calc(50% - 10px);
+            overflow: hidden;
             position: relative;
         }
 
+        /* Encabezado azul de cada panel */
+        .panel-header {
+            padding: 10px;
+            color: #58a6ff; /* Azul similar al de tu imagen */
+            font-weight: bold;
+            font-size: 14px;
+            border-bottom: 1px solid #30363d;
+            background-color: #161b22;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Área de contenido scrollable */
+        .panel-content {
+            flex: 1;
+            overflow-y: auto; /* Scroll vertical si es necesario */
+            padding: 10px;
+        }
+
+        /* Inputs de búsqueda */
+        .search-bar {
+            width: 100%;
+            background-color: #0d1117;
+            border: 1px solid #30363d;
+            color: white;
+            padding: 8px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        /* --- TABLA CON CUADRÍCULA (TU REQUERIMIENTO) --- */
         table {
             width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-            color: #D4D4D8;
+            border-collapse: collapse; /* Importante para bordes finos */
+            font-size: 12px;
+        }
+
+        th, td {
+            /* AQUÍ ESTÁ LA CUADRÍCULA VISIBLE */
+            border: 1px solid #444c56; 
+            padding: 8px;
+            text-align: left;
         }
 
         th {
-            background-color: #18181B; /* Header oscuro */
-            color: var(--text-muted);
-            font-weight: 600;
-            text-align: left;
-            padding: 10px 12px;
-            position: sticky; /* Sticky Header */
+            background-color: #161b22;
+            color: #8b949e;
+            position: sticky;
             top: 0;
-            z-index: 10;
-            border-bottom: 1px solid var(--border);
-            box-shadow: 0 1px 2px rgba(0,0,0,0.5);
-            font-size: 12px;
-            text-transform: uppercase;
         }
 
-        td {
-            padding: 8px 12px;
-            border-bottom: 1px solid #27272A;
-            vertical-align: top;
+        tr:hover {
+            background-color: #1f6feb33; /* Resaltado al pasar mouse */
         }
 
-        tr:hover td {
-            background-color: #27272A; /* Efecto Hover en filas */
+        /* Highlight naranja para coincidir con tu imagen */
+        .highlight {
+            color: #ffca28;
+            font-weight: bold;
+        }
+
+        /* --- PAGINACIÓN (TU REQUERIMIENTO) --- */
+        .paginacion-container {
+            padding: 10px;
+            background-color: #161b22;
+            border-top: 1px solid #30363d;
+            display: flex;
+            justify-content: flex-end; /* A la derecha */
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-pag {
+            background-color: #238636; /* Verde botón */
             color: white;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .btn-pag:disabled {
+            background-color: #333;
+            cursor: not-allowed;
+            color: #666;
+        }
+        .info-pag {
+            font-size: 12px;
+            color: #8b949e;
         }
 
-        /* Estados Vacíos (Mejora Visual) */
+        /* Placeholder para las vistas vacías */
         .empty-state {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100%;
-            color: #52525B;
-            text-align: center;
-            padding: 20px;
+            color: #444;
         }
-        .empty-state-icon {
-            font-size: 32px;
-            margin-bottom: 10px;
-            opacity: 0.5;
-        }
-        .empty-state p { margin: 0; font-size: 13px; }
+        .empty-icon { font-size: 40px; margin-bottom: 10px; }
 
-        /* Resaltados */
-        .highlight-match {
-            background-color: rgba(245, 158, 11, 0.2);
-            color: var(--highlight);
-            border: 1px solid rgba(245, 158, 11, 0.4);
-            padding: 0 2px;
-            border-radius: 3px;
-            font-weight: 600;
-        }
-        .val-low { color: var(--danger); font-weight: bold; }
-        .val-high { color: var(--success); font-weight: bold; }
-
-        /* Utilidades */
-        .fullscreen {
-            position: fixed !important;
-            top: 70px !important;
-            left: 10px !important;
-            width: calc(100% - 20px) !important;
-            height: calc(100vh - 80px) !important;
-            z-index: 999;
-        }
-
-        /* Modal Configuración */
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(2px);
-            z-index: 2000;
-            display: none;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .modal-content {
-            background-color: var(--bg-card);
-            padding: 25px;
-            border-radius: 8px;
-            width: 450px;
-            max-width: 90%;
-            border: 1px solid var(--border);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-        }
-
-        .modal-content h2 {
-            margin: 0 0 20px 0;
-            font-size: 18px;
-            color: var(--text-main);
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 10px;
-        }
-
-        .file-group { margin-bottom: 15px; }
-        .file-group label { display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 12px; }
-        .file-group input { 
-            width: 100%; 
-            background: var(--bg-input); 
-            border: 1px solid var(--border); 
-            color: var(--text-muted);
-            padding: 8px; 
-            border-radius: 4px;
-        }
-
-        .modal-actions { margin-top: 20px; display: flex; gap: 10px; }
-        .btn-primary { 
-            background: var(--accent); color: white; border: none; padding: 10px; 
-            border-radius: 4px; width: 100%; cursor: pointer; font-weight: 500;
-        }
-        .btn-primary:hover { background: var(--accent-hover); }
-        .btn-close {
-            background: transparent; color: var(--text-muted); border: 1px solid var(--border);
-            padding: 10px; border-radius: 4px; cursor: pointer;
-        }
-
-        /* Toasts */
-        #toast-container {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-            display: flex; flex-direction: column; gap: 8px; z-index: 3000;
-        }
-        .toast {
-            background: #27272A; color: white; padding: 10px 20px; border-radius: 20px;
-            font-size: 13px; border: 1px solid #3F3F46; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            animation: fadeIn 0.3s, fadeOut 0.3s 2.7s forwards;
-        }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes fadeOut { to { opacity: 0; } }
-
-        /* Media Query */
-        @media (max-width: 768px) {
-            .grid-container { grid-template-columns: 1fr; grid-template-rows: auto; overflow-y: auto; }
-            .top-menu { padding: 0 15px; }
-        }
     </style>
 </head>
-<body onload="loadHistory()">
+<body>
 
-    <div id="toast-container"></div>
-
-    <div class="top-menu">
-        <span>Buscadores Cuadrantes</span>
-        <div class="menu-buttons">
-            <button onclick="resetLayout()">Reiniciar Vistas</button>
-            <button onclick="openConfig()">Cargar Archivos</button>
+    <header>
+        <h1>Buscadores Cuadrantes</h1>
+        <div>
+            <button style="background:none; border:1px solid #555; color:white; padding: 5px 10px;">Reiniciar</button>
         </div>
-    </div>
+    </header>
 
-    <div class="grid-container">
+    <div class="main-grid">
         
-        <div class="search-box" id="box1" style="grid-area: 1 / 1 / 2 / 2;">
-            <div class="box-header">
-                <h3>Matriz CUPS <span class="sync-icon" id="sync1" onclick="toggleSync('1')" title="Sincronizar">⇄</span></h3>
-                <button class="options-toggle" onclick="toggleOptions('opt1')">⚙️</button>
+        <div class="cuadrante">
+            <div class="panel-header">
+                MATRIZ CUPS
+                <span>⚙️</span>
             </div>
-            <div class="options-panel" id="opt1">
-                <button onclick="fijarCuadro('box1')">Fijar</button>
-                <button onclick="pantallaCompleta('box1')">Pantalla Completa</button>
-                <button onclick="copiarResultados('res1')">Copiar Todo</button>
-                <button onclick="exportToCsv('res1', 'cups.csv')">Excel/CSV</button>
-                <button onclick="cleanBox('1')">Limpiar</button>
-                <label class="exact-label"><input type="checkbox" id="exact1"> Exacta</label>
-            </div>
-            <div class="input-area">
-                <div class="input-wrapper">
-                    <input type="text" id="in1" onkeydown="handleKey(event, '1')" placeholder="Escribe y presiona Enter o Tab...">
-                </div>
-                <div class="history-container" id="hist1"></div>
-            </div>
-            <div class="results" id="res1">
-                <div class="empty-state">
-                    <div class="empty-state-icon">📂</div>
-                    <p>Carga un archivo y busca para ver resultados</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="search-box" id="box2" style="grid-area: 1 / 2 / 2 / 3;">
-            <div class="box-header">
-                <h3>Prestadores <span class="sync-icon" id="sync2" onclick="toggleSync('2')" title="Sincronizar">⇄</span></h3>
-                <button class="options-toggle" onclick="toggleOptions('opt2')">⚙️</button>
-            </div>
-            <div class="options-panel" id="opt2">
-                <button onclick="fijarCuadro('box2')">Fijar</button>
-                <button onclick="pantallaCompleta('box2')">Pantalla Completa</button>
-                <button onclick="copiarResultados('res2')">Copiar Todo</button>
-                <button onclick="exportToCsv('res2', 'prestadores.csv')">Excel/CSV</button>
-                <button onclick="cleanBox('2')">Limpiar</button>
-                <label class="exact-label"><input type="checkbox" id="exact2"> Exacta</label>
-            </div>
-            <div class="input-area">
-                <div class="input-wrapper">
-                    <input type="text" id="in2" onkeydown="handleKey(event, '2')" placeholder="Escribe y presiona Enter o Tab...">
-                </div>
-                <div class="history-container" id="hist2"></div>
-            </div>
-            <div class="results" id="res2">
-                <div class="empty-state">
-                    <div class="empty-state-icon">📂</div>
-                    <p>Carga un archivo y busca para ver resultados</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="search-box" id="box3" style="grid-area: 2 / 1 / 3 / 2;">
-            <div class="box-header">
-                <h3>Cartas Sorweb</h3>
-                <button class="options-toggle" onclick="toggleOptions('opt3')">⚙️</button>
-            </div>
-            <div class="options-panel" id="opt3">
-                <button onclick="fijarCuadro('box3')">Fijar</button>
-                <button onclick="pantallaCompleta('box3')">Pantalla Completa</button>
-                <button onclick="copiarResultados('res3')">Copiar Todo</button>
-                <button onclick="exportToCsv('res3', 'cartas.csv')">Excel/CSV</button>
-                <button onclick="cleanBox('3')">Limpiar</button>
-                <label class="exact-label"><input type="checkbox" id="exact3"> Exacta</label>
-            </div>
-            <div class="input-area">
-                <div class="input-wrapper">
-                    <input type="text" id="in3" onkeydown="handleKey(event, '3')" placeholder="Escribe y presiona Enter o Tab...">
-                </div>
-                <div class="history-container" id="hist3"></div>
-            </div>
-            <div class="results" id="res3">
-                <div class="empty-state">
-                    <div class="empty-state-icon">📂</div>
-                    <p>Carga un archivo y busca para ver resultados</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="search-box" id="box4" style="grid-area: 2 / 2 / 3 / 3;">
-            <div class="box-header">
-                <h3>AYUDANTE</h3>
-                <button class="options-toggle" onclick="toggleOptions('opt4')">⚙️</button>
-            </div>
-            <div class="options-panel" id="opt4">
-                <button onclick="fijarCuadro('box4')">Fijar</button>
-                <button onclick="pantallaCompleta('box4')">Pantalla Completa</button>
-                <button onclick="copiarResultados('res4')">Copiar Todo</button>
-                <button onclick="exportToCsv('res4', 'ayudante.csv')">Excel/CSV</button>
-                <button onclick="cleanBox('4')">Limpiar</button>
-                <label class="exact-label"><input type="checkbox" id="exact4"> Exacta</label>
-            </div>
-            <div class="input-area">
-                <div class="input-wrapper">
-                    <input type="text" id="in4" onkeydown="handleKey(event, '4')" placeholder="Escribe y presiona Enter o Tab...">
-                </div>
-                <div class="history-container" id="hist4"></div>
-            </div>
-            <div class="results" id="res4">
-                <div class="empty-state">
-                    <div class="empty-state-icon">📂</div>
-                    <p>Carga un archivo y busca para ver resultados</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="configModal">
-        <div class="modal-content">
-            <h2>Cargar Archivos (Memoria Temporal)</h2>
             
-            <div class="file-group">
-                <label>1. Matriz CUPS</label>
-                <input type="file" id="f1" accept=".xlsx,.xls,.json">
-            </div>
-            <div class="file-group">
-                <label>2. Prestadores</label>
-                <input type="file" id="f2" accept=".xlsx,.xls,.json">
-            </div>
-            <div class="file-group">
-                <label>3. Cartas Sorweb</label>
-                <input type="file" id="f3" accept=".xlsx,.xls,.json">
-            </div>
-            <div class="file-group">
-                <label>4. Ayudante</label>
-                <input type="file" id="f4" accept=".xlsx,.xls,.json">
+            <div class="panel-content">
+                <input type="text" class="search-bar" placeholder="Buscar código o descripción...">
+                
+                <table id="tabla-cups">
+                    <thead>
+                        <tr>
+                            <th>CUPS</th>
+                            <th>DESCRIPCIÓN</th>
+                            <th>NIVEL</th>
+                            <th>SEXO</th>
+                            <th>EDAD</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuerpo-tabla">
+                        </tbody>
+                </table>
             </div>
 
-            <div class="modal-actions">
-                <button class="btn-close" onclick="closeConfig()">Cancelar</button>
-                <button class="btn-primary" onclick="processFiles()">Cargar Datos a RAM</button>
+            <div class="paginacion-container">
+                <span class="info-pag" id="info-paginacion">Mostrando 0-0 de 0</span>
+                <button class="btn-pag" id="btn-prev" onclick="cambiarPagina(-1)">Anterior</button>
+                <button class="btn-pag" id="btn-next" onclick="cambiarPagina(1)">Siguiente</button>
             </div>
-            <p id="statusMsg" style="margin-top:10px; font-size:12px; color:var(--text-muted); text-align:center;"></p>
         </div>
-    </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+        <div class="cuadrante">
+            <div class="panel-header">
+                PRESTADORES <span>⚙️</span>
+            </div>
+            <div class="panel-content">
+                <input type="text" class="search-bar" placeholder="Escribe y presiona Enter...">
+                <div class="empty-state">
+                    <div class="empty-icon">📂</div>
+                    <p>Carga un archivo y busca para ver resultados</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="cuadrante">
+            <div class="panel-header">
+                CARTAS SORWEB <span>⚙️</span>
+            </div>
+            <div class="panel-content">
+                <input type="text" class="search-bar" placeholder="Escribe y presiona Enter...">
+                <div class="empty-state">
+                    <div class="empty-icon">📂</div>
+                    <p>Sin datos cargados</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="cuadrante">
+            <div class="panel-header">
+                AYUDANTE <span>⚙️</span>
+            </div>
+            <div class="panel-content">
+                <input type="text" class="search-bar" placeholder="Pregunta al ayudante...">
+                <div class="empty-state">
+                    <div class="empty-icon">🤖</div>
+                    <p>Esperando instrucciones...</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
 
     <script>
-        // Variables en RAM (Se pierden al recargar)
-        let dataset = { '1': [], '2': [], '3': [], '4': [] };
-        let history = { '1': [], '2': [], '3': [], '4': [] };
-        let sync = { '1': false, '2': false };
-
-        // Datos de ejemplo para C3 si no se carga nada
-        const defaultC3 = [
-            { "TITULO": "Ejemplo Caso Sorweb", "CONTENIDO": "Texto de ejemplo..." },
-            { "TITULO": "Ejemplo Mora", "CONTENIDO": "Usuario en mora..." }
-        ];
-
-        // --- SISTEMA DE ARCHIVOS (Sin LocalStorage para Data) ---
-        function openConfig() { 
-            document.getElementById('configModal').style.display = 'flex'; 
-            document.getElementById('statusMsg').innerText = '';
+        // 1. GENERACIÓN DE DATOS DE PRUEBA (SIMULACIÓN)
+        // Generamos 350 registros para probar la paginación
+        const datosCompletos = [];
+        for (let i = 1; i <= 350; i++) {
+            datosCompletos.push({
+                cups: 772900 + i,
+                descripcion: `<span class="highlight">OSTEO</span>TOMÍA FACETARIA EN COLUMNA EJEMPLO REGISTRO #${i}`,
+                nivel: 2,
+                sexo: 'A',
+                edad: '0 - 120'
+            });
         }
-        function closeConfig() { document.getElementById('configModal').style.display = 'none'; }
 
-        async function processFiles() {
-            const btn = document.querySelector('.btn-primary');
-            const status = document.getElementById('statusMsg');
-            btn.disabled = true;
-            status.innerText = "Procesando archivos... espera por favor.";
+        // 2. VARIABLES DE CONFIGURACIÓN
+        let paginaActual = 1;
+        const filasPorPagina = 50; // Límite que pediste antes de paginar
 
-            const inputs = ['f1', 'f2', 'f3', 'f4'];
-            let loaded = 0;
+        // 3. FUNCIÓN PARA RENDERIZAR LA TABLA
+        function renderizarTabla() {
+            const cuerpoTabla = document.getElementById('cuerpo-tabla');
+            const infoPaginacion = document.getElementById('info-paginacion');
+            const btnPrev = document.getElementById('btn-prev');
+            const btnNext = document.getElementById('btn-next');
 
-            for(let i=0; i<4; i++) {
-                const file = document.getElementById(inputs[i]).files[0];
-                if(file) {
-                    try {
-                        const data = await readFile(file);
-                        // Normalizamos texto para búsquedas rápidas
-                        dataset[String(i+1)] = data.map(item => ({
-                            ...item,
-                            _search: normalize(JSON.stringify(item))
-                        }));
-                        loaded++;
-                    } catch(e) {
-                        console.error(e);
-                        showToast(`Error en archivo ${i+1}`);
-                    }
-                }
-            }
+            // Limpiar tabla actual
+            cuerpoTabla.innerHTML = "";
 
-            // Cargar default si C3 está vacío
-            if(dataset['3'].length === 0) {
-                dataset['3'] = defaultC3.map(i => ({...i, _search: normalize(JSON.stringify(i))}));
-            }
-
-            status.innerText = `Listo. ${loaded} archivos cargados en memoria.`;
-            showToast("Datos cargados correctamente");
+            // Calcular índices de corte
+            const inicio = (paginaActual - 1) * filasPorPagina;
+            const fin = inicio + filasPorPagina;
             
-            setTimeout(() => {
-                btn.disabled = false;
-                closeConfig();
-                // No hay reload(), los datos ya están en la variable 'dataset'
-            }, 1000);
-        }
+            // Obtener solo los datos de esta página
+            const datosPagina = datosCompletos.slice(inicio, fin);
 
-        function readFile(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                if(file.name.endsWith('.json')) {
-                    reader.onload = e => resolve(JSON.parse(e.target.result));
-                    reader.readAsText(file);
-                } else {
-                    reader.onload = e => {
-                        const wb = XLSX.read(e.target.result, { type: 'binary' });
-                        const ws = wb.Sheets[wb.SheetNames[0]];
-                        resolve(XLSX.utils.sheet_to_json(ws));
-                    };
-                    reader.readAsBinaryString(file);
-                }
-            });
-        }
-
-        // --- BUSQUEDA ---
-        function handleKey(e, id) {
-            if(e.key === 'Enter' || e.key === 'Tab') {
-                if(e.key === 'Enter') e.preventDefault();
-                performSearch(id);
-                // Si sincronización activa
-                if(['1','2'].includes(id) && sync['1'] && sync['2']) {
-                    const other = id==='1'?'2':'1';
-                    document.getElementById('in'+other).value = document.getElementById('in'+id).value;
-                    performSearch(other);
-                }
-            }
-        }
-
-        function performSearch(id) {
-            const val = document.getElementById('in'+id).value.trim();
-            const container = document.getElementById('res'+id);
-            const data = dataset[id];
-            
-            if(val) saveHistory(id, val);
-
-            if(!data || data.length === 0) {
-                container.innerHTML = getEmptyState("No hay datos cargados");
-                return;
-            }
-
-            if(!val) {
-                container.innerHTML = getEmptyState("Escribe para buscar");
-                return;
-            }
-
-            const isExact = document.getElementById('exact'+id).checked;
-            const normVal = normalize(val);
-            const terms = normVal.split(' ').filter(x => x);
-
-            const results = data.filter(item => {
-                if(isExact) return item._search === normVal;
-                return terms.every(t => item._search.includes(t));
+            // Crear filas HTML
+            datosPagina.forEach(dato => {
+                const fila = `
+                    <tr>
+                        <td>${dato.cups}</td>
+                        <td>${dato.descripcion}</td>
+                        <td>${dato.nivel}</td>
+                        <td>${dato.sexo}</td>
+                        <td>${dato.edad}</td>
+                    </tr>
+                `;
+                cuerpoTabla.innerHTML += fila;
             });
 
-            renderTable(id, results, val);
+            // Actualizar texto de información
+            infoPaginacion.innerText = `Página ${paginaActual} | Mostrando ${inicio + 1}-${Math.min(fin, datosCompletos.length)} de ${datosCompletos.length}`;
+
+            // Controlar estado de los botones (Habilitar/Deshabilitar)
+            btnPrev.disabled = paginaActual === 1;
+            btnNext.disabled = fin >= datosCompletos.length;
         }
 
-        function renderTable(id, data, query) {
-            const container = document.getElementById('res'+id);
-            if(data.length === 0) {
-                container.innerHTML = getEmptyState("Sin coincidencias");
-                return;
-            }
-
-            // Limitar renderizado a 200 filas para evitar lag
-            const displayData = data.slice(0, 200); 
-            const headers = Object.keys(displayData[0]).filter(k => k !== '_search');
-
-            let html = '<table><thead><tr>';
-            headers.forEach(h => html += `<th>${h}</th>`);
-            html += '</tr></thead><tbody>';
-
-            displayData.forEach(row => {
-                html += '<tr>';
-                headers.forEach(h => {
-                    let cell = row[h] !== undefined ? String(row[h]) : '';
-                    // Highlight logic
-                    if(query) {
-                        const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-                        cell = cell.replace(regex, '<span class="highlight-match">$1</span>');
-                    }
-                    html += `<td>${cell}</td>`;
-                });
-                html += '</tr>';
-            });
-            html += '</tbody></table>';
-            
-            if(data.length > 200) {
-                html += `<div style="padding:10px;text-align:center;font-size:12px;opacity:0.7">Mostrando primeros 200 de ${data.length} resultados</div>`;
-            }
-
-            container.innerHTML = html;
+        // 4. FUNCIÓN PARA CAMBIAR PÁGINA
+        function cambiarPagina(direccion) {
+            paginaActual += direccion;
+            renderizarTabla();
         }
 
-        // --- UTILIDADES ---
-        function normalize(str) {
-            return String(str).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        }
-
-        function getEmptyState(msg) {
-            return `<div class="empty-state"><div class="empty-state-icon">🔍</div><p>${msg}</p></div>`;
-        }
-
-        function showToast(msg) {
-            const box = document.getElementById('toast-container');
-            const el = document.createElement('div');
-            el.className = 'toast';
-            el.innerText = msg;
-            box.appendChild(el);
-            setTimeout(() => el.remove(), 3000);
-        }
-
-        // --- HISTORIAL ---
-        function loadHistory() {
-            const saved = localStorage.getItem('search_history_safe');
-            if(saved) {
-                history = JSON.parse(saved);
-                ['1','2','3','4'].forEach(renderHistory);
-            }
-        }
-
-        function saveHistory(id, txt) {
-            let list = history[id];
-            if(list.includes(txt)) list = list.filter(x => x !== txt);
-            list.unshift(txt);
-            if(list.length > 5) list.pop();
-            history[id] = list;
-            localStorage.setItem('search_history_safe', JSON.stringify(history));
-            renderHistory(id);
-        }
-
-        function renderHistory(id) {
-            const box = document.getElementById('hist'+id);
-            box.innerHTML = '';
-            history[id].forEach(txt => {
-                const tag = document.createElement('div');
-                tag.className = 'history-tag';
-                tag.innerHTML = `<span onclick="useHist('${id}','${txt}')">${txt}</span><span class="remove-item" onclick="delHist('${id}','${txt}')">×</span>`;
-                box.appendChild(tag);
-            });
-        }
-
-        function useHist(id, txt) {
-            document.getElementById('in'+id).value = txt;
-            performSearch(id);
-        }
-
-        function delHist(id, txt) {
-            history[id] = history[id].filter(x => x !== txt);
-            localStorage.setItem('search_history_safe', JSON.stringify(history));
-            renderHistory(id);
-        }
-
-        // --- UI TOGGLES ---
-        function toggleOptions(id) {
-            const p = document.getElementById(id);
-            p.style.display = p.style.display === 'flex' ? 'none' : 'flex';
-        }
-
-        function toggleSync(id) {
-            if(!['1','2'].includes(id)) { showToast("Solo Cuadros 1 y 2"); return; }
-            sync[id] = !sync[id];
-            document.getElementById('sync'+id).classList.toggle('active');
-            showToast(`Sincronización ${sync[id] ? 'Activada' : 'Desactivada'}`);
-        }
-
-        function cleanBox(id) {
-            document.getElementById('in'+id).value = '';
-            document.getElementById('res'+id).innerHTML = getEmptyState("Limpio");
-        }
-
-        function fijarCuadro(boxId) {
-            const el = document.getElementById(boxId);
-            el.style.resize = el.style.resize === 'none' ? 'both' : 'none';
-        }
-
-        function pantallaCompleta(boxId) {
-            document.getElementById(boxId).classList.toggle('fullscreen');
-        }
-
-        function copiarResultados(resId) {
-            const node = document.getElementById(resId);
-            if(node.innerText.includes("Carga un archivo") || node.innerText.includes("Sin coincidencias")) {
-                showToast("Nada que copiar"); return;
-            }
-            const txt = document.createElement('textarea');
-            txt.value = node.innerText;
-            document.body.appendChild(txt);
-            txt.select();
-            document.execCommand('copy');
-            document.body.removeChild(txt);
-            showToast("Resultados copiados");
-        }
-        
-        function exportToCsv(resId, name) {
-            const table = document.getElementById(resId).querySelector('table');
-            if(!table) { showToast("No hay tabla"); return; }
-            let csv = [];
-            table.querySelectorAll('tr').forEach(tr => {
-                let row = [];
-                tr.querySelectorAll('th, td').forEach(td => row.push(`"${td.innerText}"`));
-                csv.push(row.join(','));
-            });
-            const blob = new Blob([csv.join('\n')], {type:'text/csv'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = name; a.click();
-        }
-
-        function resetLayout() {
-            document.querySelectorAll('.search-box').forEach(b => {
-                b.style = ''; b.classList.remove('fullscreen');
-            });
-            // Restaurar grid
-            document.getElementById('box1').style.gridArea = '1 / 1 / 2 / 2';
-            document.getElementById('box2').style.gridArea = '1 / 2 / 2 / 3';
-            document.getElementById('box3').style.gridArea = '2 / 1 / 3 / 2';
-            document.getElementById('box4').style.gridArea = '2 / 2 / 3 / 3';
-        }
+        // Inicializar al cargar
+        renderizarTabla();
     </script>
 </body>
 </html>
