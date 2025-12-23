@@ -5,85 +5,96 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Buscadores Cuadrantes</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
         :root {
-            /* NUEVA PALETA DE COLORES: NEGRO NEUTRO PROFESIONAL */
-            --bg-color-dark: #121212;       /* Fondo principal casi negro */
-            --bg-color-light: #1E1E1E;      /* Fondo de tarjetas gris oscuro */
-            --accent-color: #3B82F6;        /* Azul profesional (tipo botón primario) */
-            --secondary-accent: #64748B;    /* Gris azulado para botones secundarios */
-            --text-color-light: #E0E0E0;    /* Texto claro */
-            --text-color-dark: #9CA3AF;     /* Texto secundario */
-            --border-color: #333333;        /* Bordes sutiles */
-            --shadow-light: rgba(0, 0, 0, 0.2);
-            --shadow-dark: rgba(0, 0, 0, 0.6);
-            --success-color: #10B981;
+            /* PALETA DARK MODE PRO */
+            --bg-main: #0F0F13;           /* Fondo ultra oscuro */
+            --bg-card: #18181B;           /* Tarjetas gris muy oscuro */
+            --bg-input: #09090B;          /* Inputs casi negros */
+            --accent: #3B82F6;            /* Azul vibrante */
+            --accent-hover: #2563EB;
+            --text-main: #E2E8F0;
+            --text-muted: #94A3B8;
+            --border: #27272A;            /* Bordes sutiles */
+            --highlight: #F59E0B;         /* Amarillo para busqueda */
+            --success: #10B981;
+            --danger: #EF4444;
+        }
+
+        /* --- PERSONALIZACIÓN SCROLLBAR (Mejora Visual) --- */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-main); 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3F3F46; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #52525B; 
         }
 
         body {
             margin: 0;
             font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color-dark);
-            color: var(--text-color-light);
+            background-color: var(--bg-main);
+            color: var(--text-main);
             display: flex;
             flex-direction: column;
             height: 100vh;
-            box-sizing: border-box;
             overflow: hidden;
         }
 
         /* Menú Superior */
         .top-menu {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            background-color: var(--bg-color-light);
+            height: 60px;
+            background-color: var(--bg-card);
             display: flex;
-            justify-content: center;
+            justify-content: space-between; /* Separar título y botones */
             align-items: center;
-            padding: 15px 30px;
-            z-index: 1000;
-            border-bottom: 1px solid var(--border-color);
-            box-shadow: 0 4px 15px var(--shadow-dark);
+            padding: 0 30px;
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            z-index: 100;
         }
 
         .top-menu span {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--text-color-light);
-            letter-spacing: 0.5px;
-            position: absolute;
-            left: 30px;
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-main);
+            letter-spacing: -0.5px;
         }
 
         .top-menu .menu-buttons {
             display: flex;
-            gap: 15px;
+            gap: 10px;
         }
 
         .top-menu button {
-            background-color: var(--secondary-accent);
-            color: white;
-            border: none;
-            padding: 10px 18px;
-            border-radius: 6px; /* Bordes más rectos, más profesional */
+            background-color: #27272A;
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 6px;
             cursor: pointer;
+            font-size: 13px;
             font-weight: 500;
-            transition: background-color 0.2s ease;
-        }
-        
-        .top-menu button.reset-btn {
-            background-color: #EF4444; /* Rojo suave */
+            transition: all 0.2s;
         }
         
         .top-menu button:hover {
-            background-color: var(--accent-color);
+            background-color: var(--accent);
+            border-color: var(--accent);
+            color: white;
         }
-
+        
         .top-menu button.reset-btn:hover {
-            background-color: #DC2626;
+            background-color: var(--danger);
+            border-color: var(--danger);
         }
 
         /* Grid Principal */
@@ -91,10 +102,10 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             grid-template-rows: 1fr 1fr;
-            gap: 20px;
-            padding: 90px 20px 20px 20px;
+            gap: 15px;
+            padding: 15px;
             flex-grow: 1;
-            overflow-y: auto;
+            overflow: hidden; /* El scroll lo maneja cada tabla */
         }
         
         .grid-container .search-box:nth-child(1) { grid-area: 1 / 1 / 2 / 2; }
@@ -102,860 +113,751 @@
         .grid-container .search-box:nth-child(3) { grid-area: 2 / 1 / 3 / 2; }
         .grid-container .search-box:nth-child(4) { grid-area: 2 / 2 / 3 / 3; }
 
-        /* Tarjetas de Búsqueda */
+        /* Tarjeta de Buscador */
         .search-box {
-            background-color: var(--bg-color-light);
+            background-color: var(--bg-card);
             border-radius: 8px;
-            padding: 20px;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 4px 6px var(--shadow-light);
-            position: relative;
+            border: 1px solid var(--border);
             display: flex;
             flex-direction: column;
-            resize: both;
-            overflow: hidden; 
-            min-height: 200px;
-            transition: border-color 0.3s;
+            overflow: hidden;
+            position: relative;
+            transition: box-shadow 0.3s;
         }
 
         .search-box:focus-within {
-            border-color: var(--accent-color); /* Resalta el borde cuando usas el cuadro */
+            border-color: #52525B;
+            box-shadow: 0 0 0 2px rgba(63, 63, 70, 0.4);
         }
 
-        .search-box h3 {
-            margin: 0 0 15px;
-            color: var(--text-color-light);
-            font-size: 16px;
-            font-weight: 600;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 10px;
-            flex-shrink: 0;
+        /* Cabecera de la Tarjeta */
+        .box-header {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .search-box h3 .sync-icon {
-            color: #555;
-            cursor: pointer;
-            transition: color 0.3s;
+            background-color: rgba(255,255,255,0.02);
         }
 
-        .search-box h3 .sync-icon.active {
-            color: var(--success-color);
+        .box-header h3 {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .sync-icon {
+            color: #555;
+            cursor: pointer;
+            font-size: 16px;
+            transition: color 0.3s;
+        }
+        .sync-icon.active { color: var(--success); }
+        .sync-icon:hover { color: var(--text-main); }
+
+        .options-toggle {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 18px;
+            padding: 0;
+        }
+        .options-toggle:hover { color: var(--text-main); }
+
+        /* Área de Input */
+        .input-area {
+            padding: 15px;
+            background-color: var(--bg-card);
+        }
+
+        .input-wrapper {
+            position: relative;
         }
 
         .search-box input {
             width: 100%;
-            padding: 10px;
-            margin-bottom: 5px;
-            background-color: #000000; /* Input negro puro */
-            border: 1px solid var(--border-color);
-            color: white;
-            border-radius: 4px;
+            padding: 10px 12px;
+            background-color: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            border-radius: 6px;
             font-size: 14px;
-            transition: border-color 0.3s ease;
             box-sizing: border-box;
-            flex-shrink: 0;
+            transition: all 0.2s;
             font-family: 'Inter', sans-serif;
         }
 
         .search-box input:focus {
-            border-color: var(--accent-color);
             outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 1px var(--accent);
         }
-        
+
         /* Historial (Chips) */
         .history-container {
             display: flex;
             flex-wrap: wrap;
             gap: 6px;
-            margin-bottom: 10px;
-            padding: 5px 0;
-            min-height: 28px;
+            margin-top: 8px;
+            min-height: 24px;
         }
 
         .history-tag {
-            background-color: #2D2D2D;
-            color: #BBB;
-            padding: 2px 10px;
-            border-radius: 12px;
+            background-color: #27272A;
+            color: var(--text-muted);
+            padding: 2px 8px;
+            border-radius: 4px;
             font-size: 11px;
             cursor: pointer;
-            border: 1px solid var(--border-color);
-            transition: all 0.2s ease;
+            border: 1px solid transparent;
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
+            transition: all 0.2s;
         }
 
         .history-tag:hover {
-            background-color: var(--accent-color);
-            color: white;
-            border-color: var(--accent-color);
+            background-color: #3F3F46;
+            color: var(--text-main);
+            border-color: #52525B;
         }
 
-        .history-tag .remove-item {
-            font-weight: bold;
+        .remove-item {
             font-size: 14px;
-            margin-left: 2px;
+            line-height: 1;
             opacity: 0.5;
         }
-        
-        .history-tag .remove-item:hover {
-            opacity: 1;
-            color: #fff;
-        }
+        .remove-item:hover { opacity: 1; color: var(--danger); }
 
-        .history-label {
-            font-size: 10px;
-            color: var(--text-color-dark);
-            margin-bottom: 2px;
-            display: block;
-            text-transform: uppercase;
-        }
-
-        /* Botón opciones */
-        .options-toggle {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background-color: transparent;
-            border: none;
-            color: var(--text-color-dark);
-            font-size: 20px;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-
-        .options-toggle:hover {
-            background-color: rgba(255,255,255,0.1);
-            color: white;
-        }
-        
-        /* Panel Opciones */
+        /* Panel de Opciones */
         .options-panel {
             display: none;
-            margin-top: 5px;
-            border-top: 1px solid var(--border-color);
-            padding-top: 10px;
-            display: flex;
-            flex-wrap: wrap;
+            padding: 0 15px 15px 15px;
             gap: 8px;
+            flex-wrap: wrap;
         }
 
         .options-panel button {
-            background-color: #333;
-            padding: 6px 10px;
+            background-color: #27272A;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 4px 10px;
             border-radius: 4px;
-            font-size: 12px;
+            font-size: 11px;
             cursor: pointer;
-            border: 1px solid var(--border-color);
-            color: #ddd;
         }
-        
         .options-panel button:hover {
-            background-color: var(--accent-color);
+            background-color: var(--accent);
             color: white;
-            border-color: var(--accent-color);
+            border-color: var(--accent);
         }
 
-        .options-panel .exact-match-toggle {
+        .exact-label {
             display: flex;
             align-items: center;
             gap: 5px;
-            color: var(--text-color-dark);
-            font-size: 12px;
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-left: auto;
         }
 
         /* Tabla de Resultados */
         .results {
             flex-grow: 1;
             overflow: auto;
-            background-color: #000; /* Fondo tabla negro */
-            padding: 0; /* Sin padding para que el sticky header toque los bordes */
-            border-radius: 4px;
-            border: 1px solid var(--border-color);
-            margin-top: 5px;
+            background-color: var(--bg-input);
+            border-top: 1px solid var(--border);
+            position: relative;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            table-layout: fixed;
-            color: #ccc;
             font-size: 13px;
+            color: #D4D4D8;
         }
 
-        th, td {
-            border: 1px solid #333;
-            padding: 8px 12px;
-            text-align: left;
-            word-wrap: break-word;
-        }
-
-        /* --- STICKY HEADERS (Mejora solicitada) --- */
         th {
-            background-color: #1A1A1A;
+            background-color: #18181B; /* Header oscuro */
+            color: var(--text-muted);
             font-weight: 600;
-            color: var(--text-color-light);
-            cursor: pointer;
-            position: sticky;
+            text-align: left;
+            padding: 10px 12px;
+            position: sticky; /* Sticky Header */
             top: 0;
             z-index: 10;
-            box-shadow: 0 2px 2px rgba(0,0,0,0.5); /* Sombra para separar del contenido */
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.5);
+            font-size: 12px;
+            text-transform: uppercase;
         }
 
         td {
-            background-color: #000;
+            padding: 8px 12px;
+            border-bottom: 1px solid #27272A;
+            vertical-align: top;
         }
 
         tr:hover td {
-            background-color: #111;
-        }
-
-        /* Resaltados */
-        .highlight-green { color: var(--success-color); font-weight: bold; }
-        .highlight-red { color: #EF4444; font-weight: bold; }
-        .search-highlight { background-color: #FACC15; color: #000; font-weight: bold; padding: 0 2px; border-radius: 2px; }
-
-        .fullscreen {
-            position: fixed !important;
-            top: 90px !important;
-            left: 20px !important;
-            width: calc(100% - 40px) !important;
-            height: calc(100vh - 110px) !important;
-            z-index: 999;
-        }
-        
-        /* Config Modal */
-        .config-modal {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: var(--bg-color-light);
-            border: 1px solid var(--border-color);
-            padding: 30px;
-            border-radius: 8px;
-            z-index: 1001;
-            display: none;
-            width: 500px;
-            max-width: 90%;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
-        }
-        
-        .config-modal h2 {
-            margin-top: 0;
+            background-color: #27272A; /* Efecto Hover en filas */
             color: white;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 15px;
-            margin-bottom: 20px;
-            font-size: 18px;
         }
 
-        .config-modal label {
-            color: #aaa;
-            font-size: 14px;
-            margin-top: 10px;
-        }
-
-        .config-modal input[type="file"] {
-            margin-bottom: 15px;
-            color: #ccc;
-            background-color: #000;
-            border: 1px solid var(--border-color);
-            padding: 8px;
-            border-radius: 4px;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .config-modal button {
-            background-color: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 4px;
-            width: 100%;
-            margin-top: 15px;
-        }
-        
-        /* Notificaciones TOAST (Estilo elegante) */
-        #toast-container {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 2000;
+        /* Estados Vacíos (Mejora Visual) */
+        .empty-state {
             display: flex;
             flex-direction: column;
-            gap: 10px;
-        }
-
-        .toast {
-            background-color: #333;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 50px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            font-size: 14px;
-            opacity: 0;
-            transform: translateY(20px);
-            animation: slideIn 0.3s forwards, fadeOut 0.5s forwards 2.5s;
-            border: 1px solid #444;
-            display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: center;
+            height: 100%;
+            color: #52525B;
+            text-align: center;
+            padding: 20px;
+        }
+        .empty-state-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+            opacity: 0.5;
+        }
+        .empty-state p { margin: 0; font-size: 13px; }
+
+        /* Resaltados */
+        .highlight-match {
+            background-color: rgba(245, 158, 11, 0.2);
+            color: var(--highlight);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            padding: 0 2px;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+        .val-low { color: var(--danger); font-weight: bold; }
+        .val-high { color: var(--success); font-weight: bold; }
+
+        /* Utilidades */
+        .fullscreen {
+            position: fixed !important;
+            top: 70px !important;
+            left: 10px !important;
+            width: calc(100% - 20px) !important;
+            height: calc(100vh - 80px) !important;
+            z-index: 999;
         }
 
-        @keyframes slideIn {
-            to { opacity: 1; transform: translateY(0); }
+        /* Modal Configuración */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(2px);
+            z-index: 2000;
+            display: none;
+            justify-content: center;
+            align-items: center;
         }
-        @keyframes fadeOut {
-            to { opacity: 0; transform: translateY(10px); }
+        
+        .modal-content {
+            background-color: var(--bg-card);
+            padding: 25px;
+            border-radius: 8px;
+            width: 450px;
+            max-width: 90%;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
         }
 
-        .progress-bar {
-            height: 4px;
-            width: 0%;
-            background-color: var(--accent-color);
-            transition: width 0.3s ease;
-            margin-top: 10px;
+        .modal-content h2 {
+            margin: 0 0 20px 0;
+            font-size: 18px;
+            color: var(--text-main);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
         }
 
-        /* Media queries */
+        .file-group { margin-bottom: 15px; }
+        .file-group label { display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 12px; }
+        .file-group input { 
+            width: 100%; 
+            background: var(--bg-input); 
+            border: 1px solid var(--border); 
+            color: var(--text-muted);
+            padding: 8px; 
+            border-radius: 4px;
+        }
+
+        .modal-actions { margin-top: 20px; display: flex; gap: 10px; }
+        .btn-primary { 
+            background: var(--accent); color: white; border: none; padding: 10px; 
+            border-radius: 4px; width: 100%; cursor: pointer; font-weight: 500;
+        }
+        .btn-primary:hover { background: var(--accent-hover); }
+        .btn-close {
+            background: transparent; color: var(--text-muted); border: 1px solid var(--border);
+            padding: 10px; border-radius: 4px; cursor: pointer;
+        }
+
+        /* Toasts */
+        #toast-container {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            display: flex; flex-direction: column; gap: 8px; z-index: 3000;
+        }
+        .toast {
+            background: #27272A; color: white; padding: 10px 20px; border-radius: 20px;
+            font-size: 13px; border: 1px solid #3F3F46; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s, fadeOut 0.3s 2.7s forwards;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeOut { to { opacity: 0; } }
+
+        /* Media Query */
         @media (max-width: 768px) {
-            .grid-container {
-                grid-template-columns: 1fr;
-                padding: 80px 10px 10px 10px;
-            }
+            .grid-container { grid-template-columns: 1fr; grid-template-rows: auto; overflow-y: auto; }
+            .top-menu { padding: 0 15px; }
         }
     </style>
 </head>
-<body onload="loadDataFromStorage(); loadHistory()">
+<body onload="loadHistory()">
 
     <div id="toast-container"></div>
 
     <div class="top-menu">
         <span>Buscadores Cuadrantes</span>
         <div class="menu-buttons">
-            <button onclick="resetLayout()" class="reset-btn">Reiniciar diseño</button>
-            <button onclick="openConfig()">Configuración</button>
+            <button onclick="resetLayout()">Reiniciar Vistas</button>
+            <button onclick="openConfig()">Cargar Archivos</button>
         </div>
     </div>
 
     <div class="grid-container">
+        
         <div class="search-box" id="box1" style="grid-area: 1 / 1 / 2 / 2;">
-            <button class="options-toggle" onclick="toggleOptions('options1')">•••</button>
-            <h3>
-                <span>Matriz de CUPS</span>
-                <span class="sync-icon" id="sync1" onclick="toggleSync('1')" title="Sincronizar con Cuadro 2">⇄</span>
-            </h3>
-            <div class="input-container">
-                <input type="text" id="input1" 
-                       onkeydown="handleSearchKeys(event, '1')"
-                       placeholder="Escribe y presiona Enter o Tab...">
-                <span class="history-label">Recientes:</span>
-                <div class="history-container" id="history1"></div>
+            <div class="box-header">
+                <h3>Matriz CUPS <span class="sync-icon" id="sync1" onclick="toggleSync('1')" title="Sincronizar">⇄</span></h3>
+                <button class="options-toggle" onclick="toggleOptions('opt1')">⚙️</button>
             </div>
-            <div class="options-panel" id="options1">
-                <button onclick="modoCompacto('box1')">Compacto</button>
+            <div class="options-panel" id="opt1">
                 <button onclick="fijarCuadro('box1')">Fijar</button>
-                <button onclick="pantallaCompleta('box1')">Full Screen</button>
-                <button onclick="copiarResultados('results1')">Copiar</button>
-                <button onclick="exportToCsv('results1', 'cups.csv')">CSV</button>
-                <button onclick="reiniciarCuadro('input1','results1')">Limpiar</button>
-                <label class="exact-match-toggle">
-                    <input type="checkbox" id="exact1"> Exacta
-                </label>
+                <button onclick="pantallaCompleta('box1')">Pantalla Completa</button>
+                <button onclick="copiarResultados('res1')">Copiar Todo</button>
+                <button onclick="exportToCsv('res1', 'cups.csv')">Excel/CSV</button>
+                <button onclick="cleanBox('1')">Limpiar</button>
+                <label class="exact-label"><input type="checkbox" id="exact1"> Exacta</label>
             </div>
-            <div class="results" id="results1"></div>
+            <div class="input-area">
+                <div class="input-wrapper">
+                    <input type="text" id="in1" onkeydown="handleKey(event, '1')" placeholder="Escribe y presiona Enter o Tab...">
+                </div>
+                <div class="history-container" id="hist1"></div>
+            </div>
+            <div class="results" id="res1">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📂</div>
+                    <p>Carga un archivo y busca para ver resultados</p>
+                </div>
+            </div>
         </div>
 
         <div class="search-box" id="box2" style="grid-area: 1 / 2 / 2 / 3;">
-            <button class="options-toggle" onclick="toggleOptions('options2')">•••</button>
-            <h3>
-                <span>Prestadores</span>
-                <span class="sync-icon" id="sync2" onclick="toggleSync('2')" title="Sincronizar con Cuadro 1">⇄</span>
-            </h3>
-            <div class="input-container">
-                <input type="text" id="input2" 
-                       onkeydown="handleSearchKeys(event, '2')"
-                       placeholder="Escribe y presiona Enter o Tab...">
-                <span class="history-label">Recientes:</span>
-                <div class="history-container" id="history2"></div>
+            <div class="box-header">
+                <h3>Prestadores <span class="sync-icon" id="sync2" onclick="toggleSync('2')" title="Sincronizar">⇄</span></h3>
+                <button class="options-toggle" onclick="toggleOptions('opt2')">⚙️</button>
             </div>
-            <div class="options-panel" id="options2">
-                <button onclick="modoCompacto('box2')">Compacto</button>
+            <div class="options-panel" id="opt2">
                 <button onclick="fijarCuadro('box2')">Fijar</button>
-                <button onclick="pantallaCompleta('box2')">Full Screen</button>
-                <button onclick="copiarResultados('results2')">Copiar</button>
-                <button onclick="exportToCsv('results2', 'prestadores.csv')">CSV</button>
-                <button onclick="reiniciarCuadro('input2','results2')">Limpiar</button>
-                <label class="exact-match-toggle">
-                    <input type="checkbox" id="exact2"> Exacta
-                </label>
+                <button onclick="pantallaCompleta('box2')">Pantalla Completa</button>
+                <button onclick="copiarResultados('res2')">Copiar Todo</button>
+                <button onclick="exportToCsv('res2', 'prestadores.csv')">Excel/CSV</button>
+                <button onclick="cleanBox('2')">Limpiar</button>
+                <label class="exact-label"><input type="checkbox" id="exact2"> Exacta</label>
             </div>
-            <div class="results" id="results2"></div>
+            <div class="input-area">
+                <div class="input-wrapper">
+                    <input type="text" id="in2" onkeydown="handleKey(event, '2')" placeholder="Escribe y presiona Enter o Tab...">
+                </div>
+                <div class="history-container" id="hist2"></div>
+            </div>
+            <div class="results" id="res2">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📂</div>
+                    <p>Carga un archivo y busca para ver resultados</p>
+                </div>
+            </div>
         </div>
 
         <div class="search-box" id="box3" style="grid-area: 2 / 1 / 3 / 2;">
-            <button class="options-toggle" onclick="toggleOptions('options3')">•••</button>
-            <h3>
-                <span>Cartas Sorweb</span>
-                <span class="sync-icon" id="sync3" onclick="toggleSync('3')">⇄</span>
-            </h3>
-            <div class="input-container">
-                <input type="text" id="input3" 
-                       onkeydown="handleSearchKeys(event, '3')"
-                       placeholder="Escribe y presiona Enter o Tab...">
-                <span class="history-label">Recientes:</span>
-                <div class="history-container" id="history3"></div>
+            <div class="box-header">
+                <h3>Cartas Sorweb</h3>
+                <button class="options-toggle" onclick="toggleOptions('opt3')">⚙️</button>
             </div>
-            <div class="options-panel" id="options3">
-                <button onclick="modoCompacto('box3')">Compacto</button>
+            <div class="options-panel" id="opt3">
                 <button onclick="fijarCuadro('box3')">Fijar</button>
-                <button onclick="pantallaCompleta('box3')">Full Screen</button>
-                <button onclick="copiarResultados('results3')">Copiar</button>
-                <button onclick="exportToCsv('results3', 'cartas.csv')">CSV</button>
-                <button onclick="reiniciarCuadro('input3','results3')">Limpiar</button>
-                <label class="exact-match-toggle">
-                    <input type="checkbox" id="exact3"> Exacta
-                </label>
+                <button onclick="pantallaCompleta('box3')">Pantalla Completa</button>
+                <button onclick="copiarResultados('res3')">Copiar Todo</button>
+                <button onclick="exportToCsv('res3', 'cartas.csv')">Excel/CSV</button>
+                <button onclick="cleanBox('3')">Limpiar</button>
+                <label class="exact-label"><input type="checkbox" id="exact3"> Exacta</label>
             </div>
-            <div class="results" id="results3"></div>
+            <div class="input-area">
+                <div class="input-wrapper">
+                    <input type="text" id="in3" onkeydown="handleKey(event, '3')" placeholder="Escribe y presiona Enter o Tab...">
+                </div>
+                <div class="history-container" id="hist3"></div>
+            </div>
+            <div class="results" id="res3">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📂</div>
+                    <p>Carga un archivo y busca para ver resultados</p>
+                </div>
+            </div>
         </div>
 
         <div class="search-box" id="box4" style="grid-area: 2 / 2 / 3 / 3;">
-            <button class="options-toggle" onclick="toggleOptions('options4')">•••</button>
-            <h3>
-                <span>AYUDANTE</span>
-                <span class="sync-icon" id="sync4" onclick="toggleSync('4')">⇄</span>
-            </h3>
-            <div class="input-container">
-                <input type="text" id="input4" 
-                       onkeydown="handleSearchKeys(event, '4')"
-                       placeholder="Escribe y presiona Enter o Tab...">
-                <span class="history-label">Recientes:</span>
-                <div class="history-container" id="history4"></div>
+            <div class="box-header">
+                <h3>AYUDANTE</h3>
+                <button class="options-toggle" onclick="toggleOptions('opt4')">⚙️</button>
             </div>
-            <div class="options-panel" id="options4">
-                <button onclick="modoCompacto('box4')">Compacto</button>
+            <div class="options-panel" id="opt4">
                 <button onclick="fijarCuadro('box4')">Fijar</button>
-                <button onclick="pantallaCompleta('box4')">Full Screen</button>
-                <button onclick="copiarResultados('results4')">Copiar</button>
-                <button onclick="exportToCsv('results4', 'ayudante.csv')">CSV</button>
-                <button onclick="reiniciarCuadro('input4','results4')">Limpiar</button>
-                <label class="exact-match-toggle">
-                    <input type="checkbox" id="exact4"> Exacta
-                </label>
+                <button onclick="pantallaCompleta('box4')">Pantalla Completa</button>
+                <button onclick="copiarResultados('res4')">Copiar Todo</button>
+                <button onclick="exportToCsv('res4', 'ayudante.csv')">Excel/CSV</button>
+                <button onclick="cleanBox('4')">Limpiar</button>
+                <label class="exact-label"><input type="checkbox" id="exact4"> Exacta</label>
             </div>
-            <div class="results" id="results4"></div>
+            <div class="input-area">
+                <div class="input-wrapper">
+                    <input type="text" id="in4" onkeydown="handleKey(event, '4')" placeholder="Escribe y presiona Enter o Tab...">
+                </div>
+                <div class="history-container" id="hist4"></div>
+            </div>
+            <div class="results" id="res4">
+                <div class="empty-state">
+                    <div class="empty-state-icon">📂</div>
+                    <p>Carga un archivo y busca para ver resultados</p>
+                </div>
+            </div>
         </div>
     </div>
-    
-    <div class="config-modal" id="configModal">
-        <button class="close-btn" onclick="closeConfig()">×</button>
-        <h2>Configuración de Datos</h2>
-        <p>Sube archivos JSON o Excel (.xlsx).</p>
-        
-        <label>Búsqueda 1 (CUPS):</label>
-        <input type="file" id="file1" accept=".json,.xlsx,.xls">
-        
-        <label>Búsqueda 2 (Prestadores):</label>
-        <input type="file" id="file2" accept=".json,.xlsx,.xls">
-        
-        <label>Búsqueda 3 (Cartas):</label>
-        <input type="file" id="file3" accept=".json,.xlsx,.xls">
-        
-        <label>Búsqueda 4 (Ayudante):</label>
-        <input type="file" id="file4" accept=".json,.xlsx,.xls">
-        
-        <button onclick="guardarConfig()">Procesar y Guardar</button>
-        
-        <div class="progress-bar" id="progressBar"></div>
-        <div class="confirmation" id="confirmMsg"></div>
-        
-        <button onclick="borrarDatos()" style="background-color: #333; margin-top: 20px; color: #aaa;">Borrar datos almacenados</button>
+
+    <div class="modal-overlay" id="configModal">
+        <div class="modal-content">
+            <h2>Cargar Archivos (Memoria Temporal)</h2>
+            
+            <div class="file-group">
+                <label>1. Matriz CUPS</label>
+                <input type="file" id="f1" accept=".xlsx,.xls,.json">
+            </div>
+            <div class="file-group">
+                <label>2. Prestadores</label>
+                <input type="file" id="f2" accept=".xlsx,.xls,.json">
+            </div>
+            <div class="file-group">
+                <label>3. Cartas Sorweb</label>
+                <input type="file" id="f3" accept=".xlsx,.xls,.json">
+            </div>
+            <div class="file-group">
+                <label>4. Ayudante</label>
+                <input type="file" id="f4" accept=".xlsx,.xls,.json">
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-close" onclick="closeConfig()">Cancelar</button>
+                <button class="btn-primary" onclick="processFiles()">Cargar Datos a RAM</button>
+            </div>
+            <p id="statusMsg" style="margin-top:10px; font-size:12px; color:var(--text-muted); text-align:center;"></p>
+        </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <script>
-        // Variables globales
-        let data1 = [], data2 = [], data3 = [], data4 = [];
-        const syncState = { '1': false, '2': false, '3': false, '4': false };
-        let searchHistory = { '1': [], '2': [], '3': [], '4': [] };
+        // Variables en RAM (Se pierden al recargar)
+        let dataset = { '1': [], '2': [], '3': [], '4': [] };
+        let history = { '1': [], '2': [], '3': [], '4': [] };
+        let sync = { '1': false, '2': false };
 
-        // Datos de ejemplo
-        const cartaData = [
-            { "titulo": "Ejemplo: Caso incompleto", "contenido": "..." },
-            { "titulo": "Ejemplo: Mora", "contenido": "..." }
+        // Datos de ejemplo para C3 si no se carga nada
+        const defaultC3 = [
+            { "TITULO": "Ejemplo Caso Sorweb", "CONTENIDO": "Texto de ejemplo..." },
+            { "TITULO": "Ejemplo Mora", "CONTENIDO": "Usuario en mora..." }
         ];
 
-        // --- MANEJO DE TECLAS (TAB / ENTER) ---
-        function handleSearchKeys(e, boxNum) {
-            // Código 13 = Enter, Código 9 = Tab
-            if (e.key === 'Enter' || e.key === 'Tab') {
-                // Si es Tab, no prevenimos el comportamiento por defecto para que salte al siguiente input
-                // Si es Enter, evitamos el submit si hubiera form
-                if(e.key === 'Enter') e.preventDefault();
-                
-                const inputVal = document.getElementById('input' + boxNum).value.trim();
-                
-                // Ejecutar búsqueda solo si hay valor o para limpiar
-                buscar('input' + boxNum, 'results' + boxNum);
-                
-                if (inputVal) {
-                    addToHistory(boxNum, inputVal);
-                }
-                
-                // Si hay sincronización activa (solo 1 y 2)
-                if (['1', '2'].includes(boxNum) && syncState['1'] && syncState['2']) {
-                    const otherBox = boxNum === '1' ? '2' : '1';
-                    document.getElementById('input' + otherBox).value = inputVal;
-                    buscar('input' + otherBox, 'results' + otherBox);
-                }
-            }
+        // --- SISTEMA DE ARCHIVOS (Sin LocalStorage para Data) ---
+        function openConfig() { 
+            document.getElementById('configModal').style.display = 'flex'; 
+            document.getElementById('statusMsg').innerText = '';
         }
-
-        // --- SISTEMA DE TOAST (NOTIFICACIONES) ---
-        function showToast(message) {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.innerText = message;
-            container.appendChild(toast);
-            
-            // Se elimina automáticamente por la animación CSS (2.5s + 0.5s fade)
-            setTimeout(() => {
-                if(toast.parentNode) container.removeChild(toast);
-            }, 3000);
-        }
-
-        // --- BÚSQUEDA CORE ---
-        function buscar(inputId, resultId) {
-            const resultDiv = document.getElementById(resultId);
-            const boxNum = inputId.slice(-1);
-            let data;
-            
-            switch (boxNum) {
-                case '1': data = data1; break;
-                case '2': data = data2; break;
-                case '3': data = data3; break;
-                case '4': data = data4; break;
-                default: return;
-            }
-            
-            if (!data || data.length === 0) {
-                resultDiv.innerHTML = '<div style="padding:10px; color:#666;">Sin datos cargados.</div>';
-                return;
-            }
-
-            const query = document.getElementById(inputId).value.trim();
-            const isExact = document.getElementById(`exact${boxNum}`).checked;
-            const normalizedQuery = normalizeText(query);
-            
-            let filteredData;
-            
-            // Si está vacío, mostrar todo (opcional, o mostrar nada)
-            // Aquí mostramos todo si está vacío para ver la tabla
-            if (!normalizedQuery) {
-                filteredData = data; 
-            } else if (isExact) {
-                filteredData = data.filter(item => item.searchableText === normalizedQuery);
-            } else {
-                const keywords = normalizedQuery.split(/\s+/).filter(Boolean);
-                filteredData = data.filter(item => {
-                    return keywords.every(keyword => item.searchableText.includes(keyword));
-                });
-            }
-
-            // Ordenamiento (si existe clave guardada)
-            const sortKey = resultDiv.dataset.sortKey;
-            const sortOrder = resultDiv.dataset.sortOrder;
-            if (sortKey) {
-                filteredData.sort((a, b) => {
-                    const aVal = a[sortKey], bVal = b[sortKey];
-                    if (typeof aVal === 'string') 
-                        return sortOrder === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
-                    return sortOrder === 'asc' ? (aVal > bVal ? 1 : -1) : (aVal < bVal ? 1 : -1);
-                });
-            }
-
-            // Renderizar
-            if (filteredData.length === 0) {
-                resultDiv.innerHTML = '<div style="padding:10px; color:#777;">No se encontraron resultados.</div>';
-                return;
-            }
-
-            let html = '<table><thead><tr>';
-            const headers = Object.keys(filteredData[0]).filter(k => k !== 'searchableText');
-            
-            headers.forEach(h => {
-                html += `<th onclick="sortTable(this, '${resultId}')" data-header="${h}">${h}</th>`;
-            });
-            html += '</tr></thead><tbody>';
-
-            // Limitar a 100 resultados para rendimiento si no hay paginación
-            const limit = query ? filteredData.length : Math.min(filteredData.length, 100); 
-
-            for(let i=0; i<limit; i++) {
-                const item = filteredData[i];
-                html += '<tr>';
-                headers.forEach(h => {
-                    let val = item[h] || '';
-                    let display = val;
-                    // Resaltado de texto
-                    if (query && typeof val === 'string') {
-                        const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-                        display = val.replace(regex, '<span class="search-highlight">$1</span>');
-                    }
-                    html += `<td>${display}</td>`;
-                });
-                html += '</tr>';
-            }
-            html += '</tbody></table>';
-            
-            if (!query && filteredData.length > 100) {
-                html += `<div style="padding:5px; text-align:center; color:#555; font-size:11px;">Mostrando primeros 100 de ${filteredData.length} registros.</div>`;
-            }
-
-            resultDiv.innerHTML = html;
-        }
-
-        // --- FUNCIONES AUXILIARES ---
-        function normalizeText(text) {
-            return text.toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        }
-
-        function sortTable(header, resultId) {
-            const resultDiv = document.getElementById(resultId);
-            const key = header.dataset.header;
-            let order = resultDiv.dataset.sortOrder === 'asc' ? 'desc' : 'asc';
-            if (resultDiv.dataset.sortKey !== key) order = 'asc';
-            
-            resultDiv.dataset.sortKey = key;
-            resultDiv.dataset.sortOrder = order;
-            
-            const inputId = resultId.replace('results', 'input');
-            buscar(inputId, resultId);
-        }
-
-        function toggleOptions(id) {
-            const panel = document.getElementById(id);
-            panel.style.display = panel.style.display === 'flex' ? 'none' : 'flex';
-        }
-
-        function toggleSync(boxNum) {
-            if (boxNum !== '1' && boxNum !== '2') {
-                showToast("Sincronización solo disponible entre Cuadro 1 y 2");
-                return;
-            }
-            syncState[boxNum] = !syncState[boxNum];
-            const icon = document.getElementById('sync'+boxNum);
-            icon.classList.toggle('active', syncState[boxNum]);
-            showToast(syncState[boxNum] ? "Sincronización activada" : "Sincronización desactivada");
-        }
-
-        function modoCompacto(boxId) {
-            const box = document.getElementById(boxId);
-            const input = box.querySelector('.input-container');
-            const results = box.querySelector('.results');
-            const isHidden = input.style.display === 'none';
-            input.style.display = isHidden ? 'block' : 'none';
-            results.style.display = isHidden ? 'block' : 'none';
-        }
-
-        function fijarCuadro(boxId) {
-            const box = document.getElementById(boxId);
-            const current = box.style.resize;
-            box.style.resize = (current === 'none') ? 'both' : 'none';
-            showToast((current === 'none') ? "Redimensión activada" : "Cuadro fijado");
-        }
-
-        function pantallaCompleta(boxId) {
-            document.getElementById(boxId).classList.toggle('fullscreen');
-        }
-
-        function reiniciarCuadro(inputId, resultId) {
-            document.getElementById(inputId).value = '';
-            document.getElementById(resultId).innerHTML = '';
-            document.getElementById(inputId).focus();
-        }
-
-        function copiarResultados(resultId) {
-            const el = document.getElementById(resultId);
-            if (!el.innerText) { showToast("Nada para copiar"); return; }
-            
-            const textarea = document.createElement('textarea');
-            textarea.value = el.innerText;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
-            showToast("✅ Resultados copiados al portapapeles");
-        }
-
-        function exportToCsv(resultId, filename) {
-            const table = document.getElementById(resultId).querySelector('table');
-            if (!table) { showToast("No hay tabla para exportar"); return; }
-            
-            const rows = table.querySelectorAll('tr');
-            let csv = [];
-            for(let row of rows) {
-                const cols = row.querySelectorAll('th, td');
-                let rowData = [];
-                for(let col of cols) {
-                    rowData.push('"' + col.innerText.replace(/"/g, '""') + '"');
-                }
-                csv.push(rowData.join(','));
-            }
-            
-            const blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = filename;
-            link.click();
-            showToast("📥 Archivo CSV descargado");
-        }
-
-        // --- CARGA DE DATOS ---
-        function openConfig() { document.getElementById('configModal').style.display = 'block'; }
         function closeConfig() { document.getElementById('configModal').style.display = 'none'; }
 
-        async function guardarConfig() {
-            const files = [1,2,3,4].map(n => document.getElementById('file'+n).files[0]);
-            const progress = document.getElementById('progressBar');
-            const confirm = document.getElementById('confirmMsg');
-            
-            progress.style.width = '10%';
-            confirm.innerText = 'Procesando...';
-            
-            let loadedCount = 0;
-            const loadedData = [null, null, null, null];
+        async function processFiles() {
+            const btn = document.querySelector('.btn-primary');
+            const status = document.getElementById('statusMsg');
+            btn.disabled = true;
+            status.innerText = "Procesando archivos... espera por favor.";
+
+            const inputs = ['f1', 'f2', 'f3', 'f4'];
+            let loaded = 0;
 
             for(let i=0; i<4; i++) {
-                if(files[i]) {
+                const file = document.getElementById(inputs[i]).files[0];
+                if(file) {
                     try {
-                        const data = await readFile(files[i]);
-                        // Pre-procesar búsqueda
-                        loadedData[i] = data.map(item => ({
+                        const data = await readFile(file);
+                        // Normalizamos texto para búsquedas rápidas
+                        dataset[String(i+1)] = data.map(item => ({
                             ...item,
-                            searchableText: normalizeText(JSON.stringify(item))
+                            _search: normalize(JSON.stringify(item))
                         }));
-                        loadedCount++;
+                        loaded++;
                     } catch(e) {
-                        alert("Error en archivo " + (i+1));
+                        console.error(e);
+                        showToast(`Error en archivo ${i+1}`);
                     }
                 }
             }
+
+            // Cargar default si C3 está vacío
+            if(dataset['3'].length === 0) {
+                dataset['3'] = defaultC3.map(i => ({...i, _search: normalize(JSON.stringify(i))}));
+            }
+
+            status.innerText = `Listo. ${loaded} archivos cargados en memoria.`;
+            showToast("Datos cargados correctamente");
             
-            if (loadedData[0]) data1 = loadedData[0];
-            if (loadedData[1]) data2 = loadedData[1];
-            if (loadedData[2]) data3 = loadedData[2];
-            if (loadedData[3]) data4 = loadedData[3];
-            
-            saveToLocal();
-            progress.style.width = '100%';
-            confirm.innerText = `Completado. ${loadedCount} archivos cargados.`;
-            setTimeout(() => { closeConfig(); location.reload(); }, 1500);
+            setTimeout(() => {
+                btn.disabled = false;
+                closeConfig();
+                // No hay reload(), los datos ya están en la variable 'dataset'
+            }, 1000);
         }
 
         function readFile(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
-                const ext = file.name.split('.').pop().toLowerCase();
-                
-                if (ext === 'json') {
+                if(file.name.endsWith('.json')) {
                     reader.onload = e => resolve(JSON.parse(e.target.result));
                     reader.readAsText(file);
                 } else {
                     reader.onload = e => {
                         const wb = XLSX.read(e.target.result, { type: 'binary' });
-                        resolve(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]));
+                        const ws = wb.Sheets[wb.SheetNames[0]];
+                        resolve(XLSX.utils.sheet_to_json(ws));
                     };
                     reader.readAsBinaryString(file);
                 }
             });
         }
 
-        function saveToLocal() {
-            try {
-                localStorage.setItem('d1', JSON.stringify(data1));
-                localStorage.setItem('d2', JSON.stringify(data2));
-                localStorage.setItem('d3', JSON.stringify(data3));
-                localStorage.setItem('d4', JSON.stringify(data4));
-            } catch(e) { showToast("Error: Memoria llena"); }
-        }
-
-        function loadDataFromStorage() {
-            try {
-                const d1 = localStorage.getItem('d1');
-                const d2 = localStorage.getItem('d2');
-                const d3 = localStorage.getItem('d3');
-                const d4 = localStorage.getItem('d4');
-                
-                if(d1) data1 = JSON.parse(d1);
-                if(d2) data2 = JSON.parse(d2);
-                if(d3) data3 = JSON.parse(d3); else data3 = cartaData.map(i=>({...i, searchableText: normalizeText(JSON.stringify(i))}));
-                if(d4) data4 = JSON.parse(d4);
-            } catch(e) { console.log("Sin datos previos"); }
-        }
-
-        function borrarDatos() {
-            if(confirm("¿Borrar todos los datos locales?")) {
-                localStorage.clear();
-                location.reload();
+        // --- BUSQUEDA ---
+        function handleKey(e, id) {
+            if(e.key === 'Enter' || e.key === 'Tab') {
+                if(e.key === 'Enter') e.preventDefault();
+                performSearch(id);
+                // Si sincronización activa
+                if(['1','2'].includes(id) && sync['1'] && sync['2']) {
+                    const other = id==='1'?'2':'1';
+                    document.getElementById('in'+other).value = document.getElementById('in'+id).value;
+                    performSearch(other);
+                }
             }
+        }
+
+        function performSearch(id) {
+            const val = document.getElementById('in'+id).value.trim();
+            const container = document.getElementById('res'+id);
+            const data = dataset[id];
+            
+            if(val) saveHistory(id, val);
+
+            if(!data || data.length === 0) {
+                container.innerHTML = getEmptyState("No hay datos cargados");
+                return;
+            }
+
+            if(!val) {
+                container.innerHTML = getEmptyState("Escribe para buscar");
+                return;
+            }
+
+            const isExact = document.getElementById('exact'+id).checked;
+            const normVal = normalize(val);
+            const terms = normVal.split(' ').filter(x => x);
+
+            const results = data.filter(item => {
+                if(isExact) return item._search === normVal;
+                return terms.every(t => item._search.includes(t));
+            });
+
+            renderTable(id, results, val);
+        }
+
+        function renderTable(id, data, query) {
+            const container = document.getElementById('res'+id);
+            if(data.length === 0) {
+                container.innerHTML = getEmptyState("Sin coincidencias");
+                return;
+            }
+
+            // Limitar renderizado a 200 filas para evitar lag
+            const displayData = data.slice(0, 200); 
+            const headers = Object.keys(displayData[0]).filter(k => k !== '_search');
+
+            let html = '<table><thead><tr>';
+            headers.forEach(h => html += `<th>${h}</th>`);
+            html += '</tr></thead><tbody>';
+
+            displayData.forEach(row => {
+                html += '<tr>';
+                headers.forEach(h => {
+                    let cell = row[h] !== undefined ? String(row[h]) : '';
+                    // Highlight logic
+                    if(query) {
+                        const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                        cell = cell.replace(regex, '<span class="highlight-match">$1</span>');
+                    }
+                    html += `<td>${cell}</td>`;
+                });
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            
+            if(data.length > 200) {
+                html += `<div style="padding:10px;text-align:center;font-size:12px;opacity:0.7">Mostrando primeros 200 de ${data.length} resultados</div>`;
+            }
+
+            container.innerHTML = html;
+        }
+
+        // --- UTILIDADES ---
+        function normalize(str) {
+            return String(str).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        }
+
+        function getEmptyState(msg) {
+            return `<div class="empty-state"><div class="empty-state-icon">🔍</div><p>${msg}</p></div>`;
+        }
+
+        function showToast(msg) {
+            const box = document.getElementById('toast-container');
+            const el = document.createElement('div');
+            el.className = 'toast';
+            el.innerText = msg;
+            box.appendChild(el);
+            setTimeout(() => el.remove(), 3000);
         }
 
         // --- HISTORIAL ---
         function loadHistory() {
-            const h = localStorage.getItem('history');
-            if(h) {
-                searchHistory = JSON.parse(h);
-                [1,2,3,4].forEach(n => renderHistory(String(n)));
+            const saved = localStorage.getItem('search_history_safe');
+            if(saved) {
+                history = JSON.parse(saved);
+                ['1','2','3','4'].forEach(renderHistory);
             }
         }
 
-        function addToHistory(box, term) {
-            const list = searchHistory[box];
-            const idx = list.indexOf(term);
-            if(idx > -1) list.splice(idx, 1);
-            list.unshift(term);
+        function saveHistory(id, txt) {
+            let list = history[id];
+            if(list.includes(txt)) list = list.filter(x => x !== txt);
+            list.unshift(txt);
             if(list.length > 5) list.pop();
-            
-            searchHistory[box] = list;
-            localStorage.setItem('history', JSON.stringify(searchHistory));
-            renderHistory(box);
+            history[id] = list;
+            localStorage.setItem('search_history_safe', JSON.stringify(history));
+            renderHistory(id);
         }
 
-        function removeFromHistory(box, term) {
-            const list = searchHistory[box];
-            const idx = list.indexOf(term);
-            if(idx > -1) list.splice(idx, 1);
-            localStorage.setItem('history', JSON.stringify(searchHistory));
-            renderHistory(box);
-        }
-
-        function renderHistory(box) {
-            const container = document.getElementById('history' + box);
-            container.innerHTML = '';
-            searchHistory[box].forEach(term => {
+        function renderHistory(id) {
+            const box = document.getElementById('hist'+id);
+            box.innerHTML = '';
+            history[id].forEach(txt => {
                 const tag = document.createElement('div');
                 tag.className = 'history-tag';
-                tag.innerHTML = `<span onclick="useHistory('${box}', '${term}')">${term}</span><span class="remove-item" onclick="removeFromHistory('${box}', '${term}')">×</span>`;
-                container.appendChild(tag);
+                tag.innerHTML = `<span onclick="useHist('${id}','${txt}')">${txt}</span><span class="remove-item" onclick="delHist('${id}','${txt}')">×</span>`;
+                box.appendChild(tag);
             });
         }
 
-        function useHistory(box, term) {
-            document.getElementById('input' + box).value = term;
-            buscar('input' + box, 'results' + box);
+        function useHist(id, txt) {
+            document.getElementById('in'+id).value = txt;
+            performSearch(id);
+        }
+
+        function delHist(id, txt) {
+            history[id] = history[id].filter(x => x !== txt);
+            localStorage.setItem('search_history_safe', JSON.stringify(history));
+            renderHistory(id);
+        }
+
+        // --- UI TOGGLES ---
+        function toggleOptions(id) {
+            const p = document.getElementById(id);
+            p.style.display = p.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        function toggleSync(id) {
+            if(!['1','2'].includes(id)) { showToast("Solo Cuadros 1 y 2"); return; }
+            sync[id] = !sync[id];
+            document.getElementById('sync'+id).classList.toggle('active');
+            showToast(`Sincronización ${sync[id] ? 'Activada' : 'Desactivada'}`);
+        }
+
+        function cleanBox(id) {
+            document.getElementById('in'+id).value = '';
+            document.getElementById('res'+id).innerHTML = getEmptyState("Limpio");
+        }
+
+        function fijarCuadro(boxId) {
+            const el = document.getElementById(boxId);
+            el.style.resize = el.style.resize === 'none' ? 'both' : 'none';
+        }
+
+        function pantallaCompleta(boxId) {
+            document.getElementById(boxId).classList.toggle('fullscreen');
+        }
+
+        function copiarResultados(resId) {
+            const node = document.getElementById(resId);
+            if(node.innerText.includes("Carga un archivo") || node.innerText.includes("Sin coincidencias")) {
+                showToast("Nada que copiar"); return;
+            }
+            const txt = document.createElement('textarea');
+            txt.value = node.innerText;
+            document.body.appendChild(txt);
+            txt.select();
+            document.execCommand('copy');
+            document.body.removeChild(txt);
+            showToast("Resultados copiados");
+        }
+        
+        function exportToCsv(resId, name) {
+            const table = document.getElementById(resId).querySelector('table');
+            if(!table) { showToast("No hay tabla"); return; }
+            let csv = [];
+            table.querySelectorAll('tr').forEach(tr => {
+                let row = [];
+                tr.querySelectorAll('th, td').forEach(td => row.push(`"${td.innerText}"`));
+                csv.push(row.join(','));
+            });
+            const blob = new Blob([csv.join('\n')], {type:'text/csv'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = name; a.click();
+        }
+
+        function resetLayout() {
+            document.querySelectorAll('.search-box').forEach(b => {
+                b.style = ''; b.classList.remove('fullscreen');
+            });
+            // Restaurar grid
+            document.getElementById('box1').style.gridArea = '1 / 1 / 2 / 2';
+            document.getElementById('box2').style.gridArea = '1 / 2 / 2 / 3';
+            document.getElementById('box3').style.gridArea = '2 / 1 / 3 / 2';
+            document.getElementById('box4').style.gridArea = '2 / 2 / 3 / 3';
         }
     </script>
 </body>
