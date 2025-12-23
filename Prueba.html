@@ -3,238 +3,314 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buscadores Cuadrantes - Versión Mejorada</title>
+    <title>Buscadores Cuadrantes</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* --- ESTILOS GENERALES (MODO OSCURO) --- */
+        /* --- ESTILOS GENERALES (MODO OSCURO PRO) --- */
+        :root {
+            --bg-body: #0f0f0f;
+            --bg-panel: #141414;
+            --bg-header: #1f1f1f;
+            --border-color: #333;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --accent-blue: #4dabf7;
+            --highlight-orange: #ff9800; /* Color del resaltado de texto */
+        }
+
         body {
             margin: 0;
             padding: 0;
-            background-color: #121212; /* Fondo muy oscuro */
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: #e0e0e0;
+            background-color: var(--bg-body);
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: var(--text-primary);
             height: 100vh;
             display: flex;
             flex-direction: column;
+            overflow: hidden; /* Evitamos scroll en el body, lo queremos en los paneles */
         }
 
-        /* --- BARRA SUPERIOR --- */
+        /* --- HEADER SUPERIOR --- */
         header {
-            background-color: #1f1f1f;
-            padding: 10px 20px;
-            border-bottom: 1px solid #333;
+            height: 50px;
+            background-color: var(--bg-header);
+            border-bottom: 1px solid var(--border-color);
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            height: 40px;
+            justify-content: space-between;
+            padding: 0 20px;
+            flex-shrink: 0;
         }
-        h1 { font-size: 16px; margin: 0; font-weight: bold; }
 
-        /* --- CONTENEDOR PRINCIPAL (GRILLA DE 4) --- */
-        .main-grid {
+        .header-title {
+            font-size: 16px;
+            font-weight: 700;
             display: flex;
-            flex-wrap: wrap;
-            height: calc(100vh - 60px); /* Usa el resto de la altura disponible */
-            padding: 5px;
-            box-sizing: border-box;
+            align-items: center;
             gap: 10px;
         }
 
-        /* --- CADA CUADRANTE --- */
-        .cuadrante {
-            background-color: #0d1117; /* Fondo tipo panel */
-            border: 1px solid #30363d;
+        .header-actions button {
+            background-color: #333;
+            border: 1px solid #555;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 5px;
+        }
+        .header-actions button:hover { background-color: #444; }
+
+        /* --- LAYOUT GRID 2x2 --- */
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 8px; /* Espacio entre paneles */
+            padding: 8px;
+            height: calc(100vh - 50px); /* Ocupa todo el resto de la pantalla */
+            box-sizing: border-box;
+        }
+
+        /* --- ESTILOS DE LOS PANELES (CARTAS) --- */
+        .card {
+            background-color: var(--bg-panel);
+            border: 1px solid var(--border-color);
             border-radius: 6px;
             display: flex;
             flex-direction: column;
-            /* Aquí hacemos que ocupe el 50% del ancho y 50% del alto aprox */
-            width: calc(50% - 10px); 
-            height: calc(50% - 10px);
             overflow: hidden;
             position: relative;
         }
 
-        /* Encabezado azul de cada panel */
-        .panel-header {
-            padding: 10px;
-            color: #58a6ff; /* Azul similar al de tu imagen */
+        .card-header {
+            padding: 10px 15px;
+            background-color: #1a1a1a;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--accent-blue);
             font-weight: bold;
-            font-size: 14px;
-            border-bottom: 1px solid #30363d;
-            background-color: #161b22;
+            font-size: 13px;
+            text-transform: uppercase;
             display: flex;
             justify-content: space-between;
+            align-items: center;
         }
-
-        /* Área de contenido scrollable */
-        .panel-content {
+        
+        .card-body {
             flex: 1;
-            overflow-y: auto; /* Scroll vertical si es necesario */
             padding: 10px;
+            overflow-y: auto; /* Scroll interno */
+            display: flex;
+            flex-direction: column;
         }
 
-        /* Inputs de búsqueda */
-        .search-bar {
-            width: 100%;
-            background-color: #0d1117;
-            border: 1px solid #30363d;
-            color: white;
-            padding: 8px;
-            margin-bottom: 10px;
+        /* --- INPUTS DE BÚSQUEDA --- */
+        .search-container {
+            background-color: #000;
+            border: 1px solid var(--border-color);
+            padding: 5px;
             border-radius: 4px;
-            box-sizing: border-box;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 5px;
         }
-
-        /* --- TABLA CON CUADRÍCULA (TU REQUERIMIENTO) --- */
-        table {
-            width: 100%;
-            border-collapse: collapse; /* Importante para bordes finos */
+        
+        .tag-chip {
+            background-color: #333;
+            color: #ccc;
             font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
 
-        th, td {
-            /* AQUÍ ESTÁ LA CUADRÍCULA VISIBLE */
-            border: 1px solid #444c56; 
-            padding: 8px;
+        .search-input {
+            background: transparent;
+            border: none;
+            color: white;
+            outline: none;
+            flex: 1;
+            font-size: 13px;
+            padding: 5px;
+        }
+
+        /* --- TABLA CON CUADRÍCULA (TU SOLICITUD) --- */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+
+        .data-table th, .data-table td {
+            border: 1px solid #444; /* Borde visible tipo rejilla */
+            padding: 6px 8px;
             text-align: left;
         }
 
-        th {
-            background-color: #161b22;
-            color: #8b949e;
+        .data-table th {
+            background-color: #252526;
+            color: #bbb;
             position: sticky;
             top: 0;
+            z-index: 2;
         }
 
-        tr:hover {
-            background-color: #1f6feb33; /* Resaltado al pasar mouse */
+        .data-table tr:hover td {
+            background-color: #2a2d3e;
         }
 
-        /* Highlight naranja para coincidir con tu imagen */
-        .highlight {
-            color: #ffca28;
+        /* Texto resaltado (naranja) */
+        .highlight-text {
+            color: var(--highlight-orange);
             font-weight: bold;
+            background-color: rgba(255, 152, 0, 0.1);
+            padding: 0 2px;
+            border-radius: 2px;
         }
 
-        /* --- PAGINACIÓN (TU REQUERIMIENTO) --- */
-        .paginacion-container {
-            padding: 10px;
-            background-color: #161b22;
-            border-top: 1px solid #30363d;
+        /* --- PAGINACIÓN --- */
+        .pagination-bar {
+            margin-top: auto; /* Empuja al fondo */
+            padding-top: 10px;
             display: flex;
-            justify-content: flex-end; /* A la derecha */
+            justify-content: space-between;
             align-items: center;
-            gap: 10px;
-        }
-
-        .btn-pag {
-            background-color: #238636; /* Verde botón */
-            color: white;
-            border: none;
-            padding: 5px 15px;
-            border-radius: 4px;
-            cursor: pointer;
+            border-top: 1px solid var(--border-color);
             font-size: 12px;
+            color: #888;
         }
-        .btn-pag:disabled {
+        
+        .pagination-controls button {
             background-color: #333;
-            cursor: not-allowed;
-            color: #666;
+            border: 1px solid #555;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 3px;
+            cursor: pointer;
         }
-        .info-pag {
-            font-size: 12px;
-            color: #8b949e;
+        .pagination-controls button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
-        /* Placeholder para las vistas vacías */
+        /* --- ESTADO VACÍO (CARPETAS) --- */
         .empty-state {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100%;
-            color: #444;
+            color: #555;
+            text-align: center;
         }
-        .empty-icon { font-size: 40px; margin-bottom: 10px; }
+        .empty-state i {
+            font-size: 40px;
+            margin-bottom: 15px;
+            color: #bfa15f; /* Color carpeta */
+        }
 
     </style>
 </head>
 <body>
 
     <header>
-        <h1>Buscadores Cuadrantes</h1>
-        <div>
-            <button style="background:none; border:1px solid #555; color:white; padding: 5px 10px;">Reiniciar</button>
+        <div class="header-title">
+            <i class="fas fa-arrow-left"></i>
+            <span>Buscadores Cuadrantes</span>
+        </div>
+        <div class="header-actions">
+            <button>Reiniciar Vistas</button>
+            <button>Cargar Archivos</button>
         </div>
     </header>
 
-    <div class="main-grid">
-        
-        <div class="cuadrante">
-            <div class="panel-header">
-                MATRIZ CUPS
-                <span>⚙️</span>
-            </div>
-            
-            <div class="panel-content">
-                <input type="text" class="search-bar" placeholder="Buscar código o descripción...">
-                
-                <table id="tabla-cups">
-                    <thead>
-                        <tr>
-                            <th>CUPS</th>
-                            <th>DESCRIPCIÓN</th>
-                            <th>NIVEL</th>
-                            <th>SEXO</th>
-                            <th>EDAD</th>
-                        </tr>
-                    </thead>
-                    <tbody id="cuerpo-tabla">
-                        </tbody>
-                </table>
-            </div>
+    <div class="grid-container">
 
-            <div class="paginacion-container">
-                <span class="info-pag" id="info-paginacion">Mostrando 0-0 de 0</span>
-                <button class="btn-pag" id="btn-prev" onclick="cambiarPagina(-1)">Anterior</button>
-                <button class="btn-pag" id="btn-next" onclick="cambiarPagina(1)">Siguiente</button>
+        <div class="card">
+            <div class="card-header">
+                <span>MATRIZ CUPS <i class="fas fa-exchange-alt fa-xs"></i></span>
+                <i class="fas fa-cog"></i>
+            </div>
+            <div class="card-body">
+                <div class="search-container">
+                    <div class="tag-chip">osteo <i class="fas fa-times" style="font-size:10px; cursor:pointer;"></i></div>
+                    <input type="text" class="search-input" placeholder="Escribe...">
+                </div>
+
+                <div style="flex:1; overflow:auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 60px;">CUPS</th>
+                                <th>DESCRIPCIÓN DEL CUPS</th>
+                                <th style="width: 50px;">NIVEL</th>
+                                <th style="width: 30px;">SEXO</th>
+                                <th style="width: 30px;">EDAD</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-cups-body">
+                            </tbody>
+                    </table>
+                </div>
+
+                <div class="pagination-bar">
+                    <span id="pag-info">Mostrando 0-0</span>
+                    <div class="pagination-controls">
+                        <button onclick="prevPage()"><i class="fas fa-chevron-left"></i></button>
+                        <button onclick="nextPage()"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="cuadrante">
-            <div class="panel-header">
-                PRESTADORES <span>⚙️</span>
+        <div class="card">
+            <div class="card-header">
+                <span>PRESTADORES <i class="fas fa-exchange-alt fa-xs"></i></span>
+                <i class="fas fa-cog"></i>
             </div>
-            <div class="panel-content">
-                <input type="text" class="search-bar" placeholder="Escribe y presiona Enter...">
+            <div class="card-body">
+                <div class="search-container">
+                    <input type="text" class="search-input" placeholder="Escribe y presiona Enter o Tab...">
+                </div>
                 <div class="empty-state">
-                    <div class="empty-icon">📂</div>
+                    <i class="fas fa-folder"></i>
                     <p>Carga un archivo y busca para ver resultados</p>
                 </div>
             </div>
         </div>
 
-        <div class="cuadrante">
-            <div class="panel-header">
-                CARTAS SORWEB <span>⚙️</span>
+        <div class="card">
+            <div class="card-header">
+                <span>CARTAS SORWEB</span>
+                <i class="fas fa-cog"></i>
             </div>
-            <div class="panel-content">
-                <input type="text" class="search-bar" placeholder="Escribe y presiona Enter...">
+            <div class="card-body">
+                <div class="search-container">
+                    <input type="text" class="search-input" placeholder="Escribe y presiona Enter o Tab...">
+                </div>
                 <div class="empty-state">
-                    <div class="empty-icon">📂</div>
-                    <p>Sin datos cargados</p>
+                    <i class="fas fa-folder"></i>
+                    <p>Carga un archivo y busca para ver resultados</p>
                 </div>
             </div>
         </div>
 
-        <div class="cuadrante">
-            <div class="panel-header">
-                AYUDANTE <span>⚙️</span>
+        <div class="card">
+            <div class="card-header">
+                <span>AYUDANTE</span>
+                <i class="fas fa-cog"></i>
             </div>
-            <div class="panel-content">
-                <input type="text" class="search-bar" placeholder="Pregunta al ayudante...">
+            <div class="card-body">
+                <div class="search-container">
+                    <input type="text" class="search-input" placeholder="Escribe y presiona Enter o Tab...">
+                </div>
                 <div class="empty-state">
-                    <div class="empty-icon">🤖</div>
-                    <p>Esperando instrucciones...</p>
+                    <i class="fas fa-folder"></i> <p>Carga un archivo y busca para ver resultados</p>
                 </div>
             </div>
         </div>
@@ -242,70 +318,69 @@
     </div>
 
     <script>
-        // 1. GENERACIÓN DE DATOS DE PRUEBA (SIMULACIÓN)
-        // Generamos 350 registros para probar la paginación
-        const datosCompletos = [];
-        for (let i = 1; i <= 350; i++) {
-            datosCompletos.push({
-                cups: 772900 + i,
-                descripcion: `<span class="highlight">OSTEO</span>TOMÍA FACETARIA EN COLUMNA EJEMPLO REGISTRO #${i}`,
+        // --- CONFIGURACIÓN DE DATOS ---
+        // Generamos 350 datos simulados para probar la paginación
+        const totalDatos = 350;
+        const datos = [];
+        
+        for (let i = 1; i <= totalDatos; i++) {
+            datos.push({
+                id: 772900 + i,
+                // Simulamos el resaltado naranja en la palabra "OSTEO"
+                desc: `<span class="highlight-text">OSTEO</span>TOMÍA FACETARIA COLUMNA VÍA POSTERIOR - REGISTRO ${i}`,
                 nivel: 2,
                 sexo: 'A',
                 edad: '0 - 120'
             });
         }
 
-        // 2. VARIABLES DE CONFIGURACIÓN
+        // --- LÓGICA DE PAGINACIÓN ---
         let paginaActual = 1;
-        const filasPorPagina = 50; // Límite que pediste antes de paginar
+        const filasPorPagina = 50; // Muestra 50 filas como pediste para "vistas largas"
 
-        // 3. FUNCIÓN PARA RENDERIZAR LA TABLA
-        function renderizarTabla() {
-            const cuerpoTabla = document.getElementById('cuerpo-tabla');
-            const infoPaginacion = document.getElementById('info-paginacion');
-            const btnPrev = document.getElementById('btn-prev');
-            const btnNext = document.getElementById('btn-next');
+        function renderTable() {
+            const tbody = document.getElementById('tabla-cups-body');
+            tbody.innerHTML = ''; // Limpiar tabla
 
-            // Limpiar tabla actual
-            cuerpoTabla.innerHTML = "";
-
-            // Calcular índices de corte
+            // Calcular índices
             const inicio = (paginaActual - 1) * filasPorPagina;
             const fin = inicio + filasPorPagina;
-            
-            // Obtener solo los datos de esta página
-            const datosPagina = datosCompletos.slice(inicio, fin);
+            const datosPagina = datos.slice(inicio, fin);
 
-            // Crear filas HTML
-            datosPagina.forEach(dato => {
-                const fila = `
-                    <tr>
-                        <td>${dato.cups}</td>
-                        <td>${dato.descripcion}</td>
-                        <td>${dato.nivel}</td>
-                        <td>${dato.sexo}</td>
-                        <td>${dato.edad}</td>
-                    </tr>
+            // Crear filas
+            datosPagina.forEach(d => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${d.id}</td>
+                    <td>${d.desc}</td>
+                    <td style="text-align:center;">${d.nivel}</td>
+                    <td style="text-align:center;">${d.sexo}</td>
+                    <td style="text-align:center;">${d.edad}</td>
                 `;
-                cuerpoTabla.innerHTML += fila;
+                tbody.appendChild(tr);
             });
 
-            // Actualizar texto de información
-            infoPaginacion.innerText = `Página ${paginaActual} | Mostrando ${inicio + 1}-${Math.min(fin, datosCompletos.length)} de ${datosCompletos.length}`;
-
-            // Controlar estado de los botones (Habilitar/Deshabilitar)
-            btnPrev.disabled = paginaActual === 1;
-            btnNext.disabled = fin >= datosCompletos.length;
+            // Actualizar info de paginación
+            document.getElementById('pag-info').textContent = 
+                `Registros ${inicio + 1} - ${Math.min(fin, totalDatos)} de ${totalDatos}`;
         }
 
-        // 4. FUNCIÓN PARA CAMBIAR PÁGINA
-        function cambiarPagina(direccion) {
-            paginaActual += direccion;
-            renderizarTabla();
+        function nextPage() {
+            if ((paginaActual * filasPorPagina) < totalDatos) {
+                paginaActual++;
+                renderTable();
+            }
         }
 
-        // Inicializar al cargar
-        renderizarTabla();
+        function prevPage() {
+            if (paginaActual > 1) {
+                paginaActual--;
+                renderTable();
+            }
+        }
+
+        // Iniciar
+        renderTable();
     </script>
 </body>
 </html>
