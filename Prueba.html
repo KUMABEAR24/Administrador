@@ -3,77 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buscadores Cuadrantes</title>
+    <title>Buscadores Cuadrantes - Corregido</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* --- ESTILOS GENERALES (MODO OSCURO PRO) --- */
+        /* --- ESTILOS (IGUAL QUE ANTES) --- */
         :root {
             --bg-body: #0f0f0f;
             --bg-panel: #141414;
             --bg-header: #1f1f1f;
             --border-color: #333;
             --text-primary: #e0e0e0;
-            --text-secondary: #a0a0a0;
-            --accent-blue: #4dabf7;
-            --highlight-orange: #ff9800; /* Color del resaltado de texto */
+            --highlight-orange: #ff9800;
         }
 
         body {
-            margin: 0;
-            padding: 0;
+            margin: 0; padding: 0;
             background-color: var(--bg-body);
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             color: var(--text-primary);
             height: 100vh;
             display: flex;
             flex-direction: column;
-            overflow: hidden; /* Evitamos scroll en el body, lo queremos en los paneles */
+            overflow: hidden;
         }
 
-        /* --- HEADER SUPERIOR --- */
+        /* Header */
         header {
             height: 50px;
             background-color: var(--bg-header);
             border-bottom: 1px solid var(--border-color);
             display: flex;
             align-items: center;
-            justify-content: space-between;
             padding: 0 20px;
-            flex-shrink: 0;
         }
+        .header-title { font-weight: bold; font-size: 16px; }
 
-        .header-title {
-            font-size: 16px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .header-actions button {
-            background-color: #333;
-            border: 1px solid #555;
-            color: white;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            margin-left: 5px;
-        }
-        .header-actions button:hover { background-color: #444; }
-
-        /* --- LAYOUT GRID 2x2 --- */
+        /* Grid Layout */
         .grid-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
             grid-template-rows: 1fr 1fr;
-            gap: 8px; /* Espacio entre paneles */
+            gap: 8px;
             padding: 8px;
-            height: calc(100vh - 50px); /* Ocupa todo el resto de la pantalla */
+            height: calc(100vh - 50px);
             box-sizing: border-box;
         }
 
-        /* --- ESTILOS DE LOS PANELES (CARTAS) --- */
+        /* Paneles */
         .card {
             background-color: var(--bg-panel);
             border: 1px solid var(--border-color);
@@ -81,306 +57,239 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            position: relative;
         }
 
         .card-header {
-            padding: 10px 15px;
+            padding: 10px;
             background-color: #1a1a1a;
             border-bottom: 1px solid var(--border-color);
-            color: var(--accent-blue);
+            color: #4dabf7;
             font-weight: bold;
             font-size: 13px;
-            text-transform: uppercase;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .card-body {
-            flex: 1;
-            padding: 10px;
-            overflow-y: auto; /* Scroll interno */
-            display: flex;
-            flex-direction: column;
+            display: flex; justify-content: space-between;
         }
 
-        /* --- INPUTS DE BÚSQUEDA --- */
-        .search-container {
+        .card-body {
+            flex: 1; padding: 10px;
+            overflow-y: auto; display: flex; flex-direction: column;
+        }
+
+        /* Búsqueda */
+        .search-input {
+            width: 100%;
             background-color: #000;
             border: 1px solid var(--border-color);
-            padding: 5px;
-            border-radius: 4px;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 5px;
-        }
-        
-        .tag-chip {
-            background-color: #333;
-            color: #ccc;
-            font-size: 12px;
-            padding: 2px 8px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .search-input {
-            background: transparent;
-            border: none;
             color: white;
-            outline: none;
-            flex: 1;
-            font-size: 13px;
-            padding: 5px;
+            padding: 8px;
+            border-radius: 4px;
+            box-sizing: border-box;
+            margin-bottom: 10px;
         }
 
-        /* --- TABLA CON CUADRÍCULA (TU SOLICITUD) --- */
+        /* TABLA Y CUADRÍCULA */
         .data-table {
             width: 100%;
             border-collapse: collapse;
             font-size: 11px;
         }
-
         .data-table th, .data-table td {
-            border: 1px solid #444; /* Borde visible tipo rejilla */
-            padding: 6px 8px;
+            border: 1px solid #555; /* Borde gris (Cuadrícula) */
+            padding: 6px;
             text-align: left;
         }
-
         .data-table th {
             background-color: #252526;
             color: #bbb;
-            position: sticky;
-            top: 0;
-            z-index: 2;
+            position: sticky; top: 0;
         }
+        .highlight-text { color: var(--highlight-orange); font-weight: bold; }
 
-        .data-table tr:hover td {
-            background-color: #2a2d3e;
-        }
-
-        /* Texto resaltado (naranja) */
-        .highlight-text {
-            color: var(--highlight-orange);
-            font-weight: bold;
-            background-color: rgba(255, 152, 0, 0.1);
-            padding: 0 2px;
-            border-radius: 2px;
-        }
-
-        /* --- PAGINACIÓN --- */
+        /* PAGINACIÓN */
         .pagination-bar {
-            margin-top: auto; /* Empuja al fondo */
+            margin-top: auto;
             padding-top: 10px;
+            border-top: 1px solid var(--border-color);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-top: 1px solid var(--border-color);
             font-size: 12px;
-            color: #888;
         }
         
-        .pagination-controls button {
+        /* Botones mejorados */
+        .btn-pag {
             background-color: #333;
             border: 1px solid #555;
             color: white;
-            padding: 4px 10px;
-            border-radius: 3px;
+            padding: 5px 15px;
+            border-radius: 4px;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
-        .pagination-controls button:disabled {
+        .btn-pag:hover { background-color: #444; }
+        .btn-pag:active { background-color: #222; }
+        .btn-pag:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+            background-color: #222;
         }
 
-        /* --- ESTADO VACÍO (CARPETAS) --- */
+        /* Empty State */
         .empty-state {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            color: #555;
-            text-align: center;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            height: 100%; color: #555;
         }
-        .empty-state i {
-            font-size: 40px;
-            margin-bottom: 15px;
-            color: #bfa15f; /* Color carpeta */
-        }
-
+        .empty-state i { font-size: 30px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
     <header>
-        <div class="header-title">
-            <i class="fas fa-arrow-left"></i>
-            <span>Buscadores Cuadrantes</span>
-        </div>
-        <div class="header-actions">
-            <button>Reiniciar Vistas</button>
-            <button>Cargar Archivos</button>
-        </div>
+        <div class="header-title">Buscadores Cuadrantes</div>
     </header>
 
     <div class="grid-container">
-
+        
         <div class="card">
             <div class="card-header">
-                <span>MATRIZ CUPS <i class="fas fa-exchange-alt fa-xs"></i></span>
+                <span>MATRIZ CUPS</span>
                 <i class="fas fa-cog"></i>
             </div>
             <div class="card-body">
-                <div class="search-container">
-                    <div class="tag-chip">osteo <i class="fas fa-times" style="font-size:10px; cursor:pointer;"></i></div>
-                    <input type="text" class="search-input" placeholder="Escribe...">
-                </div>
-
+                <input type="text" class="search-input" placeholder="Buscar...">
+                
                 <div style="flex:1; overflow:auto;">
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th style="width: 60px;">CUPS</th>
-                                <th>DESCRIPCIÓN DEL CUPS</th>
-                                <th style="width: 50px;">NIVEL</th>
-                                <th style="width: 30px;">SEXO</th>
-                                <th style="width: 30px;">EDAD</th>
+                                <th>ID</th>
+                                <th>DESCRIPCIÓN</th>
+                                <th>NIVEL</th>
+                                <th>SEXO</th>
+                                <th>EDAD</th>
                             </tr>
                         </thead>
-                        <tbody id="tabla-cups-body">
+                        <tbody id="tabla-body">
                             </tbody>
                     </table>
                 </div>
 
                 <div class="pagination-bar">
-                    <span id="pag-info">Mostrando 0-0</span>
-                    <div class="pagination-controls">
-                        <button onclick="prevPage()"><i class="fas fa-chevron-left"></i></button>
-                        <button onclick="nextPage()"><i class="fas fa-chevron-right"></i></button>
+                    <span id="texto-paginacion">Cargando...</span>
+                    <div style="display:flex; gap:5px;">
+                        <button type="button" id="btn-anterior" class="btn-pag">
+                            <i class="fas fa-chevron-left"></i> Anterior
+                        </button>
+                        <button type="button" id="btn-siguiente" class="btn-pag">
+                            Siguiente <i class="fas fa-chevron-right"></i>
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="card">
-            <div class="card-header">
-                <span>PRESTADORES <i class="fas fa-exchange-alt fa-xs"></i></span>
-                <i class="fas fa-cog"></i>
-            </div>
+            <div class="card-header">PRESTADORES</div>
             <div class="card-body">
-                <div class="search-container">
-                    <input type="text" class="search-input" placeholder="Escribe y presiona Enter o Tab...">
-                </div>
-                <div class="empty-state">
-                    <i class="fas fa-folder"></i>
-                    <p>Carga un archivo y busca para ver resultados</p>
-                </div>
+                <input class="search-input" placeholder="Buscar...">
+                <div class="empty-state"><i class="fas fa-folder"></i><p>Sin datos</p></div>
             </div>
         </div>
-
         <div class="card">
-            <div class="card-header">
-                <span>CARTAS SORWEB</span>
-                <i class="fas fa-cog"></i>
-            </div>
+            <div class="card-header">SORWEB</div>
             <div class="card-body">
-                <div class="search-container">
-                    <input type="text" class="search-input" placeholder="Escribe y presiona Enter o Tab...">
-                </div>
-                <div class="empty-state">
-                    <i class="fas fa-folder"></i>
-                    <p>Carga un archivo y busca para ver resultados</p>
-                </div>
+                <input class="search-input" placeholder="Buscar...">
+                <div class="empty-state"><i class="fas fa-folder"></i><p>Sin datos</p></div>
             </div>
         </div>
-
         <div class="card">
-            <div class="card-header">
-                <span>AYUDANTE</span>
-                <i class="fas fa-cog"></i>
-            </div>
+            <div class="card-header">AYUDANTE</div>
             <div class="card-body">
-                <div class="search-container">
-                    <input type="text" class="search-input" placeholder="Escribe y presiona Enter o Tab...">
-                </div>
-                <div class="empty-state">
-                    <i class="fas fa-folder"></i> <p>Carga un archivo y busca para ver resultados</p>
-                </div>
+                <input class="search-input" placeholder="Buscar...">
+                <div class="empty-state"><i class="fas fa-robot"></i><p>Esperando...</p></div>
             </div>
         </div>
 
     </div>
 
     <script>
-        // --- CONFIGURACIÓN DE DATOS ---
-        // Generamos 350 datos simulados para probar la paginación
-        const totalDatos = 350;
-        const datos = [];
-        
-        for (let i = 1; i <= totalDatos; i++) {
-            datos.push({
-                id: 772900 + i,
-                // Simulamos el resaltado naranja en la palabra "OSTEO"
-                desc: `<span class="highlight-text">OSTEO</span>TOMÍA FACETARIA COLUMNA VÍA POSTERIOR - REGISTRO ${i}`,
-                nivel: 2,
-                sexo: 'A',
-                edad: '0 - 120'
-            });
-        }
-
-        // --- LÓGICA DE PAGINACIÓN ---
-        let paginaActual = 1;
-        const filasPorPagina = 50; // Muestra 50 filas como pediste para "vistas largas"
-
-        function renderTable() {
-            const tbody = document.getElementById('tabla-cups-body');
-            tbody.innerHTML = ''; // Limpiar tabla
-
-            // Calcular índices
-            const inicio = (paginaActual - 1) * filasPorPagina;
-            const fin = inicio + filasPorPagina;
-            const datosPagina = datos.slice(inicio, fin);
-
-            // Crear filas
-            datosPagina.forEach(d => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${d.id}</td>
-                    <td>${d.desc}</td>
-                    <td style="text-align:center;">${d.nivel}</td>
-                    <td style="text-align:center;">${d.sexo}</td>
-                    <td style="text-align:center;">${d.edad}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-
-            // Actualizar info de paginación
-            document.getElementById('pag-info').textContent = 
-                `Registros ${inicio + 1} - ${Math.min(fin, totalDatos)} de ${totalDatos}`;
-        }
-
-        function nextPage() {
-            if ((paginaActual * filasPorPagina) < totalDatos) {
-                paginaActual++;
-                renderTable();
+        document.addEventListener('DOMContentLoaded', function() {
+            // 1. DATOS DE PRUEBA (350 registros)
+            const totalRegistros = 350;
+            const registros = [];
+            
+            for (let i = 1; i <= totalRegistros; i++) {
+                registros.push({
+                    id: 772900 + i,
+                    descripcion: `<span class="highlight-text">OSTEO</span>TOMÍA FACETARIA - REGISTRO DE PRUEBA #${i}`,
+                    nivel: 2,
+                    sexo: i % 2 === 0 ? 'F' : 'M',
+                    edad: '0 - 100'
+                });
             }
-        }
 
-        function prevPage() {
-            if (paginaActual > 1) {
-                paginaActual--;
-                renderTable();
+            // 2. VARIABLES DE ESTADO
+            let paginaActual = 1;
+            const filasPorPagina = 50;
+
+            // 3. REFERENCIAS AL DOM (ELEMENTOS HTML)
+            const tbody = document.getElementById('tabla-body');
+            const txtPaginacion = document.getElementById('texto-paginacion');
+            const btnAnt = document.getElementById('btn-anterior');
+            const btnSig = document.getElementById('btn-siguiente');
+
+            // 4. FUNCIÓN RENDERIZAR
+            function mostrarPagina() {
+                // Limpiar tabla
+                tbody.innerHTML = '';
+
+                // Calcular rangos
+                const inicio = (paginaActual - 1) * filasPorPagina;
+                const fin = Math.min(inicio + filasPorPagina, totalRegistros);
+                const datosPagina = registros.slice(inicio, fin);
+
+                // Dibujar filas
+                datosPagina.forEach(reg => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${reg.id}</td>
+                        <td>${reg.descripcion}</td>
+                        <td>${reg.nivel}</td>
+                        <td>${reg.sexo}</td>
+                        <td>${reg.edad}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+                // Actualizar texto
+                txtPaginacion.textContent = `Mostrando ${inicio + 1} - ${fin} de ${totalRegistros}`;
+
+                // Activar/Desactivar botones
+                btnAnt.disabled = (paginaActual === 1);
+                btnSig.disabled = (fin >= totalRegistros);
             }
-        }
 
-        // Iniciar
-        renderTable();
+            // 5. EVENTOS (LO QUE HACE QUE FUNCIONEN LOS BOTONES)
+            btnAnt.addEventListener('click', function() {
+                if (paginaActual > 1) {
+                    paginaActual--;
+                    mostrarPagina();
+                }
+            });
+
+            btnSig.addEventListener('click', function() {
+                const maxPaginas = Math.ceil(totalRegistros / filasPorPagina);
+                if (paginaActual < maxPaginas) {
+                    paginaActual++;
+                    mostrarPagina();
+                }
+            });
+
+            // Iniciar vista
+            mostrarPagina();
+        });
     </script>
 </body>
 </html>
