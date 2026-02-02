@@ -5,8 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GESTION NEGACIONES EJE CAFETERO</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone@7.23.6/babel.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.21.0/babel.min.js"></script>
     
     <script>
       // Tailwind CSS Configuration
@@ -56,16 +58,14 @@
 <body class="bg-background text-text-primary">
     <div id="root"></div>
 
-    <script type="text/babel" data-presets="react" data-type="module">
+    <script type="text/babel" data-presets="env,react" data-type="module">
         import React, { useState, useEffect, useCallback, useMemo } from 'react';
         import ReactDOM from 'react-dom/client';
 
         // =================================================================================
-        // INLINED: constants.ts
+        // CONSTANTES
         // =================================================================================
         
-        // --- CORRECCIÓN 1: Cabeceras del Portal (Área 1) ---
-        // Tus 18 columnas, en el orden exacto.
         const PORTAL_HEADERS = [
           "Fecha_Asignacion", "EJECUTIVO", "FECHA NEGACIÓN", "REGIONAL", "NÚMERO ORDEN", 
           "TIPO DOCUMENTO", "IDENTIFICACIÓN AFILIADO", "NOMBRE AFILIADO", "EDAD", 
@@ -92,7 +92,7 @@
 
 
         // =================================================================================
-        // INLINED: services/utilityService.ts
+        // SERVICES
         // =================================================================================
         const capitalizeWords = (str) => {
           if (!str) return '';
@@ -176,9 +176,6 @@
           }
         };
 
-        // =================================================================================
-        // INLINED: services/templateService.ts
-        // =================================================================================
         const TEMPLATE_STORAGE_KEY = 'sigweb_emailTemplates';
 
         const loadTemplates = () => {
@@ -205,10 +202,6 @@
           }
         };
 
-
-        // =================================================================================
-        // INLINED: services/googleSheetService.ts
-        // =================================================================================
         const fetchData = async (url) => {
             const response = await fetch(`${url}?action=getData`);
             if (!response.ok) {
@@ -237,7 +230,7 @@
 
 
         // =================================================================================
-        // INLINED: components/Spinner.tsx
+        // COMPONENTS
         // =================================================================================
         const Spinner = () => {
           return (
@@ -252,10 +245,6 @@
           );
         };
 
-
-        // =================================================================================
-        // INLINED: components/Notification.tsx
-        // =================================================================================
         const Notification = ({ message, type, onClose }) => {
           const typeClasses = {
             success: 'bg-green-600',
@@ -271,9 +260,6 @@
           );
         };
 
-        // =================================================================================
-        // INLINED: components/Header.tsx
-        // =================================================================================
         const Header = ({ onSave, onManageTemplates, onReconfigure }) => {
           return (
             <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-border-color">
@@ -306,10 +292,6 @@
           );
         };
         
-
-        // =================================================================================
-        // INLINED: components/Dashboard.tsx
-        // =================================================================================
         const DashboardCard = ({ title, value, icon }) => (
           <div className="bg-surface p-4 rounded-lg border border-border-color flex items-center">
             <div className="text-3xl text-primary mr-4">{icon}</div>
@@ -329,10 +311,6 @@
           </section>
         );
 
-
-        // =================================================================================
-        // INLINED: components/DataInputArea.tsx
-        // =================================================================================
         function DataInputArea({
           id,
           title,
@@ -419,10 +397,6 @@
           );
         }
 
-        // =================================================================================
-        // INLINED: components/ReviewArea.tsx
-        // =================================================================================
-        // Columnas de Área 3 (como en la versión anterior)
         const ReviewArea = ({
           data,
           templates,
@@ -438,7 +412,6 @@
           const [selectedRows, setSelectedRows] = useState(new Set());
           const [filter, setFilter] = useState('');
           
-          // Columnas exactas solicitadas por el usuario
           const REVIEW_HEADERS = [
               { key: 'Fecha_Neg', label: 'Fecha de Negación' },
               { key: 'No_Orden', label: 'Número de Orden' },
@@ -618,11 +591,6 @@
           );
         };
         
-
-        // =================================================================================
-        // INLINED: components/TrackingArea.tsx
-        // =================================================================================
-        // Columnas de Área 4 (como en la versión anterior)
         const TrackingTable = ({ data, isArchived, onUpdate, onArchive, filter }) => {
             
           const [selectedRows, setSelectedRows] = useState(new Set());
@@ -778,9 +746,6 @@
           );
         };
 
-        // =================================================================================
-        // INLINED: components/SetupModal.tsx
-        // =================================================================================
         const SetupModal = ({ onSave, onClose, initialUrl = '' }) => {
           const [url, setUrl] = useState(initialUrl);
           const [isVerifying, setIsVerifying] = useState(false);
@@ -837,9 +802,6 @@
           );
         };
 
-        // =================================================================================
-        // INLINED: components/TemplateManagerModal.tsx
-        // =================================================================================
         const TemplateManagerModal = ({ templates, onClose, onSave, onReset }) => {
           const [currentTemplates, setCurrentTemplates] = useState(templates);
           const [editingTemplate, setEditingTemplate] = useState(null);
@@ -953,9 +915,6 @@
           );
         };
 
-        // =================================================================================
-        // INLINED: components/PreviewModal.tsx
-        // =================================================================================
         const PreviewModal = ({ data, template, onClose }) => {
           const bodyContent = template ? replacePlaceholders(template.body, data) : '<b>Error:</b> Plantilla no seleccionada o no encontrada.';
           const fullBody = bodyContent + COMMON_EMAIL_BODY + SIGNATURE;
@@ -994,7 +953,7 @@
         
 
         // =================================================================================
-        // INLINED: App.tsx (The main application component)
+        // MAIN APP COMPONENT
         // =================================================================================
         const App = () => {
           const [state, setState] = useState({
@@ -1110,24 +1069,20 @@
             }
           };
 
-          // --- CORRECCIÓN 1 Y 2: Lógica de procesamiento de datos (Área 1) ---
           const processPortalData = useCallback(() => {
             const processedData = state.portalData
-              // 1. Filtra filas vacías Y la fila de header
               .filter((row) => {
                 const numOrden = String(row['NÚMERO ORDEN'] || '').trim();
-                if (numOrden === '') return false; // Elimina vacías
-                if (numOrden.toUpperCase() === 'NÚMERO ORDEN') return false; // Elimina header
+                if (numOrden === '') return false; 
+                if (numOrden.toUpperCase() === 'NÚMERO ORDEN') return false; 
                 return true;
               })
               .map((row) => {
-                
-                // 2. Mapeo directo de las 18 columnas a la estructura interna
                 const newRow = {
                   Fecha_Neg: row['FECHA NEGACIÓN'] || '',
                   No_Orden: row['NÚMERO ORDEN'] || '',
-                  No_Cedula: row['IDENTIFICACIÓN AFILIADO'] || '', // <-- Corregido
-                  Nombre: capitalizeWords(row['NOMBRE AFILIADO'] || ''), // <-- Corregido
+                  No_Cedula: row['IDENTIFICACIÓN AFILIADO'] || '',
+                  Nombre: capitalizeWords(row['NOMBRE AFILIADO'] || ''),
                   Tipo_Identificacion: row['TIPO DOCUMENTO'] || '',
                   Motivo_Negacion: row['MOTIVO NEGACIÓN'] || '',
                   Programa: row.PROGRAMA || '',
@@ -1137,19 +1092,13 @@
                   Celular: row.CELULAR || '',
                   Edad: row.EDAD || '',
                   Regional: row.REGIONAL || '',
-                  
-                  // Campos extra que se guardan
                   Fecha_Asignacion: row.Fecha_Asignacion || '',
                   EJECUTIVO: row.EJECUTIVO || '',
                   PROCEDIMIE: row.PROCEDIMIENTO || '',
                   Fecha_Ingres: row.Fecha_Ingreso || '',
                   ESTADO_PORTAL: row.ESTADO || '',
-
-                  // Campos viejos que ya no vienen (se inicializan vacíos)
                   Sucursal: '', Auditor: '', Antiguedad: '', Telefono: '',
                   Direccion: '', Tipo_Usuario: '', Usuario_Emitio: '', Gestion_Negacion: '',
-                  
-                  // Campos por defecto para el Área 3
                   Descripcion_PDF: '(pendiente)',
                   Justificacion_PDF: '(pendiente)',
                   Fundamento_Legal_PDF: '(pendiente)',
@@ -1212,7 +1161,6 @@
                 const template = state.templates.find((t) => t.id === row.Tipo_Carta);
                 const isComplementariedad = template && template.name.toUpperCase().includes('COMPLEMENTARIEDAD');
                 const hasRadicado = row.Radicado_Comp && row.Radicado_Comp.trim() !== '';
-                
                 return isComplementariedad && hasRadicado;
               });
 
@@ -1238,7 +1186,6 @@
                     updatedCount++;
                   }
               } else {
-                  // Los datos (item.No_Cedula) ya son correctos
                   newTrackingData.push({
                       Fecha_Ing: item.Fecha_Neg,
                       No_Orden: item.No_Orden,
@@ -1314,7 +1261,6 @@
             showNotification("Reporte de complementariedades generado.", "success");
           };
 
-
           const updateTrackingData = (index, updatedRow, isArchived) => {
             const dataKey = isArchived ? 'archivedData' : 'trackingData';
             const currentData = [...state[dataKey]];
@@ -1323,7 +1269,7 @@
           };
 
           const archiveItems = (indices, fromArchived) => {
-            if (fromArchived) { // Unarchive
+            if (fromArchived) { 
               const itemsToMove = indices.map(i => state.archivedData[i]).filter(Boolean);
               const remainingArchived = state.archivedData.filter((_, i) => !indices.includes(i));
               setState(prev => ({
@@ -1332,7 +1278,7 @@
                 archivedData: remainingArchived,
                 editsCount: prev.editsCount + itemsToMove.length
               }));
-            } else { // Archive
+            } else { 
               const itemsToMove = indices.map(i => state.trackingData[i]).filter(Boolean);
               const remainingTracking = state.trackingData.filter((_, i) => !indices.includes(i));
               setState(prev => ({
@@ -1397,7 +1343,6 @@
                    </div>
                )}
 
-              {/* Contenedor principal (más ancho) */}
               <main className="mx-auto bg-surface p-4 sm:p-6 rounded-xl border border-border-color space-y-8">
                 <Header 
                     onSave={handleSave} 
@@ -1483,9 +1428,6 @@
           );
         };
 
-        // =================================================================================
-        // INLINED: index.tsx (Render the application)
-        // =================================================================================
         const rootElement = document.getElementById('root');
         if (!rootElement) {
           throw new Error("Could not find root element to mount to");
