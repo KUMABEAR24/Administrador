@@ -3,84 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generador DNGET - Coomeva IA</title>
+    <title>Generador DNGET - Coomeva (Versión Debug)</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    
+
     <style>
-        /* --- ESTILOS VISUALES CORREGIDOS --- */
-        body { 
-            background-color: #0f172a; /* Fondo muy oscuro */
-            color: #e2e8f0; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-        }
+        /* ESTILOS DE ALTO CONTRASTE */
+        body { background-color: #0b1120; color: #e2e8f0; font-family: sans-serif; }
         
-        /* Tarjetas */
-        .card { 
-            background-color: #1e293b; /* Fondo gris azulado oscuro */
-            border: 1px solid #334155; 
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
-        }
-        .card-header { 
-            background-color: #004481; /* Azul Coomeva Institucional */
-            color: white; 
-            font-weight: bold; 
-            border-bottom: 1px solid #1e3a8a;
-        }
+        .card { background-color: #1e293b; border: 1px solid #475569; margin-bottom: 20px; }
+        .card-header { background-color: #004481; color: white; font-weight: bold; }
         
-        /* Inputs y Selectores - CORRECCIÓN DE COLOR A BLANCO */
+        /* INPUTS BLANCOS (Corrección solicitada) */
         .form-control, .form-select { 
-            background-color: #334155 !important; /* Fondo del input */
-            border: 1px solid #475569 !important; 
-            color: #ffffff !important; /* TEXTO BLANCO PURO */
+            background-color: #334155 !important; 
+            border: 1px solid #64748b !important; 
+            color: #ffffff !important; 
+            font-weight: 500;
         }
-        
-        .form-control::placeholder { 
-            color: #94a3b8 !important; /* Placeholder gris claro */
-            opacity: 1;
-        }
-        
-        .form-control:focus, .form-select:focus {
-            background-color: #334155 !important;
-            border-color: #38bdf8 !important; /* Borde azul brillante al escribir */
-            color: #ffffff !important;
-            box-shadow: 0 0 0 0.2rem rgba(56, 189, 248, 0.25);
-        }
+        .form-control::placeholder { color: #cbd5e1 !important; opacity: 0.7; }
+        .form-control:focus { border-color: #38bdf8 !important; box-shadow: 0 0 0 0.2rem rgba(56, 189, 248, 0.25); }
 
         /* Botones */
-        .btn-primary { 
-            background-color: #0284c7; 
-            border: none; 
-            font-weight: bold;
-        }
-        .btn-primary:hover { background-color: #0369a1; }
+        .btn-primary { background-color: #0ea5e9; border: none; color: white; font-weight: bold; }
+        .btn-primary:hover { background-color: #0284c7; }
 
-        /* Área de Archivos */
-        .file-drop {
-            border: 2px dashed #64748b;
-            padding: 20px;
-            text-align: center;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: 0.3s;
-            background-color: #1e293b;
-        }
-        .file-drop:hover { 
-            background-color: #334155; 
-            border-color: #38bdf8; 
-        }
-
-        /* VISTA PREVIA (Hoja de Papel) */
+        /* Vista Previa */
         #previewContainer {
-            background-color: white;
-            color: black; /* Texto negro para impresión */
-            padding: 20mm;
-            min-height: 297mm;
-            font-family: Arial, sans-serif;
-            font-size: 11pt;
-            line-height: 1.2;
+            background-color: white; color: black; padding: 20mm; min-height: 297mm;
+            font-family: Arial, sans-serif; font-size: 11pt; border-radius: 4px;
         }
         
         /* Tabla Carta */
@@ -88,102 +40,79 @@
         .carta-table th, .carta-table td { border: 1px solid black; padding: 5px; text-align: left; vertical-align: top; }
         .carta-table th { background-color: #f0f0f0; text-align: center; }
 
-        /* Loading Overlay */
-        #loadingOverlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); z-index: 9999; text-align: center; padding-top: 20%;
+        /* CONSOLA DE DEBUG (Para ver errores) */
+        #debugConsole {
+            background-color: #000; color: #00ff00; font-family: 'Courier New', monospace;
+            padding: 15px; border-radius: 5px; height: 150px; overflow-y: scroll;
+            font-size: 0.8rem; border: 1px solid #00ff00; display: none; margin-top: 20px;
         }
     </style>
 </head>
 <body>
 
-<div id="loadingOverlay">
-    <div class="spinner-border text-info" style="width: 4rem; height: 4rem;" role="status"></div>
-    <h3 class="text-white mt-3">Procesando con IA...</h3>
-    <p class="text-light">Leyendo PDF/Imágenes y buscando insumos...</p>
-</div>
-
 <div class="container py-4">
     <div class="row">
         <div class="col-lg-4">
-            <h4 class="text-white mb-3"><i class="fas fa-file-medical-alt"></i> Generador DNGET</h4>
+            <h4 class="text-white mb-3">Auditoría IA <span class="badge bg-warning text-dark">Debug Mode</span></h4>
 
             <div class="card">
-                <div class="card-header p-2"><i class="fas fa-cog"></i> Configuración</div>
+                <div class="card-header p-2">1. Configuración</div>
                 <div class="card-body p-3">
-                    <label class="small text-white mb-1">Tu API Key:</label>
-                    <input type="password" id="apiKey" class="form-control form-control-sm mb-2" placeholder="Pegar Key aquí...">
+                    <label class="text-white small">API Key:</label>
+                    <input type="password" id="apiKey" class="form-control mb-2" placeholder="Pega la Key aquí">
                     
-                    <label class="small text-white mb-1">Modelo de IA:</label>
-                    <select id="modelSelector" class="form-select form-select-sm">
-                        <option value="gemini-1.5-flash">Gemini 1.5 Flash (Rápido - Recomendado)</option>
-                        <option value="gemini-1.5-pro">Gemini 1.5 Pro (Más potente)</option>
-                        <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash (Experimental)</option>
+                    <label class="text-white small">Modelo:</label>
+                    <select id="modelSelector" class="form-select">
+                        <option value="gemini-1.5-flash">Gemini 1.5 Flash (Recomendado)</option>
+                        <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+                        <option value="gemini-2.0-flash-exp">Gemini 2.0 Experimental</option>
                     </select>
-                    <small class="text-muted" style="font-size: 0.7rem;">Si uno falla, prueba con otro de la lista.</small>
                 </div>
             </div>
 
             <div class="card">
-                <div class="card-header p-2"><i class="fas fa-file-upload"></i> Adjuntar Orden/HC</div>
-                <div class="card-body">
-                    <div class="file-drop" onclick="document.getElementById('fileInput').click()">
-                        <i class="fas fa-cloud-upload-alt fa-2x mb-2 text-info"></i>
-                        <p class="m-0 small text-white">Clic para subir PDF o Imágenes</p>
-                    </div>
-                    <input type="file" id="fileInput" multiple accept="image/*, application/pdf" style="display: none;" onchange="mostrarArchivos()">
-                    <div id="fileList" class="mt-2 small text-info fw-bold"></div>
+                <div class="card-header p-2">2. Archivos (Orden/HC)</div>
+                <div class="card-body p-3 text-center">
+                    <input type="file" id="fileInput" class="form-control mb-2" multiple accept="application/pdf, image/png, image/jpeg, image/webp">
+                    <small class="text-info" id="fileStatus">Ningun archivo seleccionado</small>
                 </div>
             </div>
 
             <div class="card">
-                <div class="card-header p-2"><i class="fas fa-edit"></i> Datos Manuales</div>
+                <div class="card-header p-2">3. Datos Manuales</div>
                 <div class="card-body p-3">
-                    <label class="small text-warning">Intención:</label>
-                    <select id="intencion" class="form-select form-select-sm mb-3">
+                    <select id="intencion" class="form-select mb-2">
                         <option value="cotizar">Cotizar</option>
                         <option value="modificar">Modificar Tarifa</option>
                         <option value="cobertura">Validar Cobertura</option>
                     </select>
 
-                    <label class="small text-white">Documento:</label>
-                    <input type="text" id="documento" class="form-control form-control-sm mb-2" placeholder="Ej: 12345678">
+                    <input type="text" id="documento" class="form-control mb-2" placeholder="CC Documento">
+                    <input type="text" id="nombre" class="form-control mb-2" placeholder="Nombre Paciente">
+                    <input type="text" id="prestador" class="form-control mb-2" placeholder="Prestador (IPS)">
                     
-                    <label class="small text-white">Nombre Paciente:</label>
-                    <input type="text" id="nombre" class="form-control form-control-sm mb-2" placeholder="Nombre completo">
-                    
-                    <label class="small text-white">Prestador (IPS):</label>
-                    <input type="text" id="prestador" class="form-control form-control-sm mb-2" placeholder="Ej: SES HOSPITAL">
-                    
-                    <div class="row g-2 mt-1">
-                        <div class="col-6">
-                            <label class="small text-white">V. Presmed:</label>
-                            <input type="text" id="valorPresmed" class="form-control form-control-sm" placeholder="$ 0">
-                        </div>
-                        <div class="col-6">
-                            <label class="small text-white">V. Oferta:</label>
-                            <input type="text" id="valorOferta" class="form-control form-control-sm" placeholder="$ 0">
-                        </div>
+                    <div class="row g-1">
+                        <div class="col-6"><input type="text" id="valorPresmed" class="form-control" placeholder="$ Presmed"></div>
+                        <div class="col-6"><input type="text" id="valorOferta" class="form-control" placeholder="$ Oferta"></div>
                     </div>
 
-                    <button onclick="procesarConIA()" class="btn btn-primary w-100 mt-4 py-2">
-                        <i class="fas fa-magic"></i> GENERAR CARTA
+                    <button onclick="ejecutarIA()" class="btn btn-primary w-100 mt-3 py-2">
+                        <i class="fas fa-play"></i> GENERAR CARTA
                     </button>
                 </div>
             </div>
+            
+            <div id="debugConsole">Esperando acciones...</div>
         </div>
 
         <div class="col-lg-8">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <h5 class="m-0 text-white">Vista Previa</h5>
-                <button onclick="descargarPDF()" class="btn btn-success btn-sm"><i class="fas fa-download"></i> Descargar PDF</button>
+            <div class="d-flex justify-content-between mb-2">
+                <h5 class="text-white">Vista Previa</h5>
+                <button onclick="descargarPDF()" class="btn btn-success btn-sm">Descargar PDF</button>
             </div>
-            
             <div id="previewContainer">
-                <div style="text-align: center; color: #aaa; margin-top: 100px;">
-                    <i class="fas fa-file-invoice fa-3x mb-3"></i><br>
-                    Sube la orden médica y haz clic en "Generar Carta".<br>
-                    La IA redactará el documento aquí.
+                <div style="text-align: center; padding-top: 100px; color: #999;">
+                    La carta aparecerá aquí.
                 </div>
             </div>
         </div>
@@ -191,49 +120,65 @@
 </div>
 
 <script>
-    function mostrarArchivos() {
-        const files = document.getElementById('fileInput').files;
-        const list = document.getElementById('fileList');
-        if(files.length > 0) {
-            list.innerHTML = `<i class="fas fa-check-circle"></i> ${files.length} archivo(s) cargado(s)`;
-            list.classList.remove('text-danger');
-            list.classList.add('text-info');
-        }
+    // --- SISTEMA DE LOGS ---
+    const consoleBox = document.getElementById('debugConsole');
+    function log(msg, type="info") {
+        consoleBox.style.display = 'block';
+        const color = type === 'error' ? 'red' : '#00ff00';
+        const time = new Date().toLocaleTimeString();
+        consoleBox.innerHTML += `<div style="color:${color}">[${time}] ${msg}</div>`;
+        consoleBox.scrollTop = consoleBox.scrollHeight;
     }
 
-    // Convertir archivo a Base64
-    function fileToGenerativePart(file) {
+    // --- CONVERSOR DE ARCHIVOS ---
+    function fileToBase64(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
-            reader.onloadend = () => {
-                const base64Data = reader.result.split(',')[1];
+            reader.onload = () => {
+                // Quitamos la cabecera "data:image/png;base64," para enviar solo los datos
+                const base64String = reader.result.split(',')[1];
                 resolve({
-                    inline_data: {
-                        mime_type: file.type,
-                        data: base64Data
-                    }
+                    mime_type: file.type,
+                    data: base64String
                 });
             };
-            reader.onerror = reject;
+            reader.onerror = (error) => reject(error);
             reader.readAsDataURL(file);
         });
     }
 
-    async function procesarConIA() {
-        const apiKey = document.getElementById('apiKey').value.trim();
-        const modelSelected = document.getElementById('modelSelector').value; // Toma el modelo elegido
-        const files = document.getElementById('fileInput').files;
+    // --- PROCESO PRINCIPAL ---
+    async function ejecutarIA() {
+        // Limpiar consola
+        consoleBox.innerHTML = '<div style="color:yellow">--- NUEVA SOLICITUD ---</div>';
         
-        if (!apiKey) { alert("¡Falta la API Key!"); return; }
-        if (files.length === 0) { alert("Adjunta la Orden Médica o Historia Clínica (PDF/Imagen)."); return; }
+        // 1. Validar Datos
+        const apiKey = document.getElementById('apiKey').value.trim();
+        const modelId = document.getElementById('modelSelector').value;
+        const files = document.getElementById('fileInput').files;
 
-        document.getElementById('loadingOverlay').style.display = 'block';
+        if (!apiKey) { log("ERROR: Falta la API Key", "error"); alert("Pon la API Key"); return; }
+        if (files.length === 0) { log("ERROR: No hay archivos", "error"); alert("Sube un PDF o Imagen"); return; }
+
+        log(`Iniciando proceso con modelo: ${modelId}`);
+        log(`Procesando ${files.length} archivo(s)...`);
 
         try {
-            // 1. Convertir Archivos
-            const fileParts = await Promise.all([...files].map(file => fileToGenerativePart(file)));
+            // 2. Convertir Archivos
+            const mediaParts = [];
+            for (const file of files) {
+                log(`Leyendo: ${file.name} (${file.type})`);
+                const fileData = await fileToBase64(file);
+                mediaParts.push({
+                    inline_data: {
+                        mime_type: fileData.mime_type,
+                        data: fileData.data
+                    }
+                });
+            }
+            log("Archivos convertidos a Base64 correctamente.");
 
-            // 2. Datos Manuales
+            // 3. Preparar Prompt
             const datos = {
                 intencion: document.getElementById('intencion').value,
                 doc: document.getElementById('documento').value,
@@ -243,112 +188,114 @@
                 oferta: document.getElementById('valorOferta').value
             };
 
-            // 3. Crear Prompt (Instrucciones)
-            let instruccionEspecial = "";
-            let columnaTarifa = "COTIZAR";
+            log("Construyendo instrucciones para la IA...");
+            
+            let instruccionIntencion = "";
+            let tarifaColumna = "COTIZAR";
             
             if (datos.intencion === 'modificar') {
-                instruccionEspecial = `<li>Solicito Visto Bueno para solicitar cambio de valor en presmed (${datos.presmed}) según oferta mercantil (${datos.oferta}).</li>`;
-                columnaTarifa = `SEGUN OFERTA: ${datos.oferta}`;
+                instruccionIntencion = `<li>Solicito Visto Bueno para solicitar cambio de valor en presmed (${datos.presmed}) según oferta mercantil (${datos.oferta}).</li>`;
+                tarifaColumna = `SEGUN OFERTA: ${datos.oferta}`;
             } else if (datos.intencion === 'cotizar') {
-                instruccionEspecial = `<li>Agradezco cotizar el procedimiento e insumos relacionados.</li><li>Validar cobertura del caso.</li>`;
-                columnaTarifa = "COTIZAR";
+                instruccionIntencion = `<li>Agradezco cotizar el procedimiento e insumos relacionados.</li>`;
             } else {
-                instruccionEspecial = `<li>Agradezco validar si el procedimiento es cobertura del programa.</li>`;
+                instruccionIntencion = `<li>Agradezco validar si el procedimiento es cobertura del programa.</li>`;
             }
 
-            const promptText = `
-                Actúa como auditor médico de Coomeva. Analiza visualmente los archivos adjuntos.
+            const prompt = `
+                Actúa como auditor médico de Coomeva. 
+                DATOS MANUALES: Paciente ${datos.nombre} - ${datos.doc}, Prestador: ${datos.prestador}.
                 
                 TAREA:
-                1. Extrae el PROCEDIMIENTO PRINCIPAL (Nombre y Código CUPS si existe).
-                2. Extrae el DIAGNÓSTICO (Nombre y Código DX).
-                3. BUSCA INSUMOS: Busca referencias específicas como "b10p002", guías, catéteres o stents en el texto de la imagen/PDF.
+                1. Mira los archivos adjuntos (Historia clínica/Orden).
+                2. Encuentra el PROCEDIMIENTO y DIAGNÓSTICO.
+                3. BUSCA INSUMOS: Busca referencias como "b10p002", stents, catéteres.
                 
-                Genera SOLAMENTE el código HTML (body content) para la siguiente carta:
-                
-                DATOS MANUALES: 
-                Paciente: ${datos.nombre} - ${datos.doc}
-                Prestador: ${datos.prestador}
-
-                PLANTILLA HTML REQUERIDA:
+                SALIDA HTML (Solo body):
                 <div style="font-family: Arial, sans-serif;">
-                    <p>Buenos días Dres.,<br>Espero se encuentren bien. Agradezco validar caso del siguiente usuario: <strong>${datos.nombre} - ${datos.doc}</strong>.</p>
-                    <p>El especialista envía lo siguiente: <em>[Resumen corto de 1 línea de lo hallado en el archivo]</em></p>
-                    
-                    <p>En relación con lo anterior:</p>
-                    <ul>${instruccionEspecial}</ul>
-
+                    <p>Buenos días Dres.,<br>Agradezco validar caso de: <strong>${datos.nombre} - ${datos.doc}</strong>.</p>
+                    <p>Especialista solicita: [Resumen de lo encontrado en el archivo]</p>
+                    <ul>${instruccionIntencion}</ul>
                     <table class="carta-table">
-                        <thead>
-                            <tr><th>SERVICIO/ITEMS</th><th>CUPS PROPUESTO EAI</th><th>TARIFA</th><th>PRESTADOR</th></tr>
-                        </thead>
+                        <thead><tr><th>SERVICIO/ITEMS</th><th>CUPS</th><th>TARIFA</th><th>PRESTADOR</th></tr></thead>
                         <tbody>
                             <tr>
-                                <td>[Pon aquí el Nombre del Procedimiento + LOS INSUMOS ESPECÍFICOS ENCONTRADOS (ej: b10p002)]</td>
-                                <td>[Código CUPS encontrado]</td>
-                                <td>${columnaTarifa}</td>
+                                <td>[Procedimiento encontrado + Insumos (b10p002, etc)]</td>
+                                <td>[Código CUPS]</td>
+                                <td>${tarifaColumna}</td>
                                 <td>${datos.prestador}</td>
                             </tr>
                         </tbody>
                     </table>
-                    
                     <p><strong>DX:</strong> [Diagnóstico encontrado]</p>
-                    
-                    <p>Muchas gracias, atento a su respuesta.<br>Cordialmente,<br><br><strong>Departamento de Auditoría Médica</strong><br>Coomeva Medicina Prepagada</p>
+                    <p>Cordialmente,<br><strong>Auditoría Médica</strong><br>Coomeva MP</p>
                 </div>
             `;
 
-            // 4. Petición a la API (URL dinámica según el modelo elegido)
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelSelected}:generateContent?key=${apiKey}`;
+            // 4. Enviar a Gemini (Fetch Manual para control total)
+            log("Conectando con Google Cloud...");
             
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
+            
+            const payload = {
+                contents: [{
+                    parts: [
+                        { text: prompt },
+                        ...mediaParts
+                    ]
+                }]
+            };
+
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{
-                        parts: [
-                            { text: promptText },
-                            ...fileParts 
-                        ]
-                    }]
-                })
+                body: JSON.stringify(payload)
             });
 
+            log(`Respuesta del servidor: ${response.status}`);
+
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(`Error del Modelo (${modelSelected}): ${errorData.error.message}`);
+                const errData = await response.json();
+                const errMsg = errData.error?.message || "Error desconocido";
+                log(`FALLO API: ${errMsg}`, "error");
+                alert(`Error de Gemini:\n${errMsg}`);
+                return;
             }
 
             const result = await response.json();
-            let htmlGenerado = result.candidates[0].content.parts[0].text;
+            log("Datos recibidos. Renderizando...");
             
-            // Limpieza
-            htmlGenerado = htmlGenerado.replace(/```html/g, '').replace(/```/g, '');
+            let htmlFinal = result.candidates[0].content.parts[0].text;
+            htmlFinal = htmlFinal.replace(/```html/g, '').replace(/```/g, ''); // Limpiar formato
 
-            document.getElementById('previewContainer').innerHTML = htmlGenerado;
+            document.getElementById('previewContainer').innerHTML = htmlFinal;
+            log("¡EXITO! Carta generada.", "success");
 
-        } catch (error) {
-            console.error(error);
-            alert("ERROR: " + error.message + "\n\nPrueba cambiando el modelo en la lista desplegable.");
-        } finally {
-            document.getElementById('loadingOverlay').style.display = 'none';
+        } catch (e) {
+            log(`ERROR CRÍTICO: ${e.message}`, "error");
+            console.error(e);
+            alert("Ocurrió un error técnico. Revisa la consola negra abajo.");
         }
     }
 
     function descargarPDF() {
         const elemento = document.getElementById('previewContainer');
-        const docId = document.getElementById('documento').value || "generado";
-        
+        const docName = document.getElementById('documento').value || "archivo";
         const opt = {
             margin: 10,
-            filename: `DNGET-${docId}.pdf`,
+            filename: `DNGET-${docName}.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
             html2canvas: { scale: 2 },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
         html2pdf().set(opt).from(elemento).save();
     }
+    
+    // Feedback visual al subir archivo
+    document.getElementById('fileInput').addEventListener('change', function() {
+        document.getElementById('fileStatus').innerText = this.files.length + " archivo(s) listo(s) para análisis";
+        document.getElementById('fileStatus').className = "text-success fw-bold";
+    });
 </script>
 
 </body>
